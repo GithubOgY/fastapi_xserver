@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -25,7 +25,6 @@
             --text-dim: #94a3b8;
             --success: #10b981;
             --danger: #f43f5e;
-            --input-bg: rgba(0, 0, 0, 0.3);
             --select-bg: rgba(30, 41, 59, 0.8);
         }
 
@@ -41,7 +40,6 @@
             --text-dim: #64748b;
             --success: #059669;
             --danger: #dc2626;
-            --input-bg: rgba(255, 255, 255, 0.8);
             --select-bg: rgba(241, 245, 249, 0.9);
         }
 
@@ -117,7 +115,7 @@
             outline: none;
             cursor: pointer;
             font-family: inherit;
-            transition: background 0.3s ease, color 0.3s ease;
+            transition: all 0.3s ease;
         }
 
         table {
@@ -202,7 +200,7 @@
                     <button hx-post="/admin/sync?ticker={{ current_ticker }}" hx-target="body" hx-swap="outerHTML"
                         hx-indicator="#sync-spinner" id="sync-button"
                         style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #10b981; padding: 0.4rem 1rem; font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; border-radius: 8px;">
-                        <span id="sync-text">譛譁ｰ繝・・繧ｿ蜷梧悄 (yfinance)</span>
+                        <span id="sync-text">最新データ同期 (yfinance)</span>
                         <div id="sync-spinner" class="htmx-indicator"
                             style="width: 14px; height: 14px; border: 2px solid #10b981; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;">
                         </div>
@@ -240,18 +238,18 @@
                     user.username }}</a>
                 {% if user.is_admin %}
                 <a href="/admin/users"
-                    style="color: var(--success); text-decoration: none; font-size: 0.8rem; background: rgba(16, 185, 129, 0.2); padding: 0.3rem 0.6rem; border-radius: 6px;">Admin</a>
+                    style="color: var(--success); text-decoration: none; font-size: 0.8rem; background: rgba(16, 185, 129, 0.2); padding: 0.3rem 0.6rem; border-radius: 6px;">管理者</a>
                 {% endif %}
-                <a href="/logout" style="color: var(--danger); text-decoration: none; font-size: 0.9rem;">Logout</a>
+                <a href="/logout" style="color: var(--danger); text-decoration: none; font-size: 0.9rem;">ログアウト</a>
                 {% else %}
-                <a href="/login" style="color: var(--accent); text-decoration: none; font-size: 0.9rem;">Login</a>
+                <a href="/login" style="color: var(--accent); text-decoration: none; font-size: 0.9rem;">ログイン</a>
                 {% endif %}
             </div>
         </div>
 
-        <!-- 驫俶氛驕ｸ謚・-->
+        <!-- 銘柄選択 -->
         <div style="margin-bottom: 2.5rem; display: flex; justify-content: center; align-items: center; gap: 1rem;">
-            <label style="font-size: 0.9rem; color: #94a3b8;">陦ｨ遉ｺ驫俶氛繧帝∈謚・</label>
+            <label style="font-size: 0.9rem; color: #94a3b8;">表示銘柄を選択:</label>
             <select onchange="window.location.href='/?ticker=' + this.value">
                 {% for t in ticker_list %}
                 <option value="{{ t.code }}" {% if t.code==current_ticker %}selected{% endif %}>
@@ -261,32 +259,32 @@
             </select>
         </div>
 
-        <!-- 讌ｭ邵ｾ繧ｰ繝ｩ繝輔そ繧ｯ繧ｷ繝ｧ繝ｳ -->
+        <!-- 業績グラフセクション -->
         <div class="section">
             <h2
                 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
-                投 讌ｭ邵ｾ謗ｨ遘ｻ繧ｰ繝ｩ繝・
+                📊 業績推移グラフ
             </h2>
             <div style="height: 300px; position: relative;">
                 <canvas id="financialChart"></canvas>
             </div>
         </div>
 
-        <!-- 雋｡蜍吶ョ繝ｼ繧ｿ繧ｻ繧ｯ繧ｷ繝ｧ繝ｳ -->
+        <!-- 財務データセクション -->
         <div class="section">
             <h2
                 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
-                嶋 {{ ticker_name }} 雋｡蜍呎耳遘ｻ
+                📈 {{ ticker_name }} 財務推移
             </h2>
 
-            <!-- 蜷梧悄繧ｹ繝・・繧ｿ繧ｹ陦ｨ遉ｺ -->
+            <!-- 同期ステータス表示 -->
             {% if company and company.last_sync_at %}
             <div style="text-align: center; margin-bottom: 1rem; font-size: 0.8rem; color: #94a3b8;">
-                譛邨ょ酔譛・ {{ company.last_sync_at }}
+                最終同期: {{ company.last_sync_at }}
                 {% if company.last_sync_error %}
-                <span style="color: #fb7185; margin-left: 0.5rem;">笞・・{{ company.last_sync_error }}</span>
+                <span style="color: #fb7185; margin-left: 0.5rem;">⚠️ {{ company.last_sync_error }}</span>
                 {% else %}
-                <span style="color: #10b981; margin-left: 0.5rem;">笨・謌仙粥</span>
+                <span style="color: #10b981; margin-left: 0.5rem;">✅ 成功</span>
                 {% endif %}
             </div>
             {% endif %}
@@ -295,18 +293,18 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>豎ｺ邂玲悄</th>
-                            <th>螢ｲ荳雁庶逶・(蜆・・)</th>
-                            <th>蝟ｶ讌ｭ蛻ｩ逶・(蜆・・)</th>
-                            <th>邏泌茜逶・(蜆・・)</th>
-                            <th>EPS (蜀・</th>
+                            <th>決算期</th>
+                            <th>売上収益 (億円)</th>
+                            <th>営業利益 (億円)</th>
+                            <th>純利益 (億円)</th>
+                            <th>EPS (円)</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% if fundamentals %}
                         {% for f in fundamentals %}
                         <tr>
-                            <td>{{ f.year }}蟷ｴ3譛・/td>
+                            <td>{{ f.year }}年3月</td>
                             <td>{{ "{:,.2f}".format(f.revenue) }}</td>
                             <td>{{ "{:,.2f}".format(f.operating_income) }}</td>
                             <td>{{ "{:,.2f}".format(f.net_income) }}</td>
@@ -316,8 +314,8 @@
                         {% else %}
                         <tr>
                             <td colspan="5" style="text-align: center; padding: 2rem; color: #64748b;">
-                                繝・・繧ｿ縺後≠繧翫∪縺帙ｓ縲ゅ悟酔譛溘阪・繧ｿ繝ｳ繧呈款縺励※蜿門ｾ励＠縺ｦ縺上□縺輔＞縲・br>
-                                (API蛻ｶ髯舌↓繧医ｊ蜿門ｾ励〒縺阪↑縺・ｴ蜷医′縺ゅｊ縺ｾ縺・
+                                データがありません。「同期」ボタンを押して取得してください。<br>
+                                (API制限により取得できない場合があります)
                             </td>
                         </tr>
                         {% endif %}
@@ -325,21 +323,21 @@
                 </table>
             </div>
             <p style="font-size: 0.75rem; color: #64748b; margin-top: 1.5rem; text-align: center;">
-                窶ｻ縺薙・繝・・繧ｿ縺ｯ yfinance API 繧医ｊ閾ｪ蜍墓峩譁ｰ縺輔ｌ縺ｦ縺・∪縺・
+                ※このデータは yfinance API より自動更新されています
             </p>
         </div>
 
-        <!-- 繧､繝ｳ繧ｿ繝ｩ繧ｯ繝・ぅ繝悶・繧ｻ繧ｯ繧ｷ繝ｧ繝ｳ -->
+        <!-- インタラクティブ・セクション -->
         <div class="section">
             <div class="input-group">
-                <input type="text" name="message" placeholder="繧ｵ繝ｼ繝舌・縺ｸ繧ｨ繧ｳ繝ｼ騾∽ｿ｡..." hx-post="/echo"
+                <input type="text" name="message" placeholder="サーバーへエコー送信..." hx-post="/echo"
                     hx-trigger="keyup[enterKey]" hx-target="#echo-target">
                 <button hx-post="/echo" hx-target="#echo-target" hx-include="[name='message']">
-                    騾∽ｿ｡
+                    送信
                 </button>
             </div>
             <div id="echo-target">
-                <p class="echo-result">API騾｣謳ｺ縺ｮ貅門ｙ縺ｯ繧医ｍ縺励＞縺ｧ縺吶°・・/p>
+                <p class="echo-result">API連携の準備はよろしいですか？</p>
             </div>
         </div>
     </div>
@@ -358,7 +356,7 @@
     </script>
 
     <script>
-        // 繧ｰ繝ｩ繝募・譛溷喧髢｢謨ｰ
+        // グラフ初期化関数
         function initChart() {
             const dataElement = document.getElementById('fundamental-data');
             if (!dataElement) return;
@@ -374,7 +372,7 @@
             const canvas = document.getElementById('financialChart');
             if (!canvas || fundamentals.length === 0) return;
 
-            // 譌｢蟄倥・繝√Ε繝ｼ繝医ｒ遐ｴ譽・
+            // 既存のチャートを破棄
             if (window.myChart) {
                 window.myChart.destroy();
             }
@@ -383,10 +381,10 @@
             window.myChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: fundamentals.map(f => f.year + '蟷ｴ'),
+                    labels: fundamentals.map(f => f.year + '年'),
                     datasets: [
                         {
-                            label: '螢ｲ荳雁庶逶・(蜆・・)',
+                            label: '売上収益 (億円)',
                             data: fundamentals.map(f => f.revenue),
                             backgroundColor: 'rgba(99, 102, 241, 0.5)',
                             borderColor: '#6366f1',
@@ -394,7 +392,7 @@
                             yAxisID: 'y'
                         },
                         {
-                            label: '蝟ｶ讌ｭ蛻ｩ逶・(蜆・・)',
+                            label: '営業利益 (億円)',
                             data: fundamentals.map(f => f.op_income),
                             type: 'line',
                             borderColor: '#10b981',
@@ -403,7 +401,7 @@
                             yAxisID: 'y'
                         },
                         {
-                            label: '邏泌茜逶・(蜆・・)',
+                            label: '純利益 (億円)',
                             data: fundamentals.map(f => f.net_income),
                             type: 'line',
                             borderColor: '#fb7185',
@@ -436,12 +434,13 @@
             });
         }
 
-        // Initial chart load
+        // 初回ロード時
         document.addEventListener('DOMContentLoaded', initChart);
 
-        // Re-init chart after HTMX swap
+        // HTMX でページが更新された後
         document.body.addEventListener('htmx:afterSwap', initChart);
     </script>
+
     <script>
         function applyTheme(theme) {
             document.documentElement.setAttribute('data-theme', theme);
