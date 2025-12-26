@@ -436,10 +436,10 @@
             });
         }
 
-        // 蛻晏屓繝ｭ繝ｼ繝画凾
+        // Initial chart load
         document.addEventListener('DOMContentLoaded', initChart);
 
-        // HTMX 縺ｧ繝壹・繧ｸ縺梧峩譁ｰ縺輔ｌ縺溷ｾ・
+        // Re-init chart after HTMX swap
         document.body.addEventListener('htmx:afterSwap', initChart);
     </script>
     <script>
