@@ -17,7 +17,7 @@ import pandas as pd
 # Load environment variables
 load_dotenv()
 
-SECRET_KEY = os.getenv("SECRET_KEY", "default-secret-key-for-dev")
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-keep-it-secret")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
@@ -101,85 +101,106 @@ def sync_stock_data(db: Session):
     
     for ticker_symbol in tickers:
         try:
+            logger.info(f"Refreshing data for {ticker_symbol}...")
             ticker = yf.Ticker(ticker_symbol)
-            info = ticker.info
-            company_name = info.get('longName', ticker_symbol)
             
-            company = db.query(Company).filter(Company.ticker == ticker_symbol).first()
-            if company:
-                company.name = company_name
-            else:
-                db.add(Company(ticker=ticker_symbol, name=company_name))
+            # 銘柄情報の取得 (失敗しても続行)
+            try:
+                info = ticker.info
+                company_name = info.get('longName', info.get('shortName', ticker_symbol))
+                company = db.query(Company).filter(Company.ticker == ticker_symbol).first()
+                if company:
+                    company.name = company_name
+                else:
+                    db.add(Company(ticker=ticker_symbol, name=company_name))
+                db.commit()
+            except Exception as info_e:
+                logger.warning(f"Could not fetch info for {ticker_symbol}: {str(info_e)}")
             
+            # 財務データの取得
             financials = ticker.financials
-            if financials.empty:
-                logger.warning(f"No financial data for {ticker_symbol}")
+            if financials is None or financials.empty:
+                logger.warning(f"No financial data returned for {ticker_symbol}")
                 continue
             
             df = financials.T
             for date, row in df.iterrows():
-                year = date.year
-                existing = db.query(CompanyFundamental).filter(
-                    CompanyFundamental.ticker == ticker_symbol,
-                    CompanyFundamental.year == year
-                ).first()
-                
-                revenue = row.get('Total Revenue', 0) / 1e8
-                op_income = row.get('Operating Income', 0) / 1e8
-                net_income = row.get('Net Income Common Stockholders', 0) / 1e8
-                eps = row.get('Basic EPS', 0)
-                
-                if pd.isna(revenue): revenue = 0
-                if pd.isna(op_income): op_income = 0
-                if pd.isna(net_income): net_income = 0
-                if pd.isna(eps): eps = 0
+                try:
+                    year = date.year
+                    logger.info(f"Processing {ticker_symbol} for year {year}")
+                    
+                    # データの抽出 (yfinanceのキー名揺れに対応)
+                    revenue_raw = row.get('Total Revenue') or row.get('TotalRevenue') or 0
+                    op_income_raw = row.get('Operating Income') or row.get('OperatingIncome') or 0
+                    net_income_raw = row.get('Net Income Common Stockholders') or row.get('NetIncomeCommonStockholders') or row.get('Net Income') or 0
+                    eps_raw = row.get('Basic EPS') or row.get('BasicEPS') or 0
+                    
+                    # 単位を億円に変換
+                    revenue = float(revenue_raw) / 1e8 if not pd.isna(revenue_raw) else 0
+                    op_income = float(op_income_raw) / 1e8 if not pd.isna(op_income_raw) else 0
+                    net_income = float(net_income_raw) / 1e8 if not pd.isna(net_income_raw) else 0
+                    eps = float(eps_raw) if not pd.isna(eps_raw) else 0
 
-                if existing:
-                    existing.revenue = float(revenue)
-                    existing.operating_income = float(op_income)
-                    existing.net_income = float(net_income)
-                    existing.eps = float(eps)
-                else:
-                    db.add(CompanyFundamental(
-                        ticker=ticker_symbol,
-                        year=int(year),
-                        revenue=float(revenue),
-                        operating_income=float(op_income),
-                        net_income=float(net_income),
-                        eps=float(eps)
-                    ))
+                    existing = db.query(CompanyFundamental).filter(
+                        CompanyFundamental.ticker == ticker_symbol,
+                        CompanyFundamental.year == year
+                    ).first()
+                    
+                    if existing:
+                        existing.revenue = revenue
+                        existing.operating_income = op_income
+                        existing.net_income = net_income
+                        existing.eps = eps
+                    else:
+                        db.add(CompanyFundamental(
+                            ticker=ticker_symbol,
+                            year=int(year),
+                            revenue=revenue,
+                            operating_income=op_income,
+                            net_income=net_income,
+                            eps=eps
+                        ))
+                    db.commit()
+                except Exception as row_e:
+                    logger.error(f"Error processing row for {ticker_symbol} {date}: {str(row_e)}")
+                    db.rollback()
             
-            db.commit()
             logger.info(f"Successfully synced {ticker_symbol}")
             
         except Exception as e:
-            logger.error(f"Error syncing {ticker_symbol}: {str(e)}")
+            logger.error(f"Major error syncing {ticker_symbol}: {str(e)}")
             db.rollback()
 
 # 初期データの設定
 @app.on_event("startup")
 def startup_event():
     db = SessionLocal()
-    # ユーザー
-    if db.query(User).count() == 0:
-        admin_user = User(username=ADMIN_USERNAME, hashed_password=get_hashed_password(ADMIN_PASSWORD))
-        db.add(admin_user)
-        db.commit()
-    
-    if db.query(Company).count() == 0:
-        initial_companies = {
-            "7203.T": "トヨタ自動車",
-            "6758.T": "ソニーグループ",
-            "9984.T": "ソフトバンクグループ"
-        }
-        for ticker, name in initial_companies.items():
-            db.add(Company(ticker=ticker, name=name))
-        db.commit()
-    
-    if db.query(CompanyFundamental).count() < 3:
-        sync_stock_data(db)
+    try:
+        # ユーザー
+        if db.query(User).count() == 0:
+            admin_user = User(username=ADMIN_USERNAME, hashed_password=get_hashed_password(ADMIN_PASSWORD))
+            db.add(admin_user)
+            db.commit()
         
-    db.close()
+        # 銘柄マスタ基本
+        if db.query(Company).count() == 0:
+            initial_companies = {
+                "7203.T": "トヨタ自動車",
+                "6758.T": "ソニーグループ",
+                "9984.T": "ソフトバンクグループ"
+            }
+            for ticker, name in initial_companies.items():
+                db.add(Company(ticker=ticker, name=name))
+            db.commit()
+        
+        # 初回データ取得 (PostgreSQL移行後はここがトリガーされる)
+        if db.query(CompanyFundamental).count() == 0:
+            logger.info("No data found in DB, starting initial sync...")
+            sync_stock_data(db)
+    except Exception as e:
+        logger.error(f"Startup error: {str(e)}")
+    finally:
+        db.close()
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request, 
