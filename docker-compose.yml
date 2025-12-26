@@ -3,6 +3,8 @@ services:
     build: .
     container_name: fastapi-app
     restart: always
+    volumes:
+      - .:/app
 
   nginx:
     image: nginx:latest
