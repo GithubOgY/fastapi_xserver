@@ -214,6 +214,7 @@ async def manual_sync(ticker: str = "7203.T", db: Session = Depends(get_db), cur
     return RedirectResponse(url=f"/?ticker={ticker}", status_code=status.HTTP_303_SEE_OTHER)
 
 # --- Auth Endpoints ---
+
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
@@ -228,6 +229,21 @@ async def login(response: Response, username: str = Form(...), password: str = F
     response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     response.set_cookie(key="access_token", value=access_token, httponly=True)
     return response
+
+@app.get("/register", response_class=HTMLResponse)
+async def register_page(request: Request):
+    return templates.TemplateResponse("register.html", {"request": request})
+
+@app.post("/register")
+async def register(username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+    existing_user = db.query(User).filter(User.username == username).first()
+    if existing_user:
+        return HTMLResponse(content="<p style='color:red;'>このユーザー名は既に使用されています</p>", status_code=400)
+    
+    new_user = User(username=username, hashed_password=get_hashed_password(password))
+    db.add(new_user)
+    db.commit()
+    return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
 
 @app.get("/logout")
 async def logout():
