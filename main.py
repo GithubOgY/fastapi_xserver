@@ -134,7 +134,6 @@ async def read_root(request: Request,
         "index.html", 
         {
             "request": request, 
-            "counter": state["counter"],
             "fundamentals": fundamentals,
             "ticker_name": f"{ticker} {ticker_display}",
             "current_ticker": ticker,
