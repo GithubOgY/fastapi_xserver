@@ -250,7 +250,7 @@
         <!-- 銘柄選択 -->
         <div style="margin-bottom: 2.5rem; display: flex; justify-content: center; align-items: center; gap: 1rem;">
             <label style="font-size: 0.9rem; color: #94a3b8;">表示銘柄を選択:</label>
-            <select onchange="window.location.href='/?ticker=' + this.value">
+            <select onchange="window.location.href='/dashboard?ticker=' + this.value">
                 {% for t in ticker_list %}
                 <option value="{{ t.code }}" {% if t.code==current_ticker %}selected{% endif %}>
                     {{ t.code }} {{ t.name }}
