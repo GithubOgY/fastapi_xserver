@@ -191,6 +191,16 @@ def sync_stock_data(db: Session, target_ticker: Optional[str] = None):
 def startup_event():
     db = SessionLocal()
     try:
+        # DBスキーマの自動更新 (簡単なマイグレーション)
+        from sqlalchemy import text
+        try:
+            db.execute(text("ALTER TABLE companies ADD COLUMN last_sync_at VARCHAR"))
+            db.execute(text("ALTER TABLE companies ADD COLUMN last_sync_error VARCHAR"))
+            db.commit()
+            logger.info("Database schema updated: added last_sync columns.")
+        except Exception:
+            db.rollback()
+
         if db.query(User).count() == 0:
             admin_user = User(username=ADMIN_USERNAME, hashed_password=get_hashed_password(ADMIN_PASSWORD))
             db.add(admin_user)
