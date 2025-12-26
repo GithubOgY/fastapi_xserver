@@ -6,3 +6,5 @@ sqlalchemy==2.0.25
 passlib[bcrypt]==1.7.4
 bcrypt==3.2.0
 python-jose[cryptography]==3.3.0
+yfinance==0.2.36
+pandas==2.2.0
