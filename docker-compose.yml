@@ -5,6 +5,7 @@ services:
     restart: always
     volumes:
       - .:/app
+      - ./logs:/app/logs
 
   nginx:
     image: nginx:latest

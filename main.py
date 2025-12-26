@@ -7,6 +7,9 @@ from database import SessionLocal, CompanyFundamental, User
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
+import logging
+import time
+import os
 
 # セキュリティ設定
 SECRET_KEY = "your-secret-key-keep-it-secret" # 練習用なので直書き
@@ -16,6 +19,33 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 app = FastAPI()
+
+# --- Logging Configuration ---
+LOG_DIR = "logs"
+if not os.path.exists(LOG_DIR):
+    os.makedirs(LOG_DIR)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(f"{LOG_DIR}/app.log", encoding="utf-8")
+    ]
+)
+logger = logging.getLogger("fastapi-app")
+
+# --- Middleware for Request Logging ---
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    logger.info(
+        f"{request.client.host} - \"{request.method} {request.url.path}\" "
+        f"{response.status_code} ({process_time:.4f}s)"
+    )
+    return response
 
 templates = Jinja2Templates(directory="templates")
 
