@@ -1,60 +1,45 @@
 # Xserver VPS 練習用アプリ (FastAPI + htmx)
 
 Xserver VPSへのデプロイを練習するための FastAPI + htmx アプリケーションです。
-Docker + Docker Compose (Nginxリバースプロキシ構成) で動作するように設計されています。
+Docker + Docker Compose (Nginxリバースプロキシ + SSL) で本番運用するように構成されています。
 
 ## 技術スタック
-- **Backend**: FastAPI (Python)
-- **Frontend**: Jinja2 + htmx
+- **Backend**: FastAPI (Python 3.11)
+- **Frontend**: Jinja2 + htmx (v2.0.0)
+- **Design**: Vanilla CSS (Premium Glassmorphism)
 - **Infrastructure**: Docker, Docker Compose, Nginx
+- **Security**: Let's Encrypt (SSL/HTTPS)
 
-## ローカル開発 (Pythonのみ)
+## ローカル開発 (Dockerなし)
 
-Dockerを使わずに、ローカル環境で直接Pythonを実行して開発する場合の手順です。
-
-1. 仮想環境の作成と有効化 (推奨):
+1. **環境構築**:
    ```bash
-   python -m venv venv
-   # Windows
-   .\venv\Scripts\activate
-   # Mac/Linux
-   source venv/bin/activate
+   .\start_dev.bat
    ```
+   ※初回実行時に `venv` の作成と `pip install` が自動で行われます。
 
-2. 依存関係のインストール:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. 開発サーバーの起動:
+2. **手動起動**:
    ```bash
    uvicorn main:app --reload
    ```
+   アクセス: [http://localhost:8000](http://localhost:8000)
 
-4. ブラウザでアクセス:
-   `http://localhost:8000`
+## VPSへのデプロイ (Docker)
 
-## VPSへのデプロイ (Docker使用)
-
-Xserver VPS上でのデプロイ手順です。
-
-1. リポジトリをクローン/プル:
+1. **コードの更新**:
    ```bash
-   git pull origin main
+   git pull
    ```
 
-2. Docker Compose で起動:
+2. **起動とビルド**:
    ```bash
    docker compose up -d --build
    ```
+   アクセス: [https://site.y-project-vps.xyz](https://site.y-project-vps.xyz)
 
-3. アクセス確認:
-   - URL: `https://site.y-project-vps.xyz` (SSL設定後)
-   - HTTP: `http://site.y-project-vps.xyz`
-
-## ディレクトリ構成
-- `main.py`: FastAPIアプリケーションのエントリーポイント
-- `templates/`: HTMLテンプレート (Jinja2)
-- `nginx/`: Nginx設定ファイル
-- `Dockerfile`: アプリケーションのDockerイメージ定義
-- `docker-compose.yml`: サービス構成定義
+## 主要な設定ファイル
+- `main.py`: アプリケーションロジック（GET/HEAD/POST）
+- `templates/index.html`: UIテンプレート
+- `docker-compose.yml`: サービス定義（App:8000, Nginx:80/443）
+- `nginx/default.conf`: リバースプロキシとSSL/HTTPSリダイレクト設定
+- `Dockerfile`: アプリのビルド定義
