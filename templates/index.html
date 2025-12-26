@@ -12,11 +12,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@500;700&display=swap"
         rel="stylesheet">
     <style>
-        /* 繝繝ｼ繧ｯ繝・・繝橸ｼ医ョ繝輔か繝ｫ繝茨ｼ・*/
+        /* Dark Theme (Default) */
         :root,
         [data-theme="dark"] {
-            --bg-primary: #0f172a;
-            --bg-secondary: #1e1b4b;
             --bg-gradient: radial-gradient(circle at top right, #1e1b4b, #0f172a);
             --glass-bg: rgba(255, 255, 255, 0.03);
             --glass-border: rgba(255, 255, 255, 0.08);
@@ -25,16 +23,14 @@
             --accent-glow: rgba(99, 102, 241, 0.3);
             --text-main: #f8fafc;
             --text-dim: #94a3b8;
-            --table-header-bg: rgba(51, 65, 85, 0.5);
-            --table-row-hover: rgba(99, 102, 241, 0.1);
             --success: #10b981;
             --danger: #f43f5e;
+            --input-bg: rgba(0, 0, 0, 0.3);
+            --select-bg: rgba(30, 41, 59, 0.8);
         }
 
-        /* 繝ｩ繧､繝医ユ繝ｼ繝・*/
+        /* Light Theme */
         [data-theme="light"] {
-            --bg-primary: #f8fafc;
-            --bg-secondary: #e2e8f0;
             --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%);
             --glass-bg: rgba(255, 255, 255, 0.8);
             --glass-border: rgba(0, 0, 0, 0.1);
@@ -43,10 +39,10 @@
             --accent-glow: rgba(79, 70, 229, 0.2);
             --text-main: #1e293b;
             --text-dim: #64748b;
-            --table-header-bg: rgba(241, 245, 249, 0.9);
-            --table-row-hover: rgba(79, 70, 229, 0.1);
             --success: #059669;
             --danger: #dc2626;
+            --input-bg: rgba(255, 255, 255, 0.8);
+            --select-bg: rgba(241, 245, 249, 0.9);
         }
 
         body {
@@ -102,7 +98,7 @@
             border-radius: 16px;
             padding: 1.5rem;
             margin-bottom: 1.5rem;
-            transition: background 0.3s ease, border-color 0.3s ease;
+            transition: background 0.3s ease;
         }
 
         .glass-card {
@@ -113,21 +109,22 @@
         }
 
         select {
-            background: rgba(30, 41, 59, 0.8);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--select-bg);
+            color: var(--text-main);
+            border: 1px solid var(--glass-border);
             padding: 0.6rem 1.2rem;
             border-radius: 12px;
             outline: none;
             cursor: pointer;
             font-family: inherit;
+            transition: background 0.3s ease, color 0.3s ease;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
             font-size: 0.9rem;
-            color: #cbd5e1;
+            color: var(--text-dim);
         }
 
         th {
@@ -235,20 +232,19 @@
                         opacity: 0.8;
                     }
                 </style>
-                <!-- 繝・・繝槫・譖ｿ繝懊ち繝ｳ -->
                 <button id="theme-toggle" onclick="toggleTheme()"
-                    style="background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-main); padding: 0.4rem 0.8rem; border-radius: 8px; cursor: pointer; font-size: 1rem; transition: all 0.3s ease;">
-                    嫌
+                    style="background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-main); padding: 0.4rem 0.8rem; border-radius: 8px; cursor: pointer; font-size: 0.8rem; transition: all 0.3s ease;">
+                    Light
                 </button>
-                <a href="/account" style="font-size: 0.9rem; color: var(--accent); text-decoration: none;">側 {{
+                <a href="/account" style="font-size: 0.9rem; color: var(--accent); text-decoration: none;">{{
                     user.username }}</a>
                 {% if user.is_admin %}
                 <a href="/admin/users"
-                    style="color: var(--success); text-decoration: none; font-size: 0.8rem; background: rgba(16, 185, 129, 0.2); padding: 0.3rem 0.6rem; border-radius: 6px;">邂｡逅・・/a>
+                    style="color: var(--success); text-decoration: none; font-size: 0.8rem; background: rgba(16, 185, 129, 0.2); padding: 0.3rem 0.6rem; border-radius: 6px;">Admin</a>
                 {% endif %}
-                <a href="/logout" style="color: var(--danger); text-decoration: none; font-size: 0.9rem;">繝ｭ繧ｰ繧｢繧ｦ繝・/a>
+                <a href="/logout" style="color: var(--danger); text-decoration: none; font-size: 0.9rem;">Logout</a>
                 {% else %}
-                <a href="/login" style="color: var(--accent); text-decoration: none; font-size: 0.9rem;">繝ｭ繧ｰ繧､繝ｳ</a>
+                <a href="/login" style="color: var(--accent); text-decoration: none; font-size: 0.9rem;">Login</a>
                 {% endif %}
             </div>
         </div>
@@ -446,26 +442,19 @@
         // HTMX 縺ｧ繝壹・繧ｸ縺梧峩譁ｰ縺輔ｌ縺溷ｾ・
         document.body.addEventListener('htmx:afterSwap', initChart);
     </script>
-
-    <!-- テーマ切替スクリプト -->
     <script>
         function applyTheme(theme) {
             document.documentElement.setAttribute('data-theme', theme);
-            const toggleBtn = document.getElementById('theme-toggle');
-            if (toggleBtn) {
-                toggleBtn.textContent = theme === 'dark' ? '' : '';
-            }
+            var btn = document.getElementById('theme-toggle');
+            if (btn) btn.textContent = theme === 'dark' ? 'Light' : 'Dark';
         }
         function toggleTheme() {
-            const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            localStorage.setItem('theme', newTheme);
-            applyTheme(newTheme);
+            var cur = document.documentElement.getAttribute('data-theme') || 'dark';
+            var nw = cur === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', nw);
+            applyTheme(nw);
         }
-        (function() {
-            const savedTheme = localStorage.getItem('theme') || 'dark';
-            applyTheme(savedTheme);
-        })();
+        applyTheme(localStorage.getItem('theme') || 'dark');
     </script>
 </body>
 
