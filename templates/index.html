@@ -265,7 +265,7 @@
                 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
                 📊 業績推移グラフ
             </h2>
-            <div style="height: 300px; position: relative;">
+            <div id="chart-container" style="height: 300px; min-height: 300px; position: relative; width: 100%;">
                 <canvas id="financialChart"></canvas>
             </div>
         </div>
@@ -434,11 +434,13 @@
             });
         }
 
-        // 初回ロード時
+        // Initial load
         document.addEventListener('DOMContentLoaded', initChart);
 
-        // HTMX でページが更新された後
-        document.body.addEventListener('htmx:afterSwap', initChart);
+        // After HTMX swap - delay to ensure DOM is fully rendered
+        document.body.addEventListener('htmx:afterSwap', function () {
+            setTimeout(initChart, 100);
+        });
     </script>
 
     <script>
