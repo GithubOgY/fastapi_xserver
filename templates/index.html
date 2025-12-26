@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>X-Server App | Premium Stock Analysis</title>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@500;700&display=swap"
@@ -196,6 +197,17 @@
             </select>
         </div>
 
+        <!-- 業績グラフセクション -->
+        <div class="section">
+            <h2
+                style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
+                📊 業績推移グラフ
+            </h2>
+            <div style="height: 300px; position: relative;">
+                <canvas id="financialChart"></canvas>
+            </div>
+        </div>
+
         <!-- 財務データセクション -->
         <div class="section">
             <h2
@@ -228,7 +240,7 @@
                 </table>
             </div>
             <p style="font-size: 0.75rem; color: #64748b; margin-top: 1.5rem; text-align: center;">
-                ※このデータは将来的に外部APIより自動更新される予定です
+                ※このデータは yfinance API より自動更新されています
             </p>
         </div>
 
@@ -246,6 +258,77 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const fundamentals = [
+                {% for f in fundamentals | reverse %}
+                {
+                year: '{{ f.year }}',
+                revenue: {{ f.revenue }},
+            op_income: {{ f.operating_income }},
+            net_income: {{ f.net_income }}
+                },
+            {% endfor %}
+            ];
+
+        const ctx = document.getElementById('financialChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: fundamentals.map(f => f.year + '年'),
+                datasets: [
+                    {
+                        label: '売上収益 (億円)',
+                        data: fundamentals.map(f => f.revenue),
+                        backgroundColor: 'rgba(99, 102, 241, 0.5)',
+                        borderColor: '#6366f1',
+                        borderWidth: 1,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: '営業利益 (億円)',
+                        data: fundamentals.map(f => f.op_income),
+                        type: 'line',
+                        borderColor: '#10b981',
+                        backgroundColor: '#10b981',
+                        tension: 0.3,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: '純利益 (億円)',
+                        data: fundamentals.map(f => f.net_income),
+                        type: 'line',
+                        borderColor: '#fb7185',
+                        backgroundColor: '#fb7185',
+                        tension: 0.3,
+                        yAxisID: 'y'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: { color: '#94a3b8', font: { size: 11 } }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#94a3b8' },
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                    },
+                    y: {
+                        ticks: { color: '#94a3b8' },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+        });
+    </script>
 </body>
 
 </html>
