@@ -7,14 +7,24 @@ from database import SessionLocal, CompanyFundamental, User, Company
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
 import logging
 import time
 import os
 import yfinance as yf
 import pandas as pd
 
+# Load environment variables
+load_dotenv()
+
+SECRET_KEY = os.getenv("SECRET_KEY", "default-secret-key-for-dev")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "password")
+LOG_DIR = os.getenv("LOG_DIR", "logs")
+
 # --- Logging Configuration ---
-LOG_DIR = "logs"
 if not os.path.exists(LOG_DIR):
     os.makedirs(LOG_DIR)
 
@@ -82,10 +92,6 @@ async def get_current_user(request: Request, db: Session = Depends(get_db)):
     except JWTError:
         return None
 
-# セキュリティ設定
-SECRET_KEY = "your-secret-key-keep-it-secret"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # --- Yahoo Finance Data Fetching ---
@@ -96,7 +102,6 @@ def sync_stock_data(db: Session):
     for ticker_symbol in tickers:
         try:
             ticker = yf.Ticker(ticker_symbol)
-            # 銘柄情報の更新
             info = ticker.info
             company_name = info.get('longName', ticker_symbol)
             
@@ -106,26 +111,19 @@ def sync_stock_data(db: Session):
             else:
                 db.add(Company(ticker=ticker_symbol, name=company_name))
             
-            # 財務データの取得 (年次)
             financials = ticker.financials
             if financials.empty:
                 logger.warning(f"No financial data for {ticker_symbol}")
                 continue
             
-            # DataFrameを転置して日付をインデックスに
             df = financials.T
-            # 必要なカラムのマッピング (yfinanceのカラム名は変更されることがあるため注意)
-            # Total Revenue, Operating Income, Net Income Common Stockholders, Basic EPS
-            
             for date, row in df.iterrows():
                 year = date.year
-                # 既にその年のデータがあるか確認
                 existing = db.query(CompanyFundamental).filter(
                     CompanyFundamental.ticker == ticker_symbol,
                     CompanyFundamental.year == year
                 ).first()
                 
-                # 単位を億円に変換 (yfinanceは通常 元の単位、日本株なら円)
                 revenue = row.get('Total Revenue', 0) / 1e8
                 op_income = row.get('Operating Income', 0) / 1e8
                 net_income = row.get('Net Income Common Stockholders', 0) / 1e8
@@ -164,12 +162,10 @@ def startup_event():
     db = SessionLocal()
     # ユーザー
     if db.query(User).count() == 0:
-        admin_user = User(username="admin", hashed_password=get_hashed_password("password"))
+        admin_user = User(username=ADMIN_USERNAME, hashed_password=get_hashed_password(ADMIN_PASSWORD))
         db.add(admin_user)
         db.commit()
     
-    # 起動時に一度同期を試みる (時間がかかるためバックグラウンドが理想だが、まずは同期的に実行)
-    # 銘柄マスタが空の場合はデフォルトを入れる
     if db.query(Company).count() == 0:
         initial_companies = {
             "7203.T": "トヨタ自動車",
@@ -180,7 +176,6 @@ def startup_event():
             db.add(Company(ticker=ticker, name=name))
         db.commit()
     
-    # 初回起動時またはデータ不足時に同期実行
     if db.query(CompanyFundamental).count() < 3:
         sync_stock_data(db)
         
