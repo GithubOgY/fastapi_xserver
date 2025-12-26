@@ -185,18 +185,34 @@
         </div>
         <p class="subtitle">FastAPI + htmx Practice Project</p>
 
-        <!-- 銘柄選択セレクター -->
-        <div style="margin-bottom: 2rem; display: flex; justify-content: center; align-items: center; gap: 1rem;">
-            <label style="font-size: 0.9rem; color: #94a3b8;">銘柄切替:</label>
-            <select
-                style="background: rgba(30, 41, 59, 0.8); color: white; border: 1px solid rgba(255,255,255,0.1); padding: 0.5rem 1rem; border-radius: 12px; outline: none; cursor: pointer;"
-                onchange="window.location.href='/?ticker=' + this.value">
-                {% for t in ticker_list %}
-                <option value="{{ t.code }}" {% if t.code==current_ticker %}selected{% endif %}>
-                    {{ t.code }} {{ t.name }}
-                </option>
-                {% endfor %}
-            </select>
+        <!-- 銘柄選択セレクター & 銘柄追加 -->
+        <div style="margin-bottom: 2rem; display: flex; flex-direction: column; align-items: center; gap: 1rem;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <label style="font-size: 0.9rem; color: #94a3b8;">銘柄切替:</label>
+                <select
+                    style="background: rgba(30, 41, 59, 0.8); color: white; border: 1px solid rgba(255,255,255,0.1); padding: 0.5rem 1rem; border-radius: 12px; outline: none; cursor: pointer;"
+                    onchange="window.location.href='/?ticker=' + this.value">
+                    {% for t in ticker_list %}
+                    <option value="{{ t.code }}" {% if t.code==current_ticker %}selected{% endif %}>
+                        {{ t.code }} {{ t.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {% if user %}
+            <!-- 銘柄追加フォーム (管理者のみ) -->
+            <form action="/admin/add_company" method="post" class="glass-card"
+                style="padding: 1rem; display: flex; gap: 0.5rem; align-items: center; scale: 0.9;">
+                <span style="font-size: 0.8rem; color: #818cf8; font-weight: bold;">新規銘柄追加:</span>
+                <input type="text" name="ticker" placeholder="例: 9983.T" required
+                    style="width: 80px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.3rem; border-radius: 4px;">
+                <input type="text" name="name" placeholder="銘柄名" required
+                    style="width: 120px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.3rem; border-radius: 4px;">
+                <button type="submit"
+                    style="background: #6366f1; border: none; color: white; padding: 0.3rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">追加</button>
+            </form>
+            {% endif %}
         </div>
 
         <!-- 財務データセクション -->
@@ -205,6 +221,7 @@
                 style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; margin-bottom: 1rem; color: #818cf8; text-align: center;">
                 {{ ticker_name }} 財務データ
             </h2>
+
             <div style="overflow-x: auto;">
                 <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: #cbd5e1;">
                     <thead>
@@ -214,9 +231,42 @@
                             <th style="padding: 0.8rem; text-align: right;">営業利益</th>
                             <th style="padding: 0.8rem; text-align: right;">純利益</th>
                             <th style="padding: 0.8rem; text-align: right;">EPS</th>
+                            {% if user %}<th style="padding: 0.8rem; text-align: center;">操作</th>{% endif %}
                         </tr>
                     </thead>
                     <tbody>
+                        {% if user %}
+                        <!-- 新規データ入力行 -->
+                        <tr style="background: rgba(99, 102, 241, 0.05);">
+                            <form action="/admin/add_fundamental" method="post">
+                                <input type="hidden" name="ticker" value="{{ current_ticker }}">
+                                <td style="padding: 0.5rem;"><input type="number" name="year" placeholder="2026"
+                                        required
+                                        style="width: 60px; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.2rem;">
+                                </td>
+                                <td style="padding: 0.5rem; text-align: right;"><input type="number" step="0.01"
+                                        name="revenue" placeholder="売上" required
+                                        style="width: 80px; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.2rem;">
+                                </td>
+                                <td style="padding: 0.5rem; text-align: right;"><input type="number" step="0.01"
+                                        name="operating_income" placeholder="営業益" required
+                                        style="width: 80px; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.2rem;">
+                                </td>
+                                <td style="padding: 0.5rem; text-align: right;"><input type="number" step="0.01"
+                                        name="net_income" placeholder="純利" required
+                                        style="width: 80px; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.2rem;">
+                                </td>
+                                <td style="padding: 0.5rem; text-align: right;"><input type="number" step="0.01"
+                                        name="eps" placeholder="EPS" required
+                                        style="width: 60px; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.2rem;">
+                                </td>
+                                <td style="padding: 0.5rem; text-align: center;"><button type="submit"
+                                        style="background: #10b981; border: none; color: white; padding: 0.2rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">保存</button>
+                                </td>
+                            </form>
+                        </tr>
+                        {% endif %}
+
                         {% for f in fundamentals %}
                         <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
                             <td style="padding: 0.8rem;">{{ f.year }}年3月</td>
@@ -225,12 +275,22 @@
                                 億円</td>
                             <td style="padding: 0.8rem; text-align: right;">{{ "{:,.2f}".format(f.net_income) }} 億円</td>
                             <td style="padding: 0.8rem; text-align: right;">{{ f.eps }} 円</td>
+                            {% if user %}
+                            <td style="padding: 0.8rem; text-align: center;">
+                                <form action="/admin/delete_fundamental/{{ f.id }}" method="post"
+                                    style="display: inline;" onsubmit="return confirm('このデータを削除してもよろしいですか？');">
+                                    <button type="submit"
+                                        style="background: rgba(244, 63, 94, 0.2); border: 1px solid rgba(244, 63, 94, 0.3); color: #fb7185; padding: 0.2rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">削除</button>
+                                </form>
+                            </td>
+                            {% endif %}
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            <p style="font-size: 0.7rem; color: #64748b; margin-top: 1rem; text-align: center;">※データは SQLite DB より取得</p>
+            <p style="font-size: 0.7rem; color: #64748b; margin-top: 1rem; text-align: center;">※データは SQLite DB より取得
+                (管理者ログインで追加・削除可能)</p>
         </div>
     </div>
 

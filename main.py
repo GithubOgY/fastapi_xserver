@@ -3,7 +3,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
 from typing import Annotated, Optional
 from sqlalchemy.orm import Session
-from database import SessionLocal, CompanyFundamental, User
+from database import SessionLocal, CompanyFundamental, User, Company
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
@@ -87,21 +87,27 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # 初期データの設定
-TICKER_NAMES = {
-    "7203.T": "トヨタ自動車",
-    "6758.T": "ソニーグループ",
-    "9984.T": "ソフトバンクグループ"
-}
-
 @app.on_event("startup")
 def seed_data():
     db = SessionLocal()
+    # ユーザー
     if db.query(User).count() == 0:
         admin_user = User(username="admin", hashed_password=get_hashed_password("password"))
         db.add(admin_user)
         db.commit()
     
-    # 各銘柄ごとに、データがなければ投入する
+    # 銘柄マスタ
+    initial_companies = {
+        "7203.T": "トヨタ自動車",
+        "6758.T": "ソニーグループ",
+        "9984.T": "ソフトバンクグループ"
+    }
+    for ticker, name in initial_companies.items():
+        if db.query(Company).filter(Company.ticker == ticker).count() == 0:
+            db.add(Company(ticker=ticker, name=name))
+    db.commit()
+
+    # 財務データ
     tickers_to_seed = ["7203.T", "6758.T", "9984.T"]
     for ticker in tickers_to_seed:
         if db.query(CompanyFundamental).filter(CompanyFundamental.ticker == ticker).count() == 0:
@@ -130,12 +136,13 @@ async def read_root(request: Request,
                     db: Session = Depends(get_db), 
                     current_user: User = Depends(get_current_user)):
     
-    fundamentals = db.query(CompanyFundamental).filter(CompanyFundamental.ticker == ticker).all()
-    ticker_display = TICKER_NAMES.get(ticker, ticker)
+    fundamentals = db.query(CompanyFundamental).filter(CompanyFundamental.ticker == ticker).order_by(CompanyFundamental.year.desc()).all()
+    company = db.query(Company).filter(Company.ticker == ticker).first()
+    ticker_display = company.name if company else ticker
     
     # 全銘柄リスト（検索ドロップダウン用）
-    all_tickers = db.query(CompanyFundamental.ticker).distinct().all()
-    ticker_list = [{"code": t[0], "name": TICKER_NAMES.get(t[0], t[0])} for t in all_tickers]
+    all_companies = db.query(Company).all()
+    ticker_list = [{"code": c.ticker, "name": c.name} for c in all_companies]
 
     return templates.TemplateResponse(
         "index.html", 
@@ -148,6 +155,66 @@ async def read_root(request: Request,
             "user": current_user
         }
     )
+
+# --- CRUD Endpoints (Protected) ---
+
+@app.post("/admin/add_fundamental")
+async def add_fundamental(
+    ticker: str = Form(...),
+    year: int = Form(...),
+    revenue: float = Form(...),
+    operating_income: float = Form(...),
+    net_income: float = Form(...),
+    eps: float = Form(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    new_data = CompanyFundamental(
+        ticker=ticker, year=year, revenue=revenue,
+        operating_income=operating_income, net_income=net_income, eps=eps
+    )
+    db.add(new_data)
+    db.commit()
+    return RedirectResponse(url=f"/?ticker={ticker}", status_code=status.HTTP_303_SEE_OTHER)
+
+@app.post("/admin/delete_fundamental/{data_id}")
+async def delete_fundamental(
+    data_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    data = db.query(CompanyFundamental).filter(CompanyFundamental.id == data_id).first()
+    ticker = data.ticker if data else "7203.T"
+    if data:
+        db.delete(data)
+        db.commit()
+    return RedirectResponse(url=f"/?ticker={ticker}", status_code=status.HTTP_303_SEE_OTHER)
+
+@app.post("/admin/add_company")
+async def add_company(
+    ticker: str = Form(...),
+    name: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    if db.query(Company).filter(Company.ticker == ticker).first():
+        return HTMLResponse(content="<script>alert('この銘柄コードは既に登録されています'); window.history.back();</script>")
+    
+    new_company = Company(ticker=ticker, name=name)
+    db.add(new_company)
+    db.commit()
+    return RedirectResponse(url=f"/?ticker={ticker}", status_code=status.HTTP_303_SEE_OTHER)
+
+# --- Auth Endpoints ---
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):

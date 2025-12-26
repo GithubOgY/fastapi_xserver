@@ -15,12 +15,17 @@ class CompanyFundamental(Base):
     __tablename__ = "fundamentals"
 
     id = Column(Integer, primary_key=True, index=True)
-    ticker = Column(String, index=True)
+    ticker = Column(String)
     year = Column(Integer)
     revenue = Column(Float)  # 売上高
     operating_income = Column(Float)  # 営業利益
     net_income = Column(Float)  # 純利益
     eps = Column(Float)  # 1株利益
+
+class Company(Base):
+    __tablename__ = "companies"
+    ticker = Column(String, primary_key=True, index=True)
+    name = Column(String)
 
 class User(Base):
     __tablename__ = "users"
@@ -29,4 +34,5 @@ class User(Base):
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
 
+# DBの初期化（テーブル作成）
 Base.metadata.create_all(bind=engine)
