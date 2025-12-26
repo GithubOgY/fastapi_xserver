@@ -11,29 +11,33 @@ import logging
 import time
 import os
 
-# セキュリティ設定
-SECRET_KEY = "your-secret-key-keep-it-secret" # 練習用なので直書き
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-app = FastAPI()
-
 # --- Logging Configuration ---
 LOG_DIR = "logs"
 if not os.path.exists(LOG_DIR):
     os.makedirs(LOG_DIR)
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler(f"{LOG_DIR}/app.log", encoding="utf-8")
-    ]
-)
+# カスタムロガーの設定
 logger = logging.getLogger("fastapi-app")
+logger.setLevel(logging.INFO)
+
+# 既にハンドラがある場合は追加しない（重複防止）
+if not logger.handlers:
+    formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+    
+    # コンソール出力用
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    logger.addHandler(stream_handler)
+    
+    # ファイル出力用
+    file_handler = logging.FileHandler(f"{LOG_DIR}/app.log", encoding="utf-8")
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+# Uvicornのアクセスログもファイルに保存するように設定
+logging.getLogger("uvicorn.access").addHandler(logging.FileHandler(f"{LOG_DIR}/app.log"))
+
+app = FastAPI()
 
 # --- Middleware for Request Logging ---
 @app.middleware("http")
@@ -41,6 +45,8 @@ async def log_requests(request: Request, call_next):
     start_time = time.time()
     response = await call_next(request)
     process_time = time.time() - start_time
+    
+    # 独自の形式でログを記録
     logger.info(
         f"{request.client.host} - \"{request.method} {request.url.path}\" "
         f"{response.status_code} ({process_time:.4f}s)"
@@ -83,17 +89,21 @@ async def get_current_user(request: Request, db: Session = Depends(get_db)):
     except JWTError:
         return None
 
+# セキュリティ設定
+SECRET_KEY = "your-secret-key-keep-it-secret"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 # 初期データ
 @app.on_event("startup")
 def seed_data():
     db = SessionLocal()
-    # ユーザー追加 (admin / password)
     if db.query(User).count() == 0:
         admin_user = User(username="admin", hashed_password=get_hashed_password("password"))
         db.add(admin_user)
         db.commit()
     
-    # 財務データ追加
     if db.query(CompanyFundamental).count() == 0:
         data = [
             CompanyFundamental(ticker="7203.T", year=2024, revenue=450953.25, operating_income=53529.34, net_income=49449.33, eps=365.94),
@@ -103,10 +113,7 @@ def seed_data():
         db.commit()
     db.close()
 
-# 状態管理 (カウンター)
 state = {"counter": 0}
-
-# --- Routes ---
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
