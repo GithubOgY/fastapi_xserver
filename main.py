@@ -107,7 +107,7 @@ def seed_data():
             db.add(Company(ticker=ticker, name=name))
     db.commit()
 
-    # 財務データ
+    # 財務データ (API連携前のサンプルデータ)
     tickers_to_seed = ["7203.T", "6758.T", "9984.T"]
     for ticker in tickers_to_seed:
         if db.query(CompanyFundamental).filter(CompanyFundamental.ticker == ticker).count() == 0:
@@ -140,7 +140,7 @@ async def read_root(request: Request,
     company = db.query(Company).filter(Company.ticker == ticker).first()
     ticker_display = company.name if company else ticker
     
-    # 全銘柄リスト（検索ドロップダウン用）
+    # 全銘柄リスト
     all_companies = db.query(Company).all()
     ticker_list = [{"code": c.ticker, "name": c.name} for c in all_companies]
 
@@ -155,64 +155,6 @@ async def read_root(request: Request,
             "user": current_user
         }
     )
-
-# --- CRUD Endpoints (Protected) ---
-
-@app.post("/admin/add_fundamental")
-async def add_fundamental(
-    ticker: str = Form(...),
-    year: int = Form(...),
-    revenue: float = Form(...),
-    operating_income: float = Form(...),
-    net_income: float = Form(...),
-    eps: float = Form(...),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    
-    new_data = CompanyFundamental(
-        ticker=ticker, year=year, revenue=revenue,
-        operating_income=operating_income, net_income=net_income, eps=eps
-    )
-    db.add(new_data)
-    db.commit()
-    return RedirectResponse(url=f"/?ticker={ticker}", status_code=status.HTTP_303_SEE_OTHER)
-
-@app.post("/admin/delete_fundamental/{data_id}")
-async def delete_fundamental(
-    data_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    
-    data = db.query(CompanyFundamental).filter(CompanyFundamental.id == data_id).first()
-    ticker = data.ticker if data else "7203.T"
-    if data:
-        db.delete(data)
-        db.commit()
-    return RedirectResponse(url=f"/?ticker={ticker}", status_code=status.HTTP_303_SEE_OTHER)
-
-@app.post("/admin/add_company")
-async def add_company(
-    ticker: str = Form(...),
-    name: str = Form(...),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    
-    if db.query(Company).filter(Company.ticker == ticker).first():
-        return HTMLResponse(content="<script>alert('この銘柄コードは既に登録されています'); window.history.back();</script>")
-    
-    new_company = Company(ticker=ticker, name=name)
-    db.add(new_company)
-    db.commit()
-    return RedirectResponse(url=f"/?ticker={ticker}", status_code=status.HTTP_303_SEE_OTHER)
 
 # --- Auth Endpoints ---
 

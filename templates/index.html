@@ -4,308 +4,241 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Xserver App - FastAPI + htmx</title>
-    <script src="https://unpkg.com/htmx.org@2.0.0"></script>
+    <title>X-Server App | Premium Stock Analysis</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Outfit:wght@500;700&display=swap"
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@500;700&display=swap"
         rel="stylesheet">
     <style>
         :root {
-            --primary: #6366f1;
-            --primary-hover: #4f46e5;
-            --bg: #0f172a;
-            --card-bg: rgba(30, 41, 59, 0.7);
-            --text: #f8fafc;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-            color: var(--text);
+            background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
+            color: var(--text-main);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
             margin: 0;
             display: flex;
-            align-items: center;
             justify-content: center;
-            min-height: 100vh;
-            overflow-x: hidden;
+            align-items: center;
+            padding: 2rem;
         }
 
         .container {
-            width: 95%;
-            max-width: 600px;
-            padding: 2.5rem;
-            background: var(--card-bg);
+            width: 100%;
+            max-width: 900px;
             backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
             border-radius: 24px;
+            padding: 3rem;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            animation: fadeIn 0.8s ease-out;
         }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
         }
 
         h1 {
             font-family: 'Outfit', sans-serif;
             font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(to right, #818cf8, #c084fc);
+            margin: 0;
+            background: linear-gradient(to right, #fff, #818cf8);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
-            text-align: center;
         }
 
         .subtitle {
-            text-align: center;
-            color: #94a3b8;
-            margin-bottom: 2.5rem;
-            font-size: 0.9rem;
+            color: var(--text-dim);
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
         }
 
         .section {
-            margin-bottom: 2rem;
-            padding: 1.5rem;
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
             border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
         }
 
-        .counter-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        #counter-value {
-            font-size: 3.5rem;
-            font-weight: 800;
-            font-family: 'Outfit', sans-serif;
-        }
-
-        .counter-animate {
-            animation: pulse 0.3s ease-out;
-        }
-
-        @keyframes pulse {
-            0% {
-                transform: scale(1);
-            }
-
-            50% {
-                transform: scale(1.2);
-                color: #818cf8;
-            }
-
-            100% {
-                transform: scale(1);
-            }
-        }
-
-        button {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 0.8rem 1.5rem;
+        .glass-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
             border-radius: 12px;
-            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        select {
+            background: rgba(30, 41, 59, 0.8);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.6rem 1.2rem;
+            border-radius: 12px;
+            outline: none;
             cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            font-family: inherit;
         }
 
-        button:hover {
-            background: var(--primary-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            color: #cbd5e1;
         }
 
-        button:active {
-            transform: translateY(0);
+        th {
+            padding: 1rem;
+            text-align: right;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--accent);
+        }
+
+        th:first-child {
+            text-align: left;
+        }
+
+        td {
+            padding: 1rem;
+            text-align: right;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        td:first-child {
+            text-align: left;
         }
 
         .input-group {
             display: flex;
             gap: 0.5rem;
-            margin-top: 1rem;
+            margin-bottom: 1rem;
         }
 
         input[type="text"] {
-            flex-grow: 1;
-            background: rgba(15, 23, 42, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 0.8rem;
+            flex: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
             border-radius: 12px;
+            padding: 0.8rem 1rem;
             color: white;
             outline: none;
         }
 
-        input[type="text"]:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 0.8rem 1.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px var(--accent-glow);
         }
 
         .echo-result {
-            margin-top: 1rem;
             font-size: 0.9rem;
-            color: #cbd5e1;
-            min-height: 1.5rem;
-            text-align: center;
+            color: #a5b4fc;
+            padding: 0.5rem;
+            border-left: 2px solid var(--accent);
         }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <div class="header">
             <div>
-                {% if user %}
-                <span style="font-size: 0.9rem; color: #818cf8;">ログイン中: {{ user.username }} さん</span>
-                {% else %}
-                <span style="font-size: 0.9rem; color: #94a3b8;">ゲストさん</span>
-                {% endif %}
+                <h1>X-Stock Analyzer</h1>
+                <p class="subtitle">FastAPI + htmx Premium Analysis Dashboard</p>
             </div>
-            <div>
+            <div class="user-info">
                 {% if user %}
+                <span style="font-size: 0.9rem; color: #818cf8; margin-right: 1rem;">👤 {{ user.username }}</span>
                 <a href="/logout" style="color: #f43f5e; text-decoration: none; font-size: 0.9rem;">ログアウト</a>
                 {% else %}
                 <a href="/login" style="color: #6366f1; text-decoration: none; font-size: 0.9rem;">ログイン</a>
                 {% endif %}
             </div>
         </div>
-        <p class="subtitle">FastAPI + htmx Practice Project</p>
 
-        <!-- 銘柄選択セレクター & 銘柄追加 -->
-        <div style="margin-bottom: 2rem; display: flex; flex-direction: column; align-items: center; gap: 1rem;">
-            <div style="display: flex; align-items: center; gap: 1rem;">
-                <label style="font-size: 0.9rem; color: #94a3b8;">銘柄切替:</label>
-                <select
-                    style="background: rgba(30, 41, 59, 0.8); color: white; border: 1px solid rgba(255,255,255,0.1); padding: 0.5rem 1rem; border-radius: 12px; outline: none; cursor: pointer;"
-                    onchange="window.location.href='/?ticker=' + this.value">
-                    {% for t in ticker_list %}
-                    <option value="{{ t.code }}" {% if t.code==current_ticker %}selected{% endif %}>
-                        {{ t.code }} {{ t.name }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            {% if user %}
-            <!-- 銘柄追加フォーム (管理者のみ) -->
-            <form action="/admin/add_company" method="post" class="glass-card"
-                style="padding: 1rem; display: flex; gap: 0.5rem; align-items: center; scale: 0.9;">
-                <span style="font-size: 0.8rem; color: #818cf8; font-weight: bold;">新規銘柄追加:</span>
-                <input type="text" name="ticker" placeholder="例: 9983.T" required
-                    style="width: 80px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.3rem; border-radius: 4px;">
-                <input type="text" name="name" placeholder="銘柄名" required
-                    style="width: 120px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.3rem; border-radius: 4px;">
-                <button type="submit"
-                    style="background: #6366f1; border: none; color: white; padding: 0.3rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">追加</button>
-            </form>
-            {% endif %}
+        <!-- 銘柄選択 -->
+        <div style="margin-bottom: 2.5rem; display: flex; justify-content: center; align-items: center; gap: 1rem;">
+            <label style="font-size: 0.9rem; color: #94a3b8;">表示銘柄を選択:</label>
+            <select onchange="window.location.href='/?ticker=' + this.value">
+                {% for t in ticker_list %}
+                <option value="{{ t.code }}" {% if t.code==current_ticker %}selected{% endif %}>
+                    {{ t.code }} {{ t.name }}
+                </option>
+                {% endfor %}
+            </select>
         </div>
 
         <!-- 財務データセクション -->
         <div class="section">
             <h2
-                style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; margin-bottom: 1rem; color: #818cf8; text-align: center;">
-                {{ ticker_name }} 財務データ
+                style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
+                📈 {{ ticker_name }} 財務推移
             </h2>
 
             <div style="overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: #cbd5e1;">
+                <table>
                     <thead>
-                        <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
-                            <th style="padding: 0.8rem; text-align: left;">決算期</th>
-                            <th style="padding: 0.8rem; text-align: right;">売上収益</th>
-                            <th style="padding: 0.8rem; text-align: right;">営業利益</th>
-                            <th style="padding: 0.8rem; text-align: right;">純利益</th>
-                            <th style="padding: 0.8rem; text-align: right;">EPS</th>
-                            {% if user %}<th style="padding: 0.8rem; text-align: center;">操作</th>{% endif %}
+                        <tr>
+                            <th>決算期</th>
+                            <th>売上収益 (億円)</th>
+                            <th>営業利益 (億円)</th>
+                            <th>純利益 (億円)</th>
+                            <th>EPS (円)</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% if user %}
-                        <!-- 新規データ入力行 -->
-                        <tr style="background: rgba(99, 102, 241, 0.05);">
-                            <form action="/admin/add_fundamental" method="post">
-                                <input type="hidden" name="ticker" value="{{ current_ticker }}">
-                                <td style="padding: 0.5rem;"><input type="number" name="year" placeholder="2026"
-                                        required
-                                        style="width: 60px; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.2rem;">
-                                </td>
-                                <td style="padding: 0.5rem; text-align: right;"><input type="number" step="0.01"
-                                        name="revenue" placeholder="売上" required
-                                        style="width: 80px; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.2rem;">
-                                </td>
-                                <td style="padding: 0.5rem; text-align: right;"><input type="number" step="0.01"
-                                        name="operating_income" placeholder="営業益" required
-                                        style="width: 80px; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.2rem;">
-                                </td>
-                                <td style="padding: 0.5rem; text-align: right;"><input type="number" step="0.01"
-                                        name="net_income" placeholder="純利" required
-                                        style="width: 80px; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.2rem;">
-                                </td>
-                                <td style="padding: 0.5rem; text-align: right;"><input type="number" step="0.01"
-                                        name="eps" placeholder="EPS" required
-                                        style="width: 60px; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.2rem;">
-                                </td>
-                                <td style="padding: 0.5rem; text-align: center;"><button type="submit"
-                                        style="background: #10b981; border: none; color: white; padding: 0.2rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">保存</button>
-                                </td>
-                            </form>
-                        </tr>
-                        {% endif %}
-
                         {% for f in fundamentals %}
-                        <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
-                            <td style="padding: 0.8rem;">{{ f.year }}年3月</td>
-                            <td style="padding: 0.8rem; text-align: right;">{{ "{:,.2f}".format(f.revenue) }} 億円</td>
-                            <td style="padding: 0.8rem; text-align: right;">{{ "{:,.2f}".format(f.operating_income) }}
-                                億円</td>
-                            <td style="padding: 0.8rem; text-align: right;">{{ "{:,.2f}".format(f.net_income) }} 億円</td>
-                            <td style="padding: 0.8rem; text-align: right;">{{ f.eps }} 円</td>
-                            {% if user %}
-                            <td style="padding: 0.8rem; text-align: center;">
-                                <form action="/admin/delete_fundamental/{{ f.id }}" method="post"
-                                    style="display: inline;" onsubmit="return confirm('このデータを削除してもよろしいですか？');">
-                                    <button type="submit"
-                                        style="background: rgba(244, 63, 94, 0.2); border: 1px solid rgba(244, 63, 94, 0.3); color: #fb7185; padding: 0.2rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">削除</button>
-                                </form>
-                            </td>
-                            {% endif %}
+                        <tr>
+                            <td>{{ f.year }}年3月</td>
+                            <td>{{ "{:,.2f}".format(f.revenue) }}</td>
+                            <td>{{ "{:,.2f}".format(f.operating_income) }}</td>
+                            <td>{{ "{:,.2f}".format(f.net_income) }}</td>
+                            <td>{{ f.eps }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            <p style="font-size: 0.7rem; color: #64748b; margin-top: 1rem; text-align: center;">※データは SQLite DB より取得
-                (管理者ログインで追加・削除可能)</p>
+            <p style="font-size: 0.75rem; color: #64748b; margin-top: 1.5rem; text-align: center;">
+                ※このデータは将来的に外部APIより自動更新される予定です
+            </p>
         </div>
-    </div>
 
-    <div class="section">
-        <div class="input-group">
-            <input type="text" name="message" placeholder="メッセージを入力..." hx-post="/echo" hx-trigger="keyup[enterKey]"
-                hx-target="#echo-target">
-            <button hx-post="/echo" hx-target="#echo-target" hx-include="[name='message']">
-                送信
-            </button>
+        <!-- インタラクティブ・セクション -->
+        <div class="section">
+            <div class="input-group">
+                <input type="text" name="message" placeholder="サーバーへエコー送信..." hx-post="/echo"
+                    hx-trigger="keyup[enterKey]" hx-target="#echo-target">
+                <button hx-post="/echo" hx-target="#echo-target" hx-include="[name='message']">
+                    送信
+                </button>
+            </div>
+            <div id="echo-target">
+                <p class="echo-result">API連携の準備はよろしいですか？</p>
+            </div>
         </div>
-        <div id="echo-target">
-            <p class="echo-result">なにか送ってみてください</p>
-        </div>
-    </div>
     </div>
 </body>
 
