@@ -10,7 +10,8 @@ templates = Jinja2Templates(directory="templates")
 # 簡易的なインメモリデータストア
 state = {"counter": 0}
 
-@app.get("/", response_class=HTMLResponse)
+# GET と HEAD 両方を許可する
+@app.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
 async def read_root(request: Request):
     return templates.TemplateResponse(
         "index.html", 
