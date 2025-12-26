@@ -123,8 +123,16 @@ def sync_stock_data(db: Session, target_ticker: Optional[str] = None):
             logger.info(f"Refreshing data for {ticker_symbol}...")
             ticker = yf.Ticker(ticker_symbol, session=session)
             
-            # 財務データの取得
-            financials = ticker.financials
+            # 財務データの取得 - income_stmt を優先、fallback で financials
+            financials = None
+            try:
+                financials = ticker.income_stmt
+                if financials is None or financials.empty:
+                    financials = ticker.financials
+            except Exception as fetch_e:
+                logger.warning(f"income_stmt failed for {ticker_symbol}, trying financials: {str(fetch_e)}")
+                financials = ticker.financials
+            
             if financials is None or financials.empty:
                 error_msg = "API制限(429)またはデータ未検出"
                 logger.warning(f"{error_msg} for {ticker_symbol}")
