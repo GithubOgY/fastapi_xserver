@@ -238,10 +238,21 @@ def startup_event():
         db.close()
 
 @app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request, 
+async def home(request: Request, current_user: User = Depends(get_current_user)):
+    # ログイン済みならダッシュボードへリダイレクト
+    if current_user:
+        return RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+    # 未ログインならランディングページを表示
+    return templates.TemplateResponse("landing.html", {"request": request})
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard(request: Request, 
                     ticker: str = Query("7203.T"),
                     db: Session = Depends(get_db), 
                     current_user: User = Depends(get_current_user)):
+    
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
     
     fundamentals = db.query(CompanyFundamental).filter(CompanyFundamental.ticker == ticker).order_by(CompanyFundamental.year.desc()).all()
     company = db.query(Company).filter(Company.ticker == ticker).first()
@@ -270,9 +281,8 @@ async def manual_sync(request: Request, ticker: str = "7203.T", db: Session = De
     
     sync_stock_data(db, target_ticker=ticker)
     
-    # HTMXリクエストの場合は、ページ全体を再描画するようにリダイレクト先を返す
-    # (hx-target="body" hx-swap="outerHTML" を使っているため、read_rootを呼び出す)
-    return await read_root(request, ticker=ticker, db=db, current_user=current_user)
+    # HTMXリクエストの場合は、ページ全体を再描画
+    return await dashboard(request, ticker=ticker, db=db, current_user=current_user)
 
 # --- Auth Endpoints ---
 
@@ -287,7 +297,7 @@ async def login(response: Response, username: str = Form(...), password: str = F
         return RedirectResponse(url="/login?error=ユーザー名またはパスワードが違います", status_code=status.HTTP_303_SEE_OTHER)
     
     access_token = create_access_token(data={"sub": user.username})
-    response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+    response = RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
     response.set_cookie(key="access_token", value=access_token, httponly=True)
     return response
 
