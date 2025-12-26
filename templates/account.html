@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>アカウント設定</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #e2e8f0;
+        }
+
+        .container {
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(16px);
+            border-radius: 24px;
+            padding: 3rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            background: linear-gradient(135deg, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .info-section {
+            background: rgba(129, 140, 248, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: #94a3b8;
+        }
+
+        .info-value {
+            color: #e2e8f0;
+            font-weight: 500;
+        }
+
+        .danger-zone {
+            background: rgba(244, 63, 94, 0.1);
+            border: 1px solid rgba(244, 63, 94, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .danger-zone h3 {
+            color: #f43f5e;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .danger-zone p {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .btn-danger {
+            width: 100%;
+            background: rgba(244, 63, 94, 0.2);
+            border: 1px solid #f43f5e;
+            color: #f43f5e;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-danger:hover {
+            background: rgba(244, 63, 94, 0.4);
+        }
+
+        .nav-links {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .nav-links a {
+            color: #818cf8;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .nav-links a:hover {
+            text-decoration: underline;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>⚙️ アカウント設定</h1>
+
+            <div class="info-section">
+                <div class="info-row">
+                    <span class="info-label">ユーザー名</span>
+                    <span class="info-value">{{ user.username }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">ユーザーID</span>
+                    <span class="info-value">#{{ user.id }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">権限</span>
+                    <span class="info-value">
+                        {% if user.is_admin %}
+                        <span class="badge">管理者</span>
+                        {% else %}
+                        一般ユーザー
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+
+            <div class="danger-zone">
+                <h3>⚠️ 危険な操作</h3>
+                <p>アカウントを削除すると、すべてのデータが失われます。この操作は取り消せません。</p>
+                <form action="/account/delete" method="post"
+                    onsubmit="return confirm('本当にアカウントを削除しますか？この操作は取り消せません。');">
+                    <button type="submit" class="btn-danger">アカウントを削除する</button>
+                </form>
+            </div>
+
+            <div class="nav-links">
+                <a href="/">← ダッシュボードへ</a>
+                <a href="/logout">ログアウト</a>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

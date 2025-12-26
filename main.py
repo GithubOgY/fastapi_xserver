@@ -204,10 +204,24 @@ def startup_event():
         except Exception:
             db.rollback()
 
+        # is_admin カラムの追加
+        try:
+            db.execute(text("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0"))
+            db.commit()
+            logger.info("Database schema updated: added is_admin column.")
+        except Exception:
+            db.rollback()
+
         if db.query(User).count() == 0:
-            admin_user = User(username=ADMIN_USERNAME, hashed_password=get_hashed_password(ADMIN_PASSWORD))
+            admin_user = User(username=ADMIN_USERNAME, hashed_password=get_hashed_password(ADMIN_PASSWORD), is_admin=1)
             db.add(admin_user)
             db.commit()
+        else:
+            # 既存のadminユーザーに管理者権限を付与
+            admin = db.query(User).filter(User.username == ADMIN_USERNAME).first()
+            if admin and not admin.is_admin:
+                admin.is_admin = 1
+                db.commit()
         
         if db.query(Company).count() == 0:
             initial_companies = {
@@ -294,7 +308,61 @@ async def register(username: str = Form(...), password: str = Form(...), db: Ses
 
 @app.get("/logout")
 async def logout():
-    response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+    response = RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+    response.delete_cookie("access_token")
+    return response
+
+# --- 管理者機能 ---
+
+@app.get("/admin/users", response_class=HTMLResponse)
+async def admin_users_page(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user or not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="管理者権限が必要です")
+    
+    users = db.query(User).all()
+    return templates.TemplateResponse("admin_users.html", {
+        "request": request,
+        "users": users,
+        "user": current_user
+    })
+
+@app.post("/admin/users/{user_id}/delete")
+async def admin_delete_user(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user or not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="管理者権限が必要です")
+    
+    target_user = db.query(User).filter(User.id == user_id).first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
+    
+    if target_user.id == current_user.id:
+        raise HTTPException(status_code=400, detail="自分自身は削除できません")
+    
+    db.delete(target_user)
+    db.commit()
+    return RedirectResponse(url="/admin/users", status_code=status.HTTP_303_SEE_OTHER)
+
+# --- ユーザーアカウント管理 ---
+
+@app.get("/account", response_class=HTMLResponse)
+async def account_page(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+    
+    return templates.TemplateResponse("account.html", {
+        "request": request,
+        "user": current_user
+    })
+
+@app.post("/account/delete")
+async def delete_own_account(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="ログインが必要です")
+    
+    db.delete(current_user)
+    db.commit()
+    
+    response = RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
     response.delete_cookie("access_token")
     return response
 

@@ -40,6 +40,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
+    is_admin = Column(Integer, default=0)  # 0=通常ユーザー, 1=管理者
 
 # DB initialization
 Base.metadata.create_all(bind=engine)

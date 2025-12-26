@@ -205,7 +205,12 @@
                         opacity: 0.8;
                     }
                 </style>
-                <span style="font-size: 0.9rem; color: #818cf8;">👤 {{ user.username }}</span>
+                <a href="/account" style="font-size: 0.9rem; color: #818cf8; text-decoration: none;">👤 {{ user.username
+                    }}</a>
+                {% if user.is_admin %}
+                <a href="/admin/users"
+                    style="color: #10b981; text-decoration: none; font-size: 0.8rem; background: rgba(16, 185, 129, 0.2); padding: 0.3rem 0.6rem; border-radius: 6px;">管理者</a>
+                {% endif %}
                 <a href="/logout" style="color: #f43f5e; text-decoration: none; font-size: 0.9rem;">ログアウト</a>
                 {% else %}
                 <a href="/login" style="color: #6366f1; text-decoration: none; font-size: 0.9rem;">ログイン</a>
