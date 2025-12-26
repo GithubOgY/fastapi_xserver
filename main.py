@@ -312,10 +312,21 @@ async def compare_page(request: Request,
                 CompanyFundamental.ticker == ticker
             ).order_by(CompanyFundamental.year.desc()).limit(5).all()
             
+            # Convert to dict for JSON serialization
+            fundamentals_data = []
+            for f in fundamentals:
+                fundamentals_data.append({
+                    "year": f.year,
+                    "revenue": f.revenue,
+                    "operating_income": f.operating_income,
+                    "net_income": f.net_income,
+                    "eps": f.eps
+                })
+            
             comparison_data.append({
                 "ticker": ticker,
                 "name": company.name,
-                "fundamentals": fundamentals
+                "fundamentals": fundamentals_data
             })
     
     return templates.TemplateResponse(
