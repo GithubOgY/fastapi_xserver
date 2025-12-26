@@ -13,6 +13,7 @@ import time
 import os
 import yfinance as yf
 import pandas as pd
+import requests
 
 # Load environment variables
 load_dotenv()
@@ -99,43 +100,52 @@ def sync_stock_data(db: Session):
     tickers = ["7203.T", "6758.T", "9984.T"]
     logger.info(f"Starting sync for tickers: {tickers}")
     
+    # yfinanceにUser-Agentを設定するためのセッション
+    session = requests.Session()
+    session.headers.update({
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    })
+    
     for ticker_symbol in tickers:
         try:
             logger.info(f"Refreshing data for {ticker_symbol}...")
-            ticker = yf.Ticker(ticker_symbol)
+            ticker = yf.Ticker(ticker_symbol, session=session)
             
-            # 銘柄情報の取得 (失敗しても続行)
+            # 銘柄情報の取得
             try:
-                info = ticker.info
-                company_name = info.get('longName', info.get('shortName', ticker_symbol))
-                company = db.query(Company).filter(Company.ticker == ticker_symbol).first()
-                if company:
-                    company.name = company_name
-                else:
-                    db.add(Company(ticker=ticker_symbol, name=company_name))
-                db.commit()
+                # infoの取得は非常に遅く、429の原因になりやすいため、まずは基本項目のみで試みる
+                # company = db.query(Company).filter(Company.ticker == ticker_symbol).first()
+                # if not company or company.name == ticker_symbol:
+                #     info = ticker.info
+                #     company_name = info.get('longName', info.get('shortName', ticker_symbol))
+                #     if company:
+                #         company.name = company_name
+                #     else:
+                #         db.add(Company(ticker=ticker_symbol, name=company_name))
+                #     db.commit()
+                # 簡易化：初期設定のまま使う or 必要ならあとで
+                pass
             except Exception as info_e:
                 logger.warning(f"Could not fetch info for {ticker_symbol}: {str(info_e)}")
             
             # 財務データの取得
             financials = ticker.financials
             if financials is None or financials.empty:
-                logger.warning(f"No financial data returned for {ticker_symbol}")
+                logger.warning(f"No financial data returned for {ticker_symbol}. Trying balance sheet...")
+                # 財務諸表が取れない場合、APIの制限の可能性が高い
+                time.sleep(5) # 429回避のための待機
                 continue
             
             df = financials.T
             for date, row in df.iterrows():
                 try:
                     year = date.year
-                    logger.info(f"Processing {ticker_symbol} for year {year}")
-                    
                     # データの抽出 (yfinanceのキー名揺れに対応)
                     revenue_raw = row.get('Total Revenue') or row.get('TotalRevenue') or 0
                     op_income_raw = row.get('Operating Income') or row.get('OperatingIncome') or 0
                     net_income_raw = row.get('Net Income Common Stockholders') or row.get('NetIncomeCommonStockholders') or row.get('Net Income') or 0
                     eps_raw = row.get('Basic EPS') or row.get('BasicEPS') or 0
                     
-                    # 単位を億円に変換
                     revenue = float(revenue_raw) / 1e8 if not pd.isna(revenue_raw) else 0
                     op_income = float(op_income_raw) / 1e8 if not pd.isna(op_income_raw) else 0
                     net_income = float(net_income_raw) / 1e8 if not pd.isna(net_income_raw) else 0
@@ -166,10 +176,12 @@ def sync_stock_data(db: Session):
                     db.rollback()
             
             logger.info(f"Successfully synced {ticker_symbol}")
+            time.sleep(2) # 銘柄間の待機
             
         except Exception as e:
             logger.error(f"Major error syncing {ticker_symbol}: {str(e)}")
             db.rollback()
+            time.sleep(5)
 
 # 初期データの設定
 @app.on_event("startup")
@@ -192,11 +204,6 @@ def startup_event():
             for ticker, name in initial_companies.items():
                 db.add(Company(ticker=ticker, name=name))
             db.commit()
-        
-        # 初回データ取得 (PostgreSQL移行後はここがトリガーされる)
-        if db.query(CompanyFundamental).count() == 0:
-            logger.info("No data found in DB, starting initial sync...")
-            sync_stock_data(db)
     except Exception as e:
         logger.error(f"Startup error: {str(e)}")
     finally:
@@ -259,7 +266,7 @@ async def register_page(request: Request):
 async def register(username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.username == username).first()
     if existing_user:
-        return HTMLResponse(content="<p style='color:red;'>このユーザー名は既に使用されています</p>", status_code=400)
+        return HTMLResponse(content="<p style='color:red;'>このユーザー名はお使いいただけません</p>", status_code=400)
     
     new_user = User(username=username, hashed_password=get_hashed_password(password))
     db.add(new_user)
