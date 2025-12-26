@@ -101,20 +101,27 @@ def seed_data():
         db.add(admin_user)
         db.commit()
     
-    if db.query(CompanyFundamental).count() == 0:
-        data = [
-            # トヨタ
-            CompanyFundamental(ticker="7203.T", year=2024, revenue=450953.25, operating_income=53529.34, net_income=49449.33, eps=365.94),
-            CompanyFundamental(ticker="7203.T", year=2025, revenue=480367.04, operating_income=47955.86, net_income=47650.86, eps=359.56),
-            # ソニー
-            CompanyFundamental(ticker="6758.T", year=2024, revenue=130235.00, operating_income=12082.00, net_income=9706.00, eps=785.12),
-            CompanyFundamental(ticker="6758.T", year=2025, revenue=140000.00, operating_income=13000.00, net_income=10500.00, eps=850.45),
-            # ソフトバンク
-            CompanyFundamental(ticker="9984.T", year=2024, revenue=67565.00, operating_income=8732.00, net_income=4521.00, eps=312.44),
-            CompanyFundamental(ticker="9984.T", year=2025, revenue=71000.00, operating_income=9500.00, net_income=5200.00, eps=358.12),
-        ]
-        db.add_all(data)
-        db.commit()
+    # 各銘柄ごとに、データがなければ投入する
+    tickers_to_seed = ["7203.T", "6758.T", "9984.T"]
+    for ticker in tickers_to_seed:
+        if db.query(CompanyFundamental).filter(CompanyFundamental.ticker == ticker).count() == 0:
+            if ticker == "7203.T":
+                data = [
+                    CompanyFundamental(ticker="7203.T", year=2024, revenue=450953.25, operating_income=53529.34, net_income=49449.33, eps=365.94),
+                    CompanyFundamental(ticker="7203.T", year=2025, revenue=480367.04, operating_income=47955.86, net_income=47650.86, eps=359.56),
+                ]
+            elif ticker == "6758.T":
+                data = [
+                    CompanyFundamental(ticker="6758.T", year=2024, revenue=130235.00, operating_income=12082.00, net_income=9706.00, eps=785.12),
+                    CompanyFundamental(ticker="6758.T", year=2025, revenue=140000.00, operating_income=13000.00, net_income=10500.00, eps=850.45),
+                ]
+            elif ticker == "9984.T":
+                data = [
+                    CompanyFundamental(ticker="9984.T", year=2024, revenue=67565.00, operating_income=8732.00, net_income=4521.00, eps=312.44),
+                    CompanyFundamental(ticker="9984.T", year=2025, revenue=71000.00, operating_income=9500.00, net_income=5200.00, eps=358.12),
+                ]
+            db.add_all(data)
+            db.commit()
     db.close()
 
 @app.get("/", response_class=HTMLResponse)
