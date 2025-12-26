@@ -243,6 +243,18 @@
                 📈 {{ ticker_name }} 財務推移
             </h2>
 
+            <!-- 同期ステータス表示 -->
+            {% if company and company.last_sync_at %}
+            <div style="text-align: center; margin-bottom: 1rem; font-size: 0.8rem; color: #94a3b8;">
+                最終同期: {{ company.last_sync_at }}
+                {% if company.last_sync_error %}
+                <span style="color: #fb7185; margin-left: 0.5rem;">⚠️ {{ company.last_sync_error }}</span>
+                {% else %}
+                <span style="color: #10b981; margin-left: 0.5rem;">✅ 成功</span>
+                {% endif %}
+            </div>
+            {% endif %}
+
             <div style="overflow-x: auto;">
                 <table>
                     <thead>
@@ -255,6 +267,7 @@
                         </tr>
                     </thead>
                     <tbody>
+                        {% if fundamentals %}
                         {% for f in fundamentals %}
                         <tr>
                             <td>{{ f.year }}年3月</td>
@@ -264,6 +277,14 @@
                             <td>{{ f.eps }}</td>
                         </tr>
                         {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 2rem; color: #64748b;">
+                                データがありません。「同期」ボタンを押して取得してください。<br>
+                                (API制限により取得できない場合があります)
+                            </td>
+                        </tr>
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
@@ -287,74 +308,90 @@
         </div>
     </div>
 
+    <script id="fundamental-data" type="application/json">
+        [
+            {% for f in fundamentals | reverse %}
+            {
+                "year": "{{ f.year }}",
+                "revenue": {{ f.revenue }},
+                "op_income": {{ f.operating_income }},
+                "net_income": {{ f.net_income }}
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ]
+    </script>
+
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const fundamentals = [
-                {% for f in fundamentals | reverse %}
-                {
-                year: '{{ f.year }}',
-                revenue: {{ f.revenue }},
-            op_income: {{ f.operating_income }},
-            net_income: {{ f.net_income }}
-                },
-            {% endfor %}
-            ];
+            const dataElement = document.getElementById('fundamental-data');
+            if (!dataElement) return;
 
-        const ctx = document.getElementById('financialChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: fundamentals.map(f => f.year + '年'),
-                datasets: [
-                    {
-                        label: '売上収益 (億円)',
-                        data: fundamentals.map(f => f.revenue),
-                        backgroundColor: 'rgba(99, 102, 241, 0.5)',
-                        borderColor: '#6366f1',
-                        borderWidth: 1,
-                        yAxisID: 'y'
-                    },
-                    {
-                        label: '営業利益 (億円)',
-                        data: fundamentals.map(f => f.op_income),
-                        type: 'line',
-                        borderColor: '#10b981',
-                        backgroundColor: '#10b981',
-                        tension: 0.3,
-                        yAxisID: 'y'
-                    },
-                    {
-                        label: '純利益 (億円)',
-                        data: fundamentals.map(f => f.net_income),
-                        type: 'line',
-                        borderColor: '#fb7185',
-                        backgroundColor: '#fb7185',
-                        tension: 0.3,
-                        yAxisID: 'y'
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        labels: { color: '#94a3b8', font: { size: 11 } }
-                    }
+            let fundamentals = [];
+            try {
+                fundamentals = JSON.parse(dataElement.textContent);
+            } catch (e) {
+                console.error("Failed to parse fundamental data:", e);
+                return;
+            }
+
+            const canvas = document.getElementById('financialChart');
+            if (!canvas || fundamentals.length === 0) return;
+
+            const ctx = canvas.getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: fundamentals.map(f => f.year + '年'),
+                    datasets: [
+                        {
+                            label: '売上収益 (億円)',
+                            data: fundamentals.map(f => f.revenue),
+                            backgroundColor: 'rgba(99, 102, 241, 0.5)',
+                            borderColor: '#6366f1',
+                            borderWidth: 1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: '営業利益 (億円)',
+                            data: fundamentals.map(f => f.op_income),
+                            type: 'line',
+                            borderColor: '#10b981',
+                            backgroundColor: '#10b981',
+                            tension: 0.3,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: '純利益 (億円)',
+                            data: fundamentals.map(f => f.net_income),
+                            type: 'line',
+                            borderColor: '#fb7185',
+                            backgroundColor: '#fb7185',
+                            tension: 0.3,
+                            yAxisID: 'y'
+                        }
+                    ]
                 },
-                scales: {
-                    x: {
-                        ticks: { color: '#94a3b8' },
-                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#94a3b8', font: { size: 11 } }
+                        }
                     },
-                    y: {
-                        ticks: { color: '#94a3b8' },
-                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                        beginAtZero: true
+                    scales: {
+                        x: {
+                            ticks: { color: '#94a3b8' },
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                        },
+                        y: {
+                            ticks: { color: '#94a3b8' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            beginAtZero: true
+                        }
                     }
                 }
-            }
-        });
+            });
         });
     </script>
 </body>

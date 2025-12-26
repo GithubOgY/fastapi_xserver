@@ -96,51 +96,48 @@ async def get_current_user(request: Request, db: Session = Depends(get_db)):
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # --- Yahoo Finance Data Fetching ---
-def sync_stock_data(db: Session):
-    tickers = ["7203.T", "6758.T", "9984.T"]
+def sync_stock_data(db: Session, target_ticker: Optional[str] = None):
+    # 特定の銘柄、または全銘柄
+    if target_ticker:
+        tickers = [target_ticker]
+    else:
+        tickers = ["7203.T", "6758.T", "9984.T"]
+        
     logger.info(f"Starting sync for tickers: {tickers}")
     
-    # yfinanceにUser-Agentを設定するためのセッション
     session = requests.Session()
     session.headers.update({
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     })
     
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
     for ticker_symbol in tickers:
+        company = db.query(Company).filter(Company.ticker == ticker_symbol).first()
+        if not company:
+            company = Company(ticker=ticker_symbol, name=ticker_symbol)
+            db.add(company)
+            db.commit()
+
         try:
             logger.info(f"Refreshing data for {ticker_symbol}...")
             ticker = yf.Ticker(ticker_symbol, session=session)
             
-            # 銘柄情報の取得
-            try:
-                # infoの取得は非常に遅く、429の原因になりやすいため、まずは基本項目のみで試みる
-                # company = db.query(Company).filter(Company.ticker == ticker_symbol).first()
-                # if not company or company.name == ticker_symbol:
-                #     info = ticker.info
-                #     company_name = info.get('longName', info.get('shortName', ticker_symbol))
-                #     if company:
-                #         company.name = company_name
-                #     else:
-                #         db.add(Company(ticker=ticker_symbol, name=company_name))
-                #     db.commit()
-                # 簡易化：初期設定のまま使う or 必要ならあとで
-                pass
-            except Exception as info_e:
-                logger.warning(f"Could not fetch info for {ticker_symbol}: {str(info_e)}")
-            
             # 財務データの取得
             financials = ticker.financials
             if financials is None or financials.empty:
-                logger.warning(f"No financial data returned for {ticker_symbol}. Trying balance sheet...")
-                # 財務諸表が取れない場合、APIの制限の可能性が高い
-                time.sleep(5) # 429回避のための待機
+                error_msg = "API制限(429)またはデータ未検出"
+                logger.warning(f"{error_msg} for {ticker_symbol}")
+                company.last_sync_at = now_str
+                company.last_sync_error = error_msg
+                db.commit()
                 continue
             
             df = financials.T
             for date, row in df.iterrows():
                 try:
                     year = date.year
-                    # データの抽出 (yfinanceのキー名揺れに対応)
+                    # データの抽出
                     revenue_raw = row.get('Total Revenue') or row.get('TotalRevenue') or 0
                     op_income_raw = row.get('Operating Income') or row.get('OperatingIncome') or 0
                     net_income_raw = row.get('Net Income Common Stockholders') or row.get('NetIncomeCommonStockholders') or row.get('Net Income') or 0
@@ -172,29 +169,33 @@ def sync_stock_data(db: Session):
                         ))
                     db.commit()
                 except Exception as row_e:
-                    logger.error(f"Error processing row for {ticker_symbol} {date}: {str(row_e)}")
+                    logger.error(f"Row error for {ticker_symbol} {date}: {str(row_e)}")
                     db.rollback()
             
+            company.last_sync_at = now_str
+            company.last_sync_error = None # 成功
+            db.commit()
             logger.info(f"Successfully synced {ticker_symbol}")
-            time.sleep(2) # 銘柄間の待機
+            time.sleep(1)
             
         except Exception as e:
-            logger.error(f"Major error syncing {ticker_symbol}: {str(e)}")
+            error_msg = f"同期エラー: {str(e)[:50]}"
+            logger.error(f"Major error for {ticker_symbol}: {str(e)}")
+            company.last_sync_at = now_str
+            company.last_sync_error = error_msg
+            db.commit()
             db.rollback()
-            time.sleep(5)
 
 # 初期データの設定
 @app.on_event("startup")
 def startup_event():
     db = SessionLocal()
     try:
-        # ユーザー
         if db.query(User).count() == 0:
             admin_user = User(username=ADMIN_USERNAME, hashed_password=get_hashed_password(ADMIN_PASSWORD))
             db.add(admin_user)
             db.commit()
         
-        # 銘柄マスタ基本
         if db.query(Company).count() == 0:
             initial_companies = {
                 "7203.T": "トヨタ自動車",
@@ -227,6 +228,7 @@ async def read_root(request: Request,
         {
             "request": request, 
             "fundamentals": fundamentals,
+            "company": company,
             "ticker_name": f"{ticker} {ticker_display}",
             "current_ticker": ticker,
             "ticker_list": ticker_list,
@@ -235,11 +237,15 @@ async def read_root(request: Request,
     )
 
 @app.post("/admin/sync")
-async def manual_sync(ticker: str = "7203.T", db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def manual_sync(request: Request, ticker: str = "7203.T", db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if not current_user:
         raise HTTPException(status_code=401, detail="Unauthorized")
-    sync_stock_data(db)
-    return RedirectResponse(url=f"/?ticker={ticker}", status_code=status.HTTP_303_SEE_OTHER)
+    
+    sync_stock_data(db, target_ticker=ticker)
+    
+    # HTMXリクエストの場合は、ページ全体を再描画するようにリダイレクト先を返す
+    # (hx-target="body" hx-swap="outerHTML" を使っているため、read_rootを呼び出す)
+    return await read_root(request, ticker=ticker, db=db, current_user=current_user)
 
 # --- Auth Endpoints ---
 
