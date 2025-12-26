@@ -167,6 +167,22 @@
 
 <body>
     <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <div>
+                {% if user %}
+                <span style="font-size: 0.9rem; color: #818cf8;">ログイン中: {{ user.username }} さん</span>
+                {% else %}
+                <span style="font-size: 0.9rem; color: #94a3b8;">ゲストさん</span>
+                {% endif %}
+            </div>
+            <div>
+                {% if user %}
+                <a href="/logout" style="color: #f43f5e; text-decoration: none; font-size: 0.9rem;">ログアウト</a>
+                {% else %}
+                <a href="/login" style="color: #6366f1; text-decoration: none; font-size: 0.9rem;">ログイン</a>
+                {% endif %}
+            </div>
+        </div>
         <h1>X-Server App</h1>
         <p class="subtitle">FastAPI + htmx Practice Project</p>
 
