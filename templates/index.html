@@ -183,15 +183,7 @@
                 {% endif %}
             </div>
         </div>
-        <h1>X-Server App</h1>
         <p class="subtitle">FastAPI + htmx Practice Project</p>
-
-        <div class="section counter-container">
-            <span id="counter-value">{{ counter }}</span>
-            <button hx-post="/increment" hx-target="#counter-value" hx-swap="outerHTML">
-                カウントアップ
-            </button>
-        </div>
 
         <!-- 銘柄選択セレクター -->
         <div style="margin-bottom: 2rem; display: flex; justify-content: center; align-items: center; gap: 1rem;">

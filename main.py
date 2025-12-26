@@ -117,8 +117,6 @@ def seed_data():
         db.commit()
     db.close()
 
-state = {"counter": 0}
-
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request, 
                     ticker: str = Query("7203.T"),
@@ -165,13 +163,6 @@ async def logout():
     response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     response.delete_cookie("access_token")
     return response
-
-@app.post("/increment")
-async def increment(current_user: User = Depends(get_current_user)):
-    if not current_user:
-        return HTMLResponse(content="<script>alert('ログインが必要です');</script>")
-    state["counter"] += 1
-    return f'<span id="counter-value" class="counter-animate">{state["counter"]}</span>'
 
 @app.post("/echo")
 async def echo(message: Annotated[str, Form()]):
