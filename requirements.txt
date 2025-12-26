@@ -9,3 +9,4 @@ python-jose[cryptography]==3.3.0
 yfinance==0.2.36
 pandas==2.2.0
 python-dotenv==1.0.1
+psycopg2-binary==2.9.9
