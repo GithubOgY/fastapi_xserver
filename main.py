@@ -296,7 +296,7 @@ async def register_page(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
 
 @app.post("/register")
-async def register(username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+async def register(request: Request, username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.username == username).first()
     if existing_user:
         return HTMLResponse(content="<p style='color:red;'>このユーザー名はお使いいただけません</p>", status_code=400)
@@ -304,7 +304,14 @@ async def register(username: str = Form(...), password: str = Form(...), db: Ses
     new_user = User(username=username, hashed_password=get_hashed_password(password))
     db.add(new_user)
     db.commit()
-    return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url=f"/register/success?username={username}", status_code=status.HTTP_303_SEE_OTHER)
+
+@app.get("/register/success", response_class=HTMLResponse)
+async def register_success(request: Request, username: str = ""):
+    return templates.TemplateResponse("register_success.html", {
+        "request": request,
+        "username": username
+    })
 
 @app.get("/logout")
 async def logout():

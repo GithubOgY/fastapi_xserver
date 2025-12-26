@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登録完了 - Xserver App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #e2e8f0;
+        }
+
+        .container {
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(16px);
+            border-radius: 24px;
+            padding: 3rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .success-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            animation: bounce 1s ease-in-out;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #10b981, #34d399);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p {
+            color: #94a3b8;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .username-display {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .username-display span {
+            color: #10b981;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .btn-login {
+            display: inline-block;
+            background: linear-gradient(135deg, #6366f1, #818cf8);
+            color: white;
+            text-decoration: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+        }
+
+        .confetti {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .confetti-piece {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #818cf8;
+            animation: fall 3s linear infinite;
+        }
+
+        @keyframes fall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="confetti">
+        <div class="confetti-piece" style="left: 10%; animation-delay: 0s; background: #6366f1;"></div>
+        <div class="confetti-piece" style="left: 20%; animation-delay: 0.5s; background: #10b981;"></div>
+        <div class="confetti-piece" style="left: 30%; animation-delay: 1s; background: #f43f5e;"></div>
+        <div class="confetti-piece" style="left: 40%; animation-delay: 0.3s; background: #818cf8;"></div>
+        <div class="confetti-piece" style="left: 50%; animation-delay: 0.8s; background: #c084fc;"></div>
+        <div class="confetti-piece" style="left: 60%; animation-delay: 0.2s; background: #10b981;"></div>
+        <div class="confetti-piece" style="left: 70%; animation-delay: 1.2s; background: #6366f1;"></div>
+        <div class="confetti-piece" style="left: 80%; animation-delay: 0.6s; background: #f43f5e;"></div>
+        <div class="confetti-piece" style="left: 90%; animation-delay: 0.9s; background: #818cf8;"></div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div class="success-icon">🎉</div>
+            <h1>登録ありがとうございます！</h1>
+            <p>アカウントが正常に作成されました。<br>以下のユーザー名でログインできます。</p>
+
+            <div class="username-display">
+                <span>{{ username }}</span>
+            </div>
+
+            <a href="/login" class="btn-login">ログインする →</a>
+        </div>
+    </div>
+</body>
+
+</html>
