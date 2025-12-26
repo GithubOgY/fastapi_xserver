@@ -288,6 +288,47 @@ async def dashboard(request: Request,
         }
     )
 
+@app.get("/compare", response_class=HTMLResponse)
+async def compare_page(request: Request, 
+                       tickers: str = Query(""),
+                       db: Session = Depends(get_db), 
+                       current_user: User = Depends(get_current_user)):
+    
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+    
+    all_companies = db.query(Company).all()
+    ticker_list = [{"code": c.ticker, "name": c.name} for c in all_companies]
+    
+    # Parse selected tickers
+    selected_tickers = [t.strip() for t in tickers.split(",") if t.strip()] if tickers else []
+    
+    # Get comparison data
+    comparison_data = []
+    for ticker in selected_tickers[:4]:  # Max 4 stocks
+        company = db.query(Company).filter(Company.ticker == ticker).first()
+        if company:
+            fundamentals = db.query(CompanyFundamental).filter(
+                CompanyFundamental.ticker == ticker
+            ).order_by(CompanyFundamental.year.desc()).limit(5).all()
+            
+            comparison_data.append({
+                "ticker": ticker,
+                "name": company.name,
+                "fundamentals": fundamentals
+            })
+    
+    return templates.TemplateResponse(
+        "compare.html", 
+        {
+            "request": request, 
+            "user": current_user,
+            "ticker_list": ticker_list,
+            "selected_tickers": selected_tickers,
+            "comparison_data": comparison_data
+        }
+    )
+
 @app.post("/admin/sync")
 async def manual_sync(request: Request, ticker: str = "7203.T", db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if not current_user:
@@ -295,7 +336,7 @@ async def manual_sync(request: Request, ticker: str = "7203.T", db: Session = De
     
     sync_stock_data(db, target_ticker=ticker)
     
-    # HTMXリクエストの場合は、ページ全体を再描画
+    # Re-render page after sync
     return await dashboard(request, ticker=ticker, db=db, current_user=current_user)
 
 # --- Auth Endpoints ---

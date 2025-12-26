@@ -234,13 +234,15 @@
                     style="background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-main); padding: 0.4rem 0.8rem; border-radius: 8px; cursor: pointer; font-size: 0.8rem; transition: all 0.3s ease;">
                     Light
                 </button>
+                <a href="/compare"
+                    style="font-size: 0.85rem; color: var(--text-dim); text-decoration: none; background: var(--glass-bg); padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border);">Compare</a>
                 <a href="/account" style="font-size: 0.9rem; color: var(--accent); text-decoration: none;">{{
                     user.username }}</a>
                 {% if user.is_admin %}
                 <a href="/admin/users"
-                    style="color: var(--success); text-decoration: none; font-size: 0.8rem; background: rgba(16, 185, 129, 0.2); padding: 0.3rem 0.6rem; border-radius: 6px;">管理者</a>
+                    style="color: var(--success); text-decoration: none; font-size: 0.8rem; background: rgba(16, 185, 129, 0.2); padding: 0.3rem 0.6rem; border-radius: 6px;">Admin</a>
                 {% endif %}
-                <a href="/logout" style="color: var(--danger); text-decoration: none; font-size: 0.9rem;">ログアウト</a>
+                <a href="/logout" style="color: var(--danger); text-decoration: none; font-size: 0.9rem;">Logout</a>
                 {% else %}
                 <a href="/login" style="color: var(--accent); text-decoration: none; font-size: 0.9rem;">ログイン</a>
                 {% endif %}
