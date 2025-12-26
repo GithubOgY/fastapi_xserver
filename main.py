@@ -212,11 +212,11 @@ async def read_root(request: Request,
     )
 
 @app.post("/admin/sync")
-async def manual_sync(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def manual_sync(ticker: str = "7203.T", db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if not current_user:
         raise HTTPException(status_code=401, detail="Unauthorized")
     sync_stock_data(db)
-    return RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url=f"/?ticker={ticker}", status_code=status.HTTP_303_SEE_OTHER)
 
 # --- Auth Endpoints ---
 @app.get("/login", response_class=HTMLResponse)
