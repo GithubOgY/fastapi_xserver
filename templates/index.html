@@ -247,9 +247,25 @@
             </div>
         </div>
 
-        <!-- 銘柄選択 -->
-        <div style="margin-bottom: 2.5rem; display: flex; justify-content: center; align-items: center; gap: 1rem;">
-            <label style="font-size: 0.9rem; color: #94a3b8;">表示銘柄を選択:</label>
+        <!-- Favorites Quick Access -->
+        {% if favorite_companies and favorite_companies|length > 0 %}
+        <div style="margin-bottom: 1.5rem; text-align: center;">
+            <span style="font-size: 0.8rem; color: var(--text-dim); margin-right: 0.5rem;">Favorites:</span>
+            {% for fav in favorite_companies %}
+            <a href="/dashboard?ticker={{ fav.code }}"
+                style="display: inline-block; margin: 0.2rem; padding: 0.3rem 0.6rem; background: var(--accent-glow); border: 1px solid var(--accent); border-radius: 6px; color: var(--accent); text-decoration: none; font-size: 0.8rem; transition: all 0.2s;"
+                onmouseover="this.style.background='var(--accent)'; this.style.color='white';"
+                onmouseout="this.style.background='var(--accent-glow)'; this.style.color='var(--accent)';">
+                {{ fav.name }}
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Ticker Select with Favorite Button -->
+        <div
+            style="margin-bottom: 2.5rem; display: flex; justify-content: center; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <label style="font-size: 0.9rem; color: var(--text-dim);">Select Stock:</label>
             <select onchange="window.location.href='/dashboard?ticker=' + this.value">
                 {% for t in ticker_list %}
                 <option value="{{ t.code }}" {% if t.code==current_ticker %}selected{% endif %}>
@@ -257,6 +273,25 @@
                 </option>
                 {% endfor %}
             </select>
+
+            <!-- Favorite Toggle Button -->
+            {% if is_favorite %}
+            <form action="/api/favorites/remove" method="post" style="margin: 0;">
+                <input type="hidden" name="ticker" value="{{ current_ticker }}">
+                <button type="submit"
+                    style="background: rgba(251, 191, 36, 0.2); border: 1px solid #fbbf24; color: #fbbf24; padding: 0.4rem 0.8rem; border-radius: 8px; cursor: pointer; font-size: 0.8rem;">
+                    ★ Favorited
+                </button>
+            </form>
+            {% else %}
+            <form action="/api/favorites/add" method="post" style="margin: 0;">
+                <input type="hidden" name="ticker" value="{{ current_ticker }}">
+                <button type="submit"
+                    style="background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-dim); padding: 0.4rem 0.8rem; border-radius: 8px; cursor: pointer; font-size: 0.8rem;">
+                    ☆ Add to Favorites
+                </button>
+            </form>
+            {% endif %}
         </div>
 
         <!-- 業績グラフセクション -->

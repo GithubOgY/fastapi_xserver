@@ -3,7 +3,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
 from typing import Annotated, Optional
 from sqlalchemy.orm import Session
-from database import SessionLocal, CompanyFundamental, User, Company
+from database import SessionLocal, CompanyFundamental, User, Company, UserFavorite
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
@@ -260,6 +260,18 @@ async def dashboard(request: Request,
     
     all_companies = db.query(Company).all()
     ticker_list = [{"code": c.ticker, "name": c.name} for c in all_companies]
+    
+    # Get user's favorites
+    user_favorites = db.query(UserFavorite).filter(UserFavorite.user_id == current_user.id).all()
+    favorite_tickers = [f.ticker for f in user_favorites]
+    is_favorite = ticker in favorite_tickers
+    
+    # Get favorite companies with names for quick access
+    favorite_companies = []
+    for fav in user_favorites:
+        comp = db.query(Company).filter(Company.ticker == fav.ticker).first()
+        if comp:
+            favorite_companies.append({"code": comp.ticker, "name": comp.name})
 
     return templates.TemplateResponse(
         "index.html", 
@@ -270,7 +282,9 @@ async def dashboard(request: Request,
             "ticker_name": f"{ticker} {ticker_display}",
             "current_ticker": ticker,
             "ticker_list": ticker_list,
-            "user": current_user
+            "user": current_user,
+            "is_favorite": is_favorite,
+            "favorite_companies": favorite_companies
         }
     )
 
@@ -386,5 +400,49 @@ async def delete_own_account(db: Session = Depends(get_db), current_user: User =
 @app.post("/echo")
 async def echo(message: Annotated[str, Form()]):
     if not message:
-        return '<p class="echo-result">何か入力してください！</p>'
-    return f'<p class="echo-result">サーバーからの返信: <strong>{message}</strong></p>'
+        return '<p class="echo-result">Please enter something!</p>'
+    return f'<p class="echo-result">Server response: <strong>{message}</strong></p>'
+
+# --- Favorites API ---
+
+@app.post("/api/favorites/add")
+async def add_favorite(ticker: str = Form(...), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Login required")
+    
+    # Check if already favorited
+    existing = db.query(UserFavorite).filter(
+        UserFavorite.user_id == current_user.id,
+        UserFavorite.ticker == ticker
+    ).first()
+    
+    if not existing:
+        favorite = UserFavorite(user_id=current_user.id, ticker=ticker)
+        db.add(favorite)
+        db.commit()
+    
+    return RedirectResponse(url=f"/dashboard?ticker={ticker}", status_code=status.HTTP_303_SEE_OTHER)
+
+@app.post("/api/favorites/remove")
+async def remove_favorite(ticker: str = Form(...), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Login required")
+    
+    favorite = db.query(UserFavorite).filter(
+        UserFavorite.user_id == current_user.id,
+        UserFavorite.ticker == ticker
+    ).first()
+    
+    if favorite:
+        db.delete(favorite)
+        db.commit()
+    
+    return RedirectResponse(url=f"/dashboard?ticker={ticker}", status_code=status.HTTP_303_SEE_OTHER)
+
+@app.get("/api/favorites")
+async def get_favorites(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user:
+        return []
+    
+    favorites = db.query(UserFavorite).filter(UserFavorite.user_id == current_user.id).all()
+    return [f.ticker for f in favorites]

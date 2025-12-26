@@ -40,7 +40,13 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
-    is_admin = Column(Integer, default=0)  # 0=通常ユーザー, 1=管理者
+    is_admin = Column(Integer, default=0)  # 0=normal user, 1=admin
+
+class UserFavorite(Base):
+    __tablename__ = "user_favorites"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True)
+    ticker = Column(String, index=True)
 
 # DB initialization
 Base.metadata.create_all(bind=engine)
