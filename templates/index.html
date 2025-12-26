@@ -322,7 +322,8 @@
     </script>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        // グラフ初期化関数
+        function initChart() {
             const dataElement = document.getElementById('fundamental-data');
             if (!dataElement) return;
 
@@ -337,8 +338,13 @@
             const canvas = document.getElementById('financialChart');
             if (!canvas || fundamentals.length === 0) return;
 
+            // 既存のチャートを破棄
+            if (window.myChart) {
+                window.myChart.destroy();
+            }
+
             const ctx = canvas.getContext('2d');
-            new Chart(ctx, {
+            window.myChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: fundamentals.map(f => f.year + '年'),
@@ -392,7 +398,13 @@
                     }
                 }
             });
-        });
+        }
+
+        // 初回ロード時
+        document.addEventListener('DOMContentLoaded', initChart);
+
+        // HTMX でページが更新された後
+        document.body.addEventListener('htmx:afterSwap', initChart);
     </script>
 </body>
 
