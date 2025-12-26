@@ -235,14 +235,14 @@
                     Light
                 </button>
                 <a href="/compare"
-                    style="font-size: 0.85rem; color: var(--text-dim); text-decoration: none; background: var(--glass-bg); padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border);">Compare</a>
+                    style="font-size: 0.85rem; color: var(--text-dim); text-decoration: none; background: var(--glass-bg); padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border);">銘柄比較</a>
                 <a href="/account" style="font-size: 0.9rem; color: var(--accent); text-decoration: none;">{{
                     user.username }}</a>
                 {% if user.is_admin %}
                 <a href="/admin/users"
-                    style="color: var(--success); text-decoration: none; font-size: 0.8rem; background: rgba(16, 185, 129, 0.2); padding: 0.3rem 0.6rem; border-radius: 6px;">Admin</a>
+                    style="color: var(--success); text-decoration: none; font-size: 0.8rem; background: rgba(16, 185, 129, 0.2); padding: 0.3rem 0.6rem; border-radius: 6px;">管理者</a>
                 {% endif %}
-                <a href="/logout" style="color: var(--danger); text-decoration: none; font-size: 0.9rem;">Logout</a>
+                <a href="/logout" style="color: var(--danger); text-decoration: none; font-size: 0.9rem;">ログアウト</a>
                 {% else %}
                 <a href="/login" style="color: var(--accent); text-decoration: none; font-size: 0.9rem;">ログイン</a>
                 {% endif %}
@@ -252,7 +252,7 @@
         <!-- Favorites Quick Access -->
         {% if favorite_companies and favorite_companies|length > 0 %}
         <div style="margin-bottom: 1.5rem; text-align: center;">
-            <span style="font-size: 0.8rem; color: var(--text-dim); margin-right: 0.5rem;">Favorites:</span>
+            <span style="font-size: 0.8rem; color: var(--text-dim); margin-right: 0.5rem;">お気に入り:</span>
             {% for fav in favorite_companies %}
             <a href="/dashboard?ticker={{ fav.code }}"
                 style="display: inline-block; margin: 0.2rem; padding: 0.3rem 0.6rem; background: var(--accent-glow); border: 1px solid var(--accent); border-radius: 6px; color: var(--accent); text-decoration: none; font-size: 0.8rem; transition: all 0.2s;"
@@ -267,7 +267,7 @@
         <!-- Ticker Select with Favorite Button -->
         <div
             style="margin-bottom: 2.5rem; display: flex; justify-content: center; align-items: center; gap: 1rem; flex-wrap: wrap;">
-            <label style="font-size: 0.9rem; color: var(--text-dim);">Select Stock:</label>
+            <label style="font-size: 0.9rem; color: var(--text-dim);">表示銘柄を選択:</label>
             <select onchange="window.location.href='/dashboard?ticker=' + this.value">
                 {% for t in ticker_list %}
                 <option value="{{ t.code }}" {% if t.code==current_ticker %}selected{% endif %}>
@@ -282,7 +282,7 @@
                 <input type="hidden" name="ticker" value="{{ current_ticker }}">
                 <button type="submit"
                     style="background: rgba(251, 191, 36, 0.2); border: 1px solid #fbbf24; color: #fbbf24; padding: 0.4rem 0.8rem; border-radius: 8px; cursor: pointer; font-size: 0.8rem;">
-                    ★ Favorited
+                    ★ 登録済み
                 </button>
             </form>
             {% else %}

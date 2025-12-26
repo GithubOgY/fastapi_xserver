@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Comparison | X-Server App</title>
+    <title>銘柄比較 | X-Server App</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -211,6 +211,400 @@
             color: var(--text-dim);
         }
     </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>銘柄比較</h1>
+            <div class="nav-links">
+                <a href="/dashboard">ダッシュボード</a>
+                <a href="/logout" style="color: var(--danger);">ログアウト</a>
+            </div>
+        </div>
+
+        <!-- Ticker Selection -->
+        <div class="section">
+            <h2 style="margin-top: 0; font-size: 1.1rem; color: var(--text-dim);">比較する銘柄を選択 (最大4つ)</h2>
+
+            <form id="compare-form" method="get" action="/compare">
+                <div class="ticker-select" id="selected-tickers">
+                    {% for t in selected_tickers %}
+                    <div class="ticker-chip">
+                        {{ t }}
+                        <button type="button" onclick="removeTicker('{{ t }}')">&times;</button>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <input type="hidden" name="tickers" id="tickers-input" value="{{ selected_tickers|join(',') }}">
+
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <select id="ticker-dropdown">
+                        <option value="">銘柄を選択...</option>
+                        {% for t in ticker_list %}
+                        <option value="{{ t.code }}">{{ t.code }} - {{ t.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="button" onclick="addTicker()">追加</button>
+                    <button type="submit">比較実行</button>
+                </div>
+            </form>
+        </div>
+
+        {% if comparison_data and comparison_data|length > 0 %}
+        <!-- Comparison Chart -->
+        <div class="section">
+            <h2 style="margin-top: 0; font-size: 1.1rem; color: var(--accent); text-align: center;">売上高比較 (直近年度)</h2>
+            <div class="chart-container">
+                <canvas id="comparisonChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Comparison Cards -->
+        <div class="comparison-grid">
+            {% for company in comparison_data %}
+            <div class="company-card">
+                <h3>{{ company.name }} ({{ company.ticker }})</h3>
+                {% if company.fundamentals and company.fundamentals|length > 0 %}
+                {% set latest = company.fundamentals[0] %}
+                <div class="metric">
+                    <span class="metric-label">年度</span>
+                    <span class="metric-value">{{ latest.year }}</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">売上収益</span>
+                    <span class="metric-value">{{ "{:,.0f}".format(latest.revenue) }} 億円</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">営業利益</span>
+                    <span class="metric-value">{{ "{:,.0f}".format(latest.operating_income) }} 億円</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">純利益</span>
+                    <span class="metric-value">{{ "{:,.0f}".format(latest.net_income) }} 億円</span>
+                </div>
+                {% if latest.eps %}
+                <div class="metric">
+                    <span class="metric-label">EPS</span>
+                    <span class="metric-value">{{ "{:,.2f}".format(latest.eps) }}</span>
+                </div>
+                {% endif %}
+                {% else %}
+                <p style="color: var(--text-dim); font-size: 0.9rem;">データがありません</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="section empty-state">
+            <p>2つ以上の銘柄を選択して比較してください。</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        let selectedTickers = {{ selected_tickers | tojson | safe }};
+
+        function addTicker() {
+            const dropdown = document.getElementById('ticker-dropdown');
+            const ticker = dropdown.value;
+            if (ticker && !selectedTickers.includes(ticker) && selectedTickers.length < 4) {
+                selectedTickers.push(ticker);
+                updateForm();
+            }
+            dropdown.value = '';
+        }
+
+        function removeTicker(ticker) {
+            selectedTickers = selectedTickers.filter(t => t !== ticker);
+            updateForm();
+        }
+
+        function updateForm() {
+            document.getElementById('tickers-input').value = selectedTickers.join(',');
+
+            const container = document.getElementById('selected-tickers');
+            container.innerHTML = selectedTickers.map(t =>
+                `<div class="ticker-chip">${t}<button type="button" onclick="removeTicker('${t}')">&times;</button></div>`
+            ).join('');
+        }
+
+        {% if comparison_data and comparison_data | length > 0 %}
+        // Comparison Chart
+        const comparisonData = {{ comparison_data | tojson | safe }};
+
+        const labels = comparisonData.map(c => c.name);
+        const revenues = comparisonData.map(c => c.fundamentals[0]?.revenue || 0);
+        const opIncomes = comparisonData.map(c => c.fundamentals[0]?.operating_income || 0);
+        const netIncomes = comparisonData.map(c => c.fundamentals[0]?.net_income || 0);
+
+        const colors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444'];
+
+        new Chart(document.getElementById('comparisonChart'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: '売上収益 (億円)',
+                        data: revenues,
+                        backgroundColor: colors.map(c => c + '80'),
+                        borderColor: colors,
+                        borderWidth: 1
+                    },
+                    {
+                        label: '営業利益 (億円)',
+                        data: opIncomes,
+                        backgroundColor: '#10b98180',
+                        borderColor: '#10b981',
+                        borderWidth: 1
+                    },
+                    {
+                        label: '純利益 (億円)',
+                        data: netIncomes,
+                        backgroundColor: '#fb718580',
+                        borderColor: '#fb7185',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: { color: '#94a3b8' }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#94a3b8' },
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                    },
+                    y: {
+                        ticks: { color: '#94a3b8' },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+        {% endif %}
+
+        // Apply theme
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+        }
+        applyTheme(localStorage.getItem('theme') || 'dark');
+    </script>
+</body>
+
+</html>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@500;700&display=swap"
+    rel="stylesheet">
+<style>
+    /* Dark Theme (Default) */
+    :root,
+    [data-theme="dark"] {
+        --bg-gradient: radial-gradient(circle at top right, #1e1b4b, #0f172a);
+        --glass-bg: rgba(255, 255, 255, 0.03);
+        --glass-border: rgba(255, 255, 255, 0.08);
+        --section-bg: rgba(0, 0, 0, 0.2);
+        --accent: #6366f1;
+        --accent-glow: rgba(99, 102, 241, 0.3);
+        --text-main: #f8fafc;
+        --text-dim: #94a3b8;
+        --success: #10b981;
+        --danger: #f43f5e;
+        --select-bg: rgba(30, 41, 59, 0.8);
+    }
+
+    /* Light Theme */
+    [data-theme="light"] {
+        --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%);
+        --glass-bg: rgba(255, 255, 255, 0.8);
+        --glass-border: rgba(0, 0, 0, 0.1);
+        --section-bg: rgba(255, 255, 255, 0.9);
+        --accent: #4f46e5;
+        --accent-glow: rgba(79, 70, 229, 0.2);
+        --text-main: #1e293b;
+        --text-dim: #64748b;
+        --success: #059669;
+        --danger: #dc2626;
+        --select-bg: rgba(241, 245, 249, 0.9);
+    }
+
+    body {
+        background: var(--bg-gradient);
+        color: var(--text-main);
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        min-height: 100vh;
+        margin: 0;
+        padding: 2rem;
+        transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        backdrop-filter: blur(12px);
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 24px;
+        padding: 2rem;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    h1 {
+        font-family: 'Outfit', sans-serif;
+        font-size: 2rem;
+        margin: 0;
+        background: linear-gradient(to right, #fff, #818cf8);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .nav-links {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .nav-links a {
+        color: var(--accent);
+        text-decoration: none;
+        font-size: 0.9rem;
+    }
+
+    .section {
+        background: var(--section-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        transition: background 0.3s ease;
+    }
+
+    .ticker-select {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .ticker-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.4rem 0.8rem;
+        background: var(--accent);
+        color: white;
+        border-radius: 20px;
+        font-size: 0.85rem;
+    }
+
+    .ticker-chip button {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        padding: 0;
+        font-size: 1rem;
+        line-height: 1;
+    }
+
+    select {
+        background: var(--select-bg);
+        color: var(--text-main);
+        border: 1px solid var(--glass-border);
+        padding: 0.6rem 1.2rem;
+        border-radius: 12px;
+        outline: none;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.3s ease;
+    }
+
+    button {
+        background: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 0.6rem 1.2rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .comparison-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+    }
+
+    .company-card {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        padding: 1rem;
+    }
+
+    .company-card h3 {
+        margin: 0 0 1rem 0;
+        color: var(--accent);
+        font-size: 1rem;
+    }
+
+    .metric {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid var(--glass-border);
+        font-size: 0.85rem;
+    }
+
+    .metric:last-child {
+        border-bottom: none;
+    }
+
+    .metric-label {
+        color: var(--text-dim);
+    }
+
+    .metric-value {
+        font-weight: 600;
+    }
+
+    .chart-container {
+        height: 350px;
+        min-height: 350px;
+        position: relative;
+        width: 100%;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: var(--text-dim);
+    }
+</style>
 </head>
 
 <body>
