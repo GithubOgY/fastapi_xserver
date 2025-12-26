@@ -105,11 +105,6 @@ def sync_stock_data(db: Session, target_ticker: Optional[str] = None):
         
     logger.info(f"Starting sync for tickers: {tickers}")
     
-    session = requests.Session()
-    session.headers.update({
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    })
-    
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     for ticker_symbol in tickers:
@@ -121,7 +116,7 @@ def sync_stock_data(db: Session, target_ticker: Optional[str] = None):
 
         try:
             logger.info(f"Refreshing data for {ticker_symbol}...")
-            ticker = yf.Ticker(ticker_symbol, session=session)
+            ticker = yf.Ticker(ticker_symbol)
             
             # 財務データの取得 - income_stmt を優先、fallback で financials
             financials = None
