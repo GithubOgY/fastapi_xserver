@@ -16,35 +16,38 @@ import logging
 logger = logging.getLogger(__name__)
 
 # EDINET API Base URL
-EDINET_API_BASE = "https://disclosure.edinet-fsa.go.jp/api/v2"
+EDINET_API_BASE = "https://api.edinet-fsa.go.jp/api/v2"
 
-# 勘定科目の英語→日本語マッピング
+# Get API key from environment
+EDINET_API_KEY = os.getenv("EDINET_API_KEY", "")
+
+# 勘定科目の英語�E日本語�EチE��ング
 ACCOUNT_MAPPING = {
-    # 損益計算書（P/L）
-    "NetSales": "売上高",
-    "OperatingIncome": "営業利益",
-    "OrdinaryIncome": "経常利益",
-    "NetIncome": "当期純利益",
-    "NetIncomeAttributableToOwnersOfParent": "親会社株主に帰属する当期純利益",
-    "GrossProfit": "売上総利益",
-    "SellingGeneralAndAdministrativeExpenses": "販売費及び一般管理費",
+    # 損益計算書�E�E/L�E�E
+    "NetSales": "売上髁E,
+    "OperatingIncome": "営業利盁E,
+    "OrdinaryIncome": "経常利盁E,
+    "NetIncome": "当期純利盁E,
+    "NetIncomeAttributableToOwnersOfParent": "親会社株主に帰属する当期純利盁E,
+    "GrossProfit": "売上総利盁E,
+    "SellingGeneralAndAdministrativeExpenses": "販売費及�E一般管琁E��",
     
-    # 貸借対照表（B/S）
-    "TotalAssets": "総資産",
-    "TotalLiabilities": "負債合計",
-    "NetAssets": "純資産",
-    "CurrentAssets": "流動資産",
-    "NonCurrentAssets": "固定資産",
+    # 貸借対照表�E�E/S�E�E
+    "TotalAssets": "総賁E��",
+    "TotalLiabilities": "負債合訁E,
+    "NetAssets": "純賁E��",
+    "CurrentAssets": "流動賁E��",
+    "NonCurrentAssets": "固定賁E��",
     
-    # キャッシュフロー
-    "CashFlowsFromOperatingActivities": "営業活動によるキャッシュフロー",
-    "CashFlowsFromInvestingActivities": "投資活動によるキャッシュフロー",
-    "CashFlowsFromFinancingActivities": "財務活動によるキャッシュフロー",
+    # キャチE��ュフロー
+    "CashFlowsFromOperatingActivities": "営業活動によるキャチE��ュフロー",
+    "CashFlowsFromInvestingActivities": "投賁E��動によるキャチE��ュフロー",
+    "CashFlowsFromFinancingActivities": "財務活動によるキャチE��ュフロー",
     
-    # その他
-    "BasicEarningsPerShare": "1株当たり当期純利益",
-    "DividendPerShare": "1株当たり配当金",
-    "BookValuePerShare": "1株当たり純資産",
+    # そ�E仁E
+    "BasicEarningsPerShare": "1株当たり当期純利盁E,
+    "DividendPerShare": "1株当たり�E当��",
+    "BookValuePerShare": "1株当たり純賁E��",
 }
 
 
@@ -64,7 +67,7 @@ def get_document_list(date: str = None) -> List[Dict]:
         date = yesterday.strftime("%Y-%m-%d")
     
     url = f"{EDINET_API_BASE}/documents.json"
-    params = {"date": date, "type": 2}  # type=2: metadata + XBRL
+    params = {"date": date, "type": 2, "Subscription-Key": EDINET_API_KEY}
     
     try:
         response = requests.get(url, params=params, timeout=30)
@@ -128,7 +131,7 @@ def download_xbrl_document(doc_id: str) -> Optional[str]:
         Path to extracted XBRL directory, or None if failed
     """
     url = f"{EDINET_API_BASE}/documents/{doc_id}"
-    params = {"type": 1}  # type=1: Get XBRL ZIP file
+    params = {"type": 1, "Subscription-Key": EDINET_API_KEY}  # type=1: Get XBRL ZIP file
     
     try:
         response = requests.get(url, params=params, timeout=60)
