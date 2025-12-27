@@ -1,0 +1,49 @@
+2025-12-27 21:23:22,081 [ERROR] fastapi-app: Startup error: password cannot be longer than 72 bytes, truncate manually if necessary (e.g. my_password[:72])
+2025-12-27 21:24:16,908 [ERROR] fastapi-app: Startup error: password cannot be longer than 72 bytes, truncate manually if necessary (e.g. my_password[:72])
+2025-12-27 21:26:32,379 [ERROR] fastapi-app: Startup error: password cannot be longer than 72 bytes, truncate manually if necessary (e.g. my_password[:72])
+2025-12-27 21:26:57,234 [INFO] fastapi-app: 127.0.0.1 - "GET /" 200 (0.0078s)
+127.0.0.1:56105 - "GET / HTTP/1.1" 200
+2025-12-27 21:26:57,944 [INFO] fastapi-app: 127.0.0.1 - "GET /favicon.ico" 404 (0.0004s)
+127.0.0.1:56105 - "GET /favicon.ico HTTP/1.1" 404
+2025-12-27 21:27:13,204 [INFO] fastapi-app: 127.0.0.1 - "GET /login" 200 (0.0033s)
+127.0.0.1:56127 - "GET /login HTTP/1.1" 200
+2025-12-27 21:27:20,332 [INFO] fastapi-app: 127.0.0.1 - "POST /login" 303 (0.0056s)
+127.0.0.1:56129 - "POST /login HTTP/1.1" 303
+2025-12-27 21:27:20,337 [INFO] fastapi-app: 127.0.0.1 - "GET /login" 200 (0.0009s)
+127.0.0.1:56129 - "GET /login?error=%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC%E5%90%8D%E3%81%BE%E3%81%9F%E3%81%AF%E3%83%91%E3%82%B9%E3%83%AF%E3%83%BC%E3%83%89%E3%81%8C%E9%81%95%E3%81%84%E3%81%BE%E3%81%99 HTTP/1.1" 200
+2025-12-27 21:27:28,837 [INFO] fastapi-app: 127.0.0.1 - "POST /login" 303 (0.0023s)
+127.0.0.1:56130 - "POST /login HTTP/1.1" 303
+2025-12-27 21:27:28,841 [INFO] fastapi-app: 127.0.0.1 - "GET /login" 200 (0.0006s)
+127.0.0.1:56130 - "GET /login?error=%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC%E5%90%8D%E3%81%BE%E3%81%9F%E3%81%AF%E3%83%91%E3%82%B9%E3%83%AF%E3%83%BC%E3%83%89%E3%81%8C%E9%81%95%E3%81%84%E3%81%BE%E3%81%99 HTTP/1.1" 200
+2025-12-27 21:27:37,653 [INFO] fastapi-app: 127.0.0.1 - "POST /login" 303 (0.0020s)
+127.0.0.1:56136 - "POST /login HTTP/1.1" 303
+2025-12-27 21:27:37,657 [INFO] fastapi-app: 127.0.0.1 - "GET /login" 200 (0.0006s)
+127.0.0.1:56136 - "GET /login?error=%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC%E5%90%8D%E3%81%BE%E3%81%9F%E3%81%AF%E3%83%91%E3%82%B9%E3%83%AF%E3%83%BC%E3%83%89%E3%81%8C%E9%81%95%E3%81%84%E3%81%BE%E3%81%99 HTTP/1.1" 200
+2025-12-27 21:27:49,801 [INFO] fastapi-app: 127.0.0.1 - "POST /login" 303 (0.0022s)
+127.0.0.1:56139 - "POST /login HTTP/1.1" 303
+2025-12-27 21:27:49,805 [INFO] fastapi-app: 127.0.0.1 - "GET /login" 200 (0.0007s)
+127.0.0.1:56139 - "GET /login?error=%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC%E5%90%8D%E3%81%BE%E3%81%9F%E3%81%AF%E3%83%91%E3%82%B9%E3%83%AF%E3%83%BC%E3%83%89%E3%81%8C%E9%81%95%E3%81%84%E3%81%BE%E3%81%99 HTTP/1.1" 200
+2025-12-27 21:27:52,483 [INFO] fastapi-app: 127.0.0.1 - "GET /" 200 (0.0009s)
+127.0.0.1:56139 - "GET / HTTP/1.1" 200
+2025-12-27 21:27:53,891 [INFO] fastapi-app: 127.0.0.1 - "GET /login" 200 (0.0006s)
+127.0.0.1:56139 - "GET /login HTTP/1.1" 200
+2025-12-27 21:28:32,050 [INFO] fastapi-app: 127.0.0.1 - "POST /login" 303 (0.0021s)
+127.0.0.1:56152 - "POST /login HTTP/1.1" 303
+2025-12-27 21:28:32,054 [INFO] fastapi-app: 127.0.0.1 - "GET /login" 200 (0.0007s)
+127.0.0.1:56152 - "GET /login?error=%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC%E5%90%8D%E3%81%BE%E3%81%9F%E3%81%AF%E3%83%91%E3%82%B9%E3%83%AF%E3%83%BC%E3%83%89%E3%81%8C%E9%81%95%E3%81%84%E3%81%BE%E3%81%99 HTTP/1.1" 200
+2025-12-27 21:28:40,082 [INFO] fastapi-app: 127.0.0.1 - "POST /login" 303 (0.0037s)
+127.0.0.1:56352 - "POST /login HTTP/1.1" 303
+2025-12-27 21:28:40,088 [INFO] fastapi-app: 127.0.0.1 - "GET /login" 200 (0.0012s)
+127.0.0.1:56352 - "GET /login?error=%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC%E5%90%8D%E3%81%BE%E3%81%9F%E3%81%AF%E3%83%91%E3%82%B9%E3%83%AF%E3%83%BC%E3%83%89%E3%81%8C%E9%81%95%E3%81%84%E3%81%BE%E3%81%99 HTTP/1.1" 200
+2025-12-27 21:28:49,220 [INFO] fastapi-app: 127.0.0.1 - "POST /login" 303 (0.0020s)
+127.0.0.1:56383 - "POST /login HTTP/1.1" 303
+2025-12-27 21:28:49,224 [INFO] fastapi-app: 127.0.0.1 - "GET /login" 200 (0.0006s)
+127.0.0.1:56383 - "GET /login?error=%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC%E5%90%8D%E3%81%BE%E3%81%9F%E3%81%AF%E3%83%91%E3%82%B9%E3%83%AF%E3%83%BC%E3%83%89%E3%81%8C%E9%81%95%E3%81%84%E3%81%BE%E3%81%99 HTTP/1.1" 200
+2025-12-27 21:30:22,176 [INFO] fastapi-app: 127.0.0.1 - "GET /login" 200 (0.0006s)
+127.0.0.1:56461 - "GET /login HTTP/1.1" 200
+2025-12-27 21:34:25,639 [INFO] fastapi-app: 127.0.0.1 - "POST /login" 303 (0.0041s)
+127.0.0.1:56512 - "POST /login HTTP/1.1" 303
+2025-12-27 21:34:25,646 [INFO] fastapi-app: 127.0.0.1 - "GET /login" 200 (0.0012s)
+127.0.0.1:56512 - "GET /login?error=%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC%E5%90%8D%E3%81%BE%E3%81%9F%E3%81%AF%E3%83%91%E3%82%B9%E3%83%AF%E3%83%BC%E3%83%89%E3%81%8C%E9%81%95%E3%81%84%E3%81%BE%E3%81%99 HTTP/1.1" 200
+2025-12-27 21:38:21,308 [ERROR] fastapi-app: Startup error: password cannot be longer than 72 bytes, truncate manually if necessary (e.g. my_password[:72])
+2025-12-27 21:38:24,559 [ERROR] fastapi-app: Startup error: password cannot be longer than 72 bytes, truncate manually if necessary (e.g. my_password[:72])

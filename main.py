@@ -589,11 +589,25 @@ async def send_test_email(email: str = Form(...), current_user: User = Depends(g
         )
         
         if success:
-            return {"message": "Email sent successfully", "to": email}
+            # Return HTML response for HTMX
+            return HTMLResponse(content=f"""
+                <div class="alert alert-success">
+                    ✅ メールが正常に送信されました！<br>
+                    送信先: <strong>{email}</strong>
+                </div>
+            """)
         else:
-            raise HTTPException(status_code=500, detail="Failed to send email")
+            return HTMLResponse(content="""
+                <div class="alert alert-error">
+                    ❌ メール送信に失敗しました。設定を確認してください。
+                </div>
+            """, status_code=500)
             
     except Exception as e:
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        return HTMLResponse(content=f"""
+            <div class="alert alert-error">
+                ❌ エラーが発生しました: {str(e)}
+            </div>
+        """, status_code=500)
