@@ -1,31 +1,52 @@
-from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
-from pydantic import EmailStr
-from typing import List
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# メール設定
-conf = ConnectionConfig(
-    MAIL_USERNAME=os.getenv("MAIL_USERNAME"),
-    MAIL_PASSWORD=os.getenv("MAIL_PASSWORD"),
-    MAIL_FROM=os.getenv("MAIL_FROM"),
-    MAIL_PORT=587,
-    MAIL_SERVER="smtp.gmail.com",  # Gmailの場合
-    MAIL_STARTTLS=True,
-    MAIL_SSL_TLS=False,
-    USE_CREDENTIALS=True,
-    VALIDATE_CERTS=True
-)
-
-async def send_email(subject: str, recipients: List[EmailStr], body: str):
-    message = MessageSchema(
-        subject=subject,
-        recipients=recipients,
-        body=body,
-        subtype=MessageType.html
-    )
-
-    fm = FastMail(conf)
-    await fm.send_message(message)
+def send_email(subject: str, recipient: str, body: str) -> bool:
+    """
+    Send email using standard library smtplib
+    
+    Args:
+        subject: Email subject
+        recipient: Recipient email address
+        body: Email body (HTML or plain text)
+    
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        # Get email settings from environment variables
+        mail_username = os.getenv("MAIL_USERNAME")
+        mail_password = os.getenv("MAIL_PASSWORD")
+        mail_from = os.getenv("MAIL_FROM", mail_username)
+        
+        if not mail_username or not mail_password:
+            print("Error: MAIL_USERNAME or MAIL_PASSWORD not set in .env")
+            return False
+        
+        # Create message
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = mail_from
+        msg['To'] = recipient
+        
+        # Attach HTML body
+        html_part = MIMEText(body, 'html')
+        msg.attach(html_part)
+        
+        # Send via Gmail SMTP
+        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+            server.starttls()
+            server.login(mail_username, mail_password)
+            server.send_message(msg)
+        
+        print(f"Email sent successfully to {recipient}")
+        return True
+        
+    except Exception as e:
+        print(f"Failed to send email: {e}")
+        return False

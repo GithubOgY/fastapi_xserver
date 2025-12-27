@@ -4,7 +4,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from typing import Annotated, Optional
 from sqlalchemy.orm import Session
 from database import SessionLocal, CompanyFundamental, User, Company, UserFavorite
-# from utils.email import send_email  # Temporarily disabled due to library compatibility issues
+from utils.email import send_email
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
@@ -574,3 +574,26 @@ async def get_favorites(db: Session = Depends(get_db), current_user: User = Depe
     
     favorites = db.query(UserFavorite).filter(UserFavorite.user_id == current_user.id).all()
     return [f.ticker for f in favorites]
+
+@app.post("/api/test-email")
+async def send_test_email(email: str = Form(...), current_user: User = Depends(get_current_user)):
+    """Test email sending functionality"""
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    try:
+        success = send_email(
+            subject="【X-Server App】テストメール",
+            recipient=email,
+            body="<h1>メール通知のテストです</h1><p>これが届けば設定は成功です！</p>"
+        )
+        
+        if success:
+            return {"message": "Email sent successfully", "to": email}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to send email")
+            
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
