@@ -351,11 +351,15 @@ async def screener_page(request: Request, current_user: User = Depends(get_curre
 async def screener_results(
     request: Request,
     keyword: str = Query(None),
-    min_revenue: float = Query(None),
-    min_income: float = Query(None),
+    min_revenue: str = Query(None), # Receive as str to handle empty strings
+    min_income: str = Query(None), # Receive as str to handle empty strings
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    # Convert empty strings to None and parse floats
+    revenue_filter = float(min_revenue) if min_revenue and min_revenue.strip() else None
+    income_filter = float(min_income) if min_income and min_income.strip() else None
+
     # Base query
     query = db.query(Company)
     
@@ -377,9 +381,9 @@ async def screener_results(
         
         # Apply financial filters
         if latest_fund:
-            if min_revenue and latest_fund.revenue < min_revenue:
+            if revenue_filter is not None and latest_fund.revenue < revenue_filter:
                 continue
-            if min_income and latest_fund.operating_income < min_income:
+            if income_filter is not None and latest_fund.operating_income < income_filter:
                 continue
                 
             results.append({
@@ -391,7 +395,7 @@ async def screener_results(
                 "net_income": latest_fund.net_income,
                 "eps": latest_fund.eps
             })
-        elif min_revenue or min_income:
+        elif revenue_filter is not None or income_filter is not None:
             # Skip if filters are active but no data exists
             continue
         else:
