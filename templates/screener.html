@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スクリーニング | X-Server App</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        /* Dark Theme (Default) */
+        :root,
+        [data-theme="dark"] {
+            --bg-gradient: radial-gradient(circle at top right, #1e1b4b, #0f172a);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --section-bg: rgba(0, 0, 0, 0.2);
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --success: #10b981;
+            --danger: #f43f5e;
+            --select-bg: rgba(30, 41, 59, 0.8);
+        }
+
+        /* Light Theme */
+        [data-theme="light"] {
+            --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f1f5f9 100%);
+            --glass-bg: rgba(255, 255, 255, 0.8);
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --section-bg: rgba(255, 255, 255, 0.9);
+            --accent: #4f46e5;
+            --accent-glow: rgba(79, 70, 229, 0.2);
+            --text-main: #1e293b;
+            --text-dim: #64748b;
+            --success: #059669;
+            --danger: #dc2626;
+            --select-bg: rgba(241, 245, 249, 0.9);
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            backdrop-filter: blur(12px);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2rem;
+            margin: 0;
+            background: linear-gradient(to right, #fff, #818cf8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .search-panel {
+            background: var(--section-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .input-group label {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        input {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid var(--glass-border);
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
+            color: var(--text-main);
+            outline: none;
+            font-family: inherit;
+        }
+
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.6rem 1.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            height: 40px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            color: var(--text-dim);
+        }
+
+        th {
+            padding: 1rem;
+            text-align: right;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--accent);
+        }
+
+        th:first-child {
+            text-align: left;
+        }
+
+        td {
+            padding: 1rem;
+            text-align: right;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        td:first-child {
+            text-align: left;
+        }
+
+        .htmx-indicator {
+            display: none;
+            opacity: 0;
+            transition: opacity 200ms ease-in;
+        }
+
+        .htmx-request .htmx-indicator {
+            display: inline;
+            opacity: 1;
+        }
+
+        .htmx-request.htmx-indicator {
+            display: inline;
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>銘柄スクリーニング</h1>
+            <div class="nav-links">
+                <a href="/dashboard">ダッシュボード</a>
+                <a href="/compare">銘柄比較</a>
+                <a href="/logout" style="color: var(--danger);">ログアウト</a>
+            </div>
+        </div>
+
+        <form class="search-panel" hx-get="/api/screener/results" hx-target="#results-body" hx-indicator="#loading">
+            <div class="input-group">
+                <label>キーワード (銘柄名・コード)</label>
+                <input type="text" name="keyword" placeholder="例: トヨタ, 7203">
+            </div>
+            <div class="input-group">
+                <label>最低売上高 (億円)</label>
+                <input type="number" name="min_revenue" placeholder="0">
+            </div>
+            <div class="input-group">
+                <label>最低営業利益 (億円)</label>
+                <input type="number" name="min_income" placeholder="0">
+            </div>
+            <button type="submit">検索</button>
+        </form>
+
+        <div style="text-align: center; margin-bottom: 1rem;">
+            <span id="loading" class="htmx-indicator" style="color: var(--accent);">検索中...</span>
+        </div>
+
+        <div class="section" style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>銘柄</th>
+                        <th>最新年度</th>
+                        <th>売上収益 (億円)</th>
+                        <th>営業利益 (億円)</th>
+                        <th>純利益 (億円)</th>
+                        <th>EPS</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="results-body">
+                    <!-- Results will be loaded here -->
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 2rem;">条件を入力して検索してください</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Apply theme
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+        }
+        applyTheme(localStorage.getItem('theme') || 'dark');
+    </script>
+</body>
+
+</html>

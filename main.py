@@ -340,6 +340,77 @@ async def compare_page(request: Request,
         }
     )
 
+@app.get("/screener", response_class=HTMLResponse)
+async def screener_page(request: Request, current_user: User = Depends(get_current_user)):
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+    
+    return templates.TemplateResponse("screener.html", {"request": request, "user": current_user})
+
+@app.get("/api/screener/results", response_class=HTMLResponse)
+async def screener_results(
+    request: Request,
+    keyword: str = Query(None),
+    min_revenue: float = Query(None),
+    min_income: float = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Base query
+    query = db.query(Company)
+    
+    # Filter by keyword
+    if keyword:
+        query = query.filter(
+            (Company.ticker.ilike(f"%{keyword}%")) | 
+            (Company.name.ilike(f"%{keyword}%"))
+        )
+    
+    companies = query.all()
+    results = []
+    
+    for company in companies:
+        # Get latest fundamentals
+        latest_fund = db.query(CompanyFundamental).filter(
+            CompanyFundamental.ticker == company.ticker
+        ).order_by(CompanyFundamental.year.desc()).first()
+        
+        # Apply financial filters
+        if latest_fund:
+            if min_revenue and latest_fund.revenue < min_revenue:
+                continue
+            if min_income and latest_fund.operating_income < min_income:
+                continue
+                
+            results.append({
+                "ticker": company.ticker,
+                "name": company.name,
+                "year": latest_fund.year,
+                "revenue": latest_fund.revenue,
+                "operating_income": latest_fund.operating_income,
+                "net_income": latest_fund.net_income,
+                "eps": latest_fund.eps
+            })
+        elif min_revenue or min_income:
+            # Skip if filters are active but no data exists
+            continue
+        else:
+            # No data but no financial filters -> include with placeholders
+            results.append({
+                "ticker": company.ticker,
+                "name": company.name,
+                "year": "-",
+                "revenue": 0,
+                "operating_income": 0,
+                "net_income": 0,
+                "eps": 0
+            })
+    
+    return templates.TemplateResponse(
+        "partials/screener_results.html", 
+        {"request": request, "results": results}
+    )
+
 @app.post("/admin/sync")
 async def manual_sync(request: Request, ticker: str = "7203.T", db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if not current_user:

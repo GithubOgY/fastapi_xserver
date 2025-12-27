@@ -1,0 +1,23 @@
+{% for r in results %}
+<tr>
+    <td style="text-align: left;">
+        <strong>{{ r.ticker }}</strong><br>
+        <span style="font-size: 0.8rem; color: var(--text-dim);">{{ r.name }}</span>
+    </td>
+    <td>{{ r.year }}</td>
+    <td>{{ "{:,.0f}".format(r.revenue) }}</td>
+    <td>{{ "{:,.0f}".format(r.operating_income) }}</td>
+    <td>{{ "{:,.0f}".format(r.net_income) }}</td>
+    <td>{{ "{:,.2f}".format(r.eps) }}</td>
+    <td>
+        <a href="/dashboard?ticker={{ r.ticker }}"
+            style="font-size: 0.8rem; color: var(--accent); text-decoration: none; border: 1px solid var(--accent); padding: 0.2rem 0.5rem; border-radius: 4px; margin-right: 0.5rem;">
+            詳細
+        </a>
+    </td>
+</tr>
+{% else %}
+<tr>
+    <td colspan="7" style="text-align: center; padding: 2rem;">条件に一致する銘柄は見つかりませんでした</td>
+</tr>
+{% endfor %}
