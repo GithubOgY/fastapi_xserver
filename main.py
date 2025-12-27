@@ -4,7 +4,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from typing import Annotated, Optional
 from sqlalchemy.orm import Session
 from database import SessionLocal, CompanyFundamental, User, Company, UserFavorite
-from utils.email import send_email
+# from utils.email import send_email  # Temporarily disabled due to library compatibility issues
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
