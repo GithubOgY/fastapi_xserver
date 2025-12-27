@@ -204,9 +204,14 @@ def parse_xbrl_financial_data(xbrl_dir: str) -> Dict[str, any]:
 def get_company_financial_data(company_code: str) -> Dict[str, any]:
     """
     Get financial data for a company by its securities code
+    Priority: Annual Report (120) > Quarterly Report (140)
     """
-    # Search for recent documents
-    docs = search_company_documents(company_code=company_code, days_back=180)
+    # First try Annual Report (120) - Look back 365 days
+    docs = search_company_documents(company_code=company_code, doc_type="120", days_back=365)
+    
+    # If not found, try Quarterly Report (140) - Look back 180 days
+    if not docs:
+        docs = search_company_documents(company_code=company_code, doc_type="140", days_back=180)
     
     if not docs:
         logger.warning(f"No documents found for company code {company_code}")
@@ -215,6 +220,8 @@ def get_company_financial_data(company_code: str) -> Dict[str, any]:
     # Use the most recent document
     latest_doc = docs[0]
     doc_id = latest_doc.get("docID")
+    doc_type = latest_doc.get("docDescription", "Unknown Document")
+    logger.info(f"Using document: {doc_type} (ID: {doc_id})")
     
     # Download and parse XBRL
     xbrl_dir = download_xbrl_document(doc_id)
