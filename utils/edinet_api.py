@@ -19,47 +19,44 @@ logger = logging.getLogger(__name__)
 EDINET_API_BASE = "https://api.edinet-fsa.go.jp/api/v2"
 
 # Get API key from environment
+# Note: EDINET_API_KEY should be set in .env file
 EDINET_API_KEY = os.getenv("EDINET_API_KEY", "")
 
-# 勘定科目の英語�E日本語�EチE��ング
+# Account mapping (English to Japanese)
+# Using Unicode escapes to prevent encoding issues during file transfer
+# 売上高, 営業利益, etc.
 ACCOUNT_MAPPING = {
-    # 損益計算書�E�E/L�E�E
-    "NetSales": "売上髁E,
-    "OperatingIncome": "営業利盁E,
-    "OrdinaryIncome": "経常利盁E,
-    "NetIncome": "当期純利盁E,
-    "NetIncomeAttributableToOwnersOfParent": "親会社株主に帰属する当期純利盁E,
-    "GrossProfit": "売上総利盁E,
-    "SellingGeneralAndAdministrativeExpenses": "販売費及�E一般管琁E��",
+    # P/L
+    "NetSales": "\u58b2\u4e0a\u9ad8",
+    "OperatingIncome": "\u55b6\u696d\u5229\u76ca",
+    "OrdinaryIncome": "\u7d4c\u5e38\u5229\u76ca",
+    "NetIncome": "\u5f53\u671f\u7d14\u5229\u76ca",
+    "NetIncomeAttributableToOwnersOfParent": "\u89aa\u4f1a\u793e\u682a\u4e3b\u306b\u5e30\u5c5e\u3059\u308b\u5f53\u671f\u7d14\u5229\u76ca",
+    "GrossProfit": "\u58b2\u4e0a\u7dcf\u5229\u76ca",
+    "SellingGeneralAndAdministrativeExpenses": "\u8ca9\u58f2\u8cbb\u53ca\u3073\u4e00\u822c\u7ba1\u7406\u8cbb",
     
-    # 貸借対照表�E�E/S�E�E
-    "TotalAssets": "総賁E��",
-    "TotalLiabilities": "負債合訁E,
-    "NetAssets": "純賁E��",
-    "CurrentAssets": "流動賁E��",
-    "NonCurrentAssets": "固定賁E��",
+    # B/S
+    "TotalAssets": "\u7dcf\u8cc7\u7523",
+    "TotalLiabilities": "\u8ca0\u50b5\u5408\u8a08",
+    "NetAssets": "\u7d14\u8cc7\u7523",
+    "CurrentAssets": "\u6d41\u52d5\u8cc7\u7523",
+    "NonCurrentAssets": "\u56fa\u5b9a\u8cc7\u7523",
     
-    # キャチE��ュフロー
-    "CashFlowsFromOperatingActivities": "営業活動によるキャチE��ュフロー",
-    "CashFlowsFromInvestingActivities": "投賁E��動によるキャチE��ュフロー",
-    "CashFlowsFromFinancingActivities": "財務活動によるキャチE��ュフロー",
+    # Cash Flow
+    "CashFlowsFromOperatingActivities": "\u55b6\u696d\u6d3b\u52d5\u306b\u3088\u308b\u30ad\u30e3\u30c3\u30b7\u30e5\u30d5\u30ed\u30fc",
+    "CashFlowsFromInvestingActivities": "\u6295\u8cc7\u6d3b\u52d5\u306b\u3088\u308b\u30ad\u30e3\u30c3\u30b7\u30e5\u30d5\u30ed\u30fc",
+    "CashFlowsFromFinancingActivities": "\u8ca1\u52d9\u6d3b\u52d5\u306b\u3088\u308b\u30ad\u30e3\u30c3\u30b7\u30e5\u30d5\u30ed\u30fc",
     
-    # そ�E仁E
-    "BasicEarningsPerShare": "1株当たり当期純利盁E,
-    "DividendPerShare": "1株当たり�E当��",
-    "BookValuePerShare": "1株当たり純賁E��",
+    # Per Share
+    "BasicEarningsPerShare": "1\u682a\u5f53\u305f\u308a\u5f53\u671f\u7d14\u5229\u76ca",
+    "DividendPerShare": "1\u682a\u5f53\u305f\u308a\u914d\u5353\u91d1",
+    "BookValuePerShare": "1\u682a\u5f53\u305f\u308a\u7d14\u8cc7\u7523",
 }
 
 
 def get_document_list(date: str = None) -> List[Dict]:
     """
     Get list of documents submitted on a specific date
-    
-    Args:
-        date: Date in YYYY-MM-DD format (default: yesterday)
-    
-    Returns:
-        List of document metadata
     """
     if date is None:
         # Default to yesterday
@@ -83,19 +80,12 @@ def search_company_documents(company_code: str = None, company_name: str = None,
                              doc_type: str = "120", days_back: int = 365) -> List[Dict]:
     """
     Search for company documents by code or name
-    
-    Args:
-        company_code: Securities code (e.g., "7203" for Toyota)
-        company_name: Company name (e.g., "トヨタ")
-        doc_type: Document type code (120=有価証券報告書, 130=四半期報告書)
-        days_back: Number of days to search back
-    
-    Returns:
-        List of matching documents
+    doc_type 120: Yuuka Shouken Houkokusho (Annual Report)
     """
     matching_docs = []
     
     # Search for the last N days
+    # Note: This can be slow, in production we should optimize or cache
     for i in range(days_back):
         search_date = datetime.now() - timedelta(days=i)
         date_str = search_date.strftime("%Y-%m-%d")
@@ -123,15 +113,9 @@ def search_company_documents(company_code: str = None, company_name: str = None,
 def download_xbrl_document(doc_id: str) -> Optional[str]:
     """
     Download XBRL document and extract to temp directory
-    
-    Args:
-        doc_id: Document ID from EDINET
-    
-    Returns:
-        Path to extracted XBRL directory, or None if failed
     """
     url = f"{EDINET_API_BASE}/documents/{doc_id}"
-    params = {"type": 1, "Subscription-Key": EDINET_API_KEY}  # type=1: Get XBRL ZIP file
+    params = {"type": 1, "Subscription-Key": EDINET_API_KEY}
     
     try:
         response = requests.get(url, params=params, timeout=60)
@@ -161,12 +145,6 @@ def download_xbrl_document(doc_id: str) -> Optional[str]:
 def parse_xbrl_financial_data(xbrl_dir: str) -> Dict[str, any]:
     """
     Parse XBRL financial data and extract key metrics
-    
-    Args:
-        xbrl_dir: Path to extracted XBRL directory
-    
-    Returns:
-        Dictionary of financial data with Japanese labels
     """
     try:
         from edinet_xbrl.edinet_xbrl_parser import EdinetXbrlParser
@@ -189,16 +167,28 @@ def parse_xbrl_financial_data(xbrl_dir: str) -> Dict[str, any]:
         parser = EdinetXbrlParser()
         data = parser.parse_file(xbrl_file)
         
-        # Extract financial data with Japanese labels
+        # Extract financial data using the key mapping
         financial_data = {}
         
         for eng_label, jp_label in ACCOUNT_MAPPING.items():
             try:
                 # Try to get data for this account
+                # Context ref "CurrentYearDuration" is typical for PL items
+                # "CurrentYearInstant" is typical for BS items (needs check)
+                
+                # Try Duration (PL) first
                 value = data.get_data_by_context_ref(
                     key=eng_label,
-                    context_ref="CurrentYearDuration"  # Current fiscal year
+                    context_ref="CurrentYearDuration"
                 )
+                
+                # If not found, try Instant (BS)
+                if value is None:
+                    value = data.get_data_by_context_ref(
+                        key=eng_label,
+                        context_ref="CurrentYearInstant"
+                    )
+                
                 if value:
                     financial_data[jp_label] = value
             except:
@@ -214,12 +204,6 @@ def parse_xbrl_financial_data(xbrl_dir: str) -> Dict[str, any]:
 def get_company_financial_data(company_code: str) -> Dict[str, any]:
     """
     Get financial data for a company by its securities code
-    
-    Args:
-        company_code: Securities code (e.g., "7203")
-    
-    Returns:
-        Dictionary of financial data
     """
     # Search for recent documents
     docs = search_company_documents(company_code=company_code, days_back=180)
