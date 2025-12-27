@@ -122,9 +122,9 @@ def download_xbrl_document(doc_id: str) -> Optional[str]:
 
 
 def parse_xbrl_financial_data(xbrl_dir: str) -> Dict[str, any]:
-    """Parse XBRL financial data and extract key metrics"""
+    """Parse XBRL financial data using lxml (more reliable than edinet-xbrl)"""
     try:
-        from edinet_xbrl.edinet_xbrl_parser import EdinetXbrlParser
+        from lxml import etree
         
         # Find all XBRL files
         xbrl_files = []
@@ -153,40 +153,62 @@ def parse_xbrl_financial_data(xbrl_dir: str) -> Dict[str, any]:
             
         logger.info(f"Parsing: {os.path.basename(xbrl_file)}")
         
-        # Parse XBRL
-        parser = EdinetXbrlParser()
-        data = parser.parse_file(xbrl_file)
+        # Parse XBRL with lxml
+        tree = etree.parse(xbrl_file)
+        root_elem = tree.getroot()
         
-        # Extract financial data
+        # XBRL element mapping (IFRS format to Japanese labels)
+        # Element names found in actual EDINET XBRL files
+        xbrl_mapping = {
+            "OperatingRevenuesIFRS": "\u58f2\u4e0a\u9ad8",
+            "ProfitLossBeforeTaxIFRS": "\u7a0e\u5f15\u524d\u5229\u76ca",
+            "ProfitLossAttributableToOwnersOfParentIFRS": "\u89aa\u4f1a\u793e\u682a\u4e3b\u5e30\u5c5e\u5229\u76ca",
+            "TotalAssetsIFRS": "\u7dcf\u8cc7\u7523",
+            "TotalEquityIFRS": "\u7d14\u8cc7\u7523",
+            "BasicEarningsLossPerShareIFRS": "1\u682a\u5f53\u305f\u308a\u5229\u76ca",
+            "OperatingIncome": "\u55b6\u696d\u5229\u76ca",
+            "NetSales": "\u58f2\u4e0a\u9ad8",
+            "OrdinaryIncome": "\u7d4c\u5e38\u5229\u76ca",
+            "TotalAssets": "\u7dcf\u8cc7\u7523",
+        }
+        
         financial_data = {}
         
-        for eng_label, jp_label in ACCOUNT_MAPPING.items():
-            try:
-                # Try Duration context (P/L items)
-                value = data.get_data_by_context_ref(
-                    key=eng_label,
-                    context_ref="CurrentYearDuration"
-                )
-                
-                # Try Instant context (B/S items)
-                if value is None:
-                    value = data.get_data_by_context_ref(
-                        key=eng_label,
-                        context_ref="CurrentYearInstant"
-                    )
-                
-                if value:
-                    financial_data[jp_label] = value
-            except:
-                continue
+        # Extract financial data from XBRL elements
+        for elem in root_elem.iter():
+            tag = elem.tag
+            # Remove namespace
+            if "}" in tag:
+                tag = tag.split("}")[1]
+            
+            # Check if this element matches any of our mappings
+            for xbrl_key, jp_label in xbrl_mapping.items():
+                if xbrl_key in tag and elem.text and elem.text.strip():
+                    try:
+                        value = elem.text.strip()
+                        # Try to convert to number
+                        if value.replace("-", "").isdigit():
+                            value = int(value)
+                        # Store the value (last occurrence will be kept - usually latest year)
+                        financial_data[jp_label] = value
+                    except:
+                        continue
         
-        return financial_data
+        # Format large numbers for readability
+        formatted_data = {}
+        for key, value in financial_data.items():
+            if isinstance(value, int) and value > 1000000000:
+                # Convert to billions (億円)
+                formatted_data[key] = f"{value / 100000000:,.0f}\u5104\u5186"
+            else:
+                formatted_data[key] = value
+        
+        return formatted_data
     
-    except ImportError:
-        logger.error("edinet-xbrl library not installed")
-        return {}
     except Exception as e:
         logger.error(f"Failed to parse XBRL: {e}")
+        import traceback
+        traceback.print_exc()
         return {}
 
 
