@@ -611,3 +611,70 @@ async def send_test_email(email: str = Form(...), current_user: User = Depends(g
                 ❌ エラーが発生しました: {str(e)}
             </div>
         """, status_code=500)
+
+
+# --- EDINET API Endpoint ---
+@app.post("/api/edinet/search")
+async def search_edinet_company(
+    company_name: str = Form(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Search company financial data from EDINET"""
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    try:
+        from utils.edinet_api import search_company_documents, download_xbrl_document, parse_xbrl_financial_data
+        
+        # Search for documents
+        docs = search_company_documents(company_name=company_name, doc_type="120", days_back=365)
+        
+        if not docs:
+            # Try quarterly report
+            docs = search_company_documents(company_name=company_name, doc_type="140", days_back=180)
+        
+        if not docs:
+            return HTMLResponse(content=f"""
+                <div style="color: #f43f5e; padding: 1rem; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
+                    ❌ 「{company_name}」の書類が見つかりませんでした。
+                </div>
+            """)
+        
+        doc = docs[0]
+        doc_desc = doc.get("docDescription", "")
+        filer_name = doc.get("filerName", "")
+        
+        # Download and parse XBRL
+        xbrl_dir = download_xbrl_document(doc.get("docID"))
+        if not xbrl_dir:
+            return HTMLResponse(content="""
+                <div style="color: #f43f5e; padding: 1rem; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
+                    ❌ データのダウンロードに失敗しました。
+                </div>
+            """)
+        
+        financial_data = parse_xbrl_financial_data(xbrl_dir)
+        
+        # Build HTML response
+        rows = ""
+        for label, value in financial_data.items():
+            rows += f"<tr><td style='padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1);'>{label}</td><td style='padding: 0.5rem; text-align: right; border-bottom: 1px solid rgba(255,255,255,0.1);'>{value}</td></tr>"
+        
+        return HTMLResponse(content=f"""
+            <div style="background: rgba(99, 102, 241, 0.1); border-radius: 12px; padding: 1.5rem;">
+                <h3 style="color: #818cf8; margin: 0 0 0.5rem 0; font-size: 1.1rem;">📊 {filer_name}</h3>
+                <p style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 1rem 0;">{doc_desc}</p>
+                <table style="width: 100%; border-collapse: collapse; color: #e2e8f0; font-size: 0.9rem;">
+                    {rows if rows else "<tr><td colspan='2'>財務データが取得できませんでした</td></tr>"}
+                </table>
+            </div>
+        """)
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return HTMLResponse(content=f"""
+            <div style="color: #f43f5e; padding: 1rem; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
+                ❌ エラー: {str(e)}
+            </div>
+        """, status_code=500)
