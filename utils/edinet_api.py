@@ -18,37 +18,37 @@ logger = logging.getLogger(__name__)
 # EDINET API Base URL
 EDINET_API_BASE = "https://disclosure.edinet-fsa.go.jp/api/v2"
 
-# 勘定科目の英語→日本語マッピング
+# 勘定科目の英語�E日本語�EチE��ング
 ACCOUNT_MAPPING = {
-    # 損益計算書（P/L）
-    "NetSales": "売上高",
-    "OperatingIncome": "営業利益",
-    "OrdinaryIncome": "経常利益",
-    "NetIncome": "当期純利益",
-    "NetIncomeAttributableToOwnersOfParent": "親会社株主に帰属する当期純利益",
-    "GrossProfit": "売上総利益",
-    "SellingGeneralAndAdministrativeExpenses": "販売費及び一般管理費",
+    # 損益計算書�E�E/L�E�E
+    "NetSales": "売上髁E,
+    "OperatingIncome": "営業利盁E,
+    "OrdinaryIncome": "経常利盁E,
+    "NetIncome": "当期純利盁E,
+    "NetIncomeAttributableToOwnersOfParent": "親会社株主に帰属する当期純利盁E,
+    "GrossProfit": "売上総利盁E,
+    "SellingGeneralAndAdministrativeExpenses": "販売費及�E一般管琁E��",
     
-    # 貸借対照表（B/S）
-    "TotalAssets": "総資産",
-    "TotalLiabilities": "負債合計",
-    "NetAssets": "純資産",
-    "CurrentAssets": "流動資産",
-    "NonCurrentAssets": "固定資産",
+    # 貸借対照表�E�E/S�E�E
+    "TotalAssets": "総賁E��",
+    "TotalLiabilities": "負債合訁E,
+    "NetAssets": "純賁E��",
+    "CurrentAssets": "流動賁E��",
+    "NonCurrentAssets": "固定賁E��",
     
-    # キャッシュフロー
-    "CashFlowsFromOperatingActivities": "営業活動によるキャッシュフロー",
-    "CashFlowsFromInvestingActivities": "投資活動によるキャッシュフロー",
-    "CashFlowsFromFinancingActivities": "財務活動によるキャッシュフロー",
+    # キャチE��ュフロー
+    "CashFlowsFromOperatingActivities": "営業活動によるキャチE��ュフロー",
+    "CashFlowsFromInvestingActivities": "投賁E��動によるキャチE��ュフロー",
+    "CashFlowsFromFinancingActivities": "財務活動によるキャチE��ュフロー",
     
-    # その他
-    "BasicEarningsPerShare": "1株当たり当期純利益",
-    "DividendPerShare": "1株当たり配当金",
-    "BookValuePerShare": "1株当たり純資産",
+    # そ�E仁E
+    "BasicEarningsPerShare": "1株当たり当期純利盁E,
+    "DividendPerShare": "1株当たり�E当��",
+    "BookValuePerShare": "1株当たり純賁E��",
 }
 
 
-def get_document_list(date: str = None) -&gt; List[Dict]:
+def get_document_list(date: str = None) -> List[Dict]:
     """
     Get list of documents submitted on a specific date
     
@@ -77,7 +77,7 @@ def get_document_list(date: str = None) -&gt; List[Dict]:
 
 
 def search_company_documents(company_code: str = None, company_name: str = None, 
-                             doc_type: str = "120", days_back: int = 365) -&gt; List[Dict]:
+                             doc_type: str = "120", days_back: int = 365) -> List[Dict]:
     """
     Search for company documents by code or name
     
@@ -117,7 +117,7 @@ def search_company_documents(company_code: str = None, company_name: str = None,
     return matching_docs
 
 
-def download_xbrl_document(doc_id: str) -&gt; Optional[str]:
+def download_xbrl_document(doc_id: str) -> Optional[str]:
     """
     Download XBRL document and extract to temp directory
     
@@ -155,7 +155,7 @@ def download_xbrl_document(doc_id: str) -&gt; Optional[str]:
         return None
 
 
-def parse_xbrl_financial_data(xbrl_dir: str) -&gt; Dict[str, any]:
+def parse_xbrl_financial_data(xbrl_dir: str) -> Dict[str, any]:
     """
     Parse XBRL financial data and extract key metrics
     
@@ -208,7 +208,7 @@ def parse_xbrl_financial_data(xbrl_dir: str) -&gt; Dict[str, any]:
         return {}
 
 
-def get_company_financial_data(company_code: str) -&gt; Dict[str, any]:
+def get_company_financial_data(company_code: str) -> Dict[str, any]:
     """
     Get financial data for a company by its securities code
     
