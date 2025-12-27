@@ -12,6 +12,7 @@ python-dotenv==1.0.1
 psycopg2-binary==2.9.9
 requests==2.31.0
 curl_cffi>=0.5.10
-fastapi-mail
+fastapi-mail>=1.4.1
 email-validator
+pydantic>=2.0
 pydantic-settings
