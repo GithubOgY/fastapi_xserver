@@ -14,3 +14,4 @@ requests==2.31.0
 curl_cffi>=0.5.10
 fastapi-mail
 email-validator
+pydantic-settings
