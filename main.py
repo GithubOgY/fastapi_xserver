@@ -686,26 +686,18 @@ async def search_edinet_company(
         if sec_code:
             code_only = sec_code[:4] # First 4 digits
             history_btn = f"""
+            <style>
+                .btn-loading {{ display: none; }}
+                .htmx-request .btn-default {{ display: none; }}
+                .htmx-request .btn-loading {{ display: inline; }}
+            </style>
             <button hx-get="/api/edinet/history/{code_only}" 
                     hx-target="#edinet-history-container" 
                     hx-swap="innerHTML"
-                    hx-disabled-elt="this"
-                    id="history-btn-{code_only}"
-                    class="mt-10 w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-wait text-white rounded-lg text-sm font-medium transition-all">
-                直近の財務推移グラフを表示
+                    class="mt-10 w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-all">
+                <span class="btn-default">直近の財務推移グラフを表示</span>
+                <span class="btn-loading">⏳ データ取得中... (数十秒かかる場合があります)</span>
             </button>
-            <script>
-                (function() {{
-                    const btn = document.getElementById('history-btn-{code_only}');
-                    const originalText = btn.textContent;
-                    btn.addEventListener('htmx:beforeRequest', function() {{
-                        btn.textContent = '⏳ データ取得中... (数十秒かかる場合があります)';
-                    }});
-                    btn.addEventListener('htmx:afterRequest', function() {{
-                        btn.textContent = originalText;
-                    }});
-                }})();
-            </script>
             <div id="edinet-history-container" class="mt-4"></div>
             """
         
@@ -1027,23 +1019,10 @@ async def get_edinet_history(code: str, current_user: User = Depends(get_current
                 <button hx-get="/api/edinet/ratios/{code}" 
                         hx-target="#edinet-ratios-container" 
                         hx-swap="innerHTML"
-                        hx-disabled-elt="this"
-                        id="ratios-btn-{code}"
-                        class="mt-6 w-full py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-wait text-white rounded-lg text-sm font-medium transition-all">
-                    財務指標グラフを表示 (ROE・自己資本比率・EPS)
+                        class="mt-6 w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-all">
+                    <span class="btn-default">財務指標グラフを表示 (ROE・自己資本比率・EPS)</span>
+                    <span class="btn-loading">⏳ データ取得中...</span>
                 </button>
-                <script>
-                    (function() {{
-                        const btn = document.getElementById('ratios-btn-{code}');
-                        const originalText = btn.textContent;
-                        btn.addEventListener('htmx:beforeRequest', function() {{
-                            btn.textContent = '⏳ データ取得中...';
-                        }});
-                        btn.addEventListener('htmx:afterRequest', function() {{
-                            btn.textContent = originalText;
-                        }});
-                    }})();
-                </script>
                 <div id="edinet-ratios-container" class="mt-4"></div>
             </div>
         """)
