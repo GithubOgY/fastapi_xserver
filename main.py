@@ -1619,13 +1619,13 @@ async def get_stock_news(ticker_code: str):
         
         for item in news_items:
             html += f"""
-            <a href="{item['link']}" target="_blank" class="block group">
+            <a href="{item['link']}" target="_blank" class="block group" style="text-decoration: none;">
                 <div class="bg-gray-800/50 hover:bg-gray-700/50 backdrop-blur border border-gray-700 hover:border-green-500/50 rounded-xl p-3 transition-all duration-200 shadow-sm hover:shadow-md">
                     <div class="flex items-center justify-between mb-1.5">
                         <span class="text-[0.7rem] font-mono text-green-400 border border-green-500/30 rounded px-1.5 py-0.5 truncate max-w-[100px]">{item['source']}</span>
                         <span class="text-[0.7rem] text-gray-500">{item['published']}</span>
                     </div>
-                    <h4 class="text-sm font-medium text-white group-hover:text-gray-200 leading-snug line-clamp-3">
+                    <h4 class="text-sm font-medium text-white group-hover:text-green-300 leading-snug line-clamp-3" style="color: white !important;">
                         {item['title']}
                     </h4>
                 </div>
