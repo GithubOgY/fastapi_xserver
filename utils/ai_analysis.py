@@ -18,7 +18,40 @@ def setup_gemini():
         return None
     
     genai.configure(api_key=api_key)
+    
+    # Try to list models to confirm, or just return the model object
+    # We will handle the 404 in the generation call by retrying with fallbacks
     return genai.GenerativeModel(model_name)
+
+def generate_with_fallback(prompt: str, api_key: str, preferred_model: str) -> str:
+    """Try to generate content with preferred model, fallback if not found"""
+    models_to_try = [preferred_model, "gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-flash-001", "gemini-pro"]
+    # Remove duplicates while preserving order
+    models_to_try = list(dict.fromkeys(models_to_try))
+    
+    last_error = None
+    import google.generativeai as genai
+
+    for model_name in models_to_try:
+        try:
+            model = genai.GenerativeModel(model_name)
+            response = model.generate_content(
+                prompt,
+                generation_config=genai.types.GenerationConfig(
+                    candidate_count=1,
+                    max_output_tokens=4000,
+                    temperature=0.7,
+                )
+            )
+            return response.text
+        except Exception as e:
+            logger.warning(f"Model {model_name} failed: {e}")
+            last_error = e
+            if "API key not valid" in str(e):
+                raise e # Don't retry invalid keys
+            continue
+            
+    raise last_error
 
 def analyze_stock_with_ai(ticker_code: str, financial_context: Dict[str, Any], company_name: str = "") -> str:
     """
@@ -78,9 +111,14 @@ def analyze_stock_with_ai(ticker_code: str, financial_context: Dict[str, Any], c
 """
 
     try:
-        response = model.generate_content(prompt)
+        # Use fallback mechanism
+        api_key = os.getenv("GEMINI_API_KEY")
+        model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+        
+        response_text = generate_with_fallback(prompt, api_key, model_name)
+        
         # MarkdownをHTMLに変換
-        analysis_html = markdown.markdown(response.text, extensions=['extra', 'nl2br'])
+        analysis_html = markdown.markdown(response_text, extensions=['extra', 'nl2br'])
         return analysis_html
     except Exception as e:
         logger.error(f"AI Analysis failed: {e}")
