@@ -191,6 +191,19 @@
             document.documentElement.setAttribute('data-theme', theme);
         }
         applyTheme(localStorage.getItem('theme') || 'dark');
+
+        // Auto-search last query on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            var lastQuery = '{{ last_query }}';
+            if (lastQuery && lastQuery.trim() !== '') {
+                var input = document.querySelector('input[name="company_name"]');
+                if (input) {
+                    input.value = lastQuery;
+                    // Trigger HTMX request
+                    htmx.trigger(input.form, 'submit');
+                }
+            }
+        });
     </script>
 </body>
 

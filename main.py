@@ -302,11 +302,15 @@ async def edinet_page(request: Request,
     if not current_user:
         return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
     
+    # Read last EDINET search query from cookie
+    last_query = request.cookies.get("last_edinet_query", "")
+    
     return templates.TemplateResponse(
         "edinet.html", 
         {
             "request": request, 
-            "user": current_user
+            "user": current_user,
+            "last_query": last_query
         }
     )
 
@@ -794,6 +798,11 @@ async def search_edinet_company(
                 {history_btn}
             </div>
         """)
+        
+        # Create response and set cookie to remember last EDINET search
+        response = HTMLResponse(content=html_content)
+        response.set_cookie(key="last_edinet_query", value=company_name, max_age=86400*30)  # 30 days
+        return response
         
     except Exception as e:
         import traceback
