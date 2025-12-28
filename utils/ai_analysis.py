@@ -34,6 +34,7 @@ def generate_with_fallback(prompt: str, api_key: str, preferred_model: str) -> s
 
     for model_name in models_to_try:
         try:
+            logger.info(f"Attempting AI analysis with model: {model_name}")
             model = genai.GenerativeModel(model_name)
             response = model.generate_content(
                 prompt,
@@ -49,6 +50,14 @@ def generate_with_fallback(prompt: str, api_key: str, preferred_model: str) -> s
             last_error = e
             if "API key not valid" in str(e):
                 raise e # Don't retry invalid keys
+            
+            # If 404, let's try to list models for debugging once
+            if "not found" in str(e).lower() and model_name == models_to_try[-1]:
+                try:
+                    available_models = [m.name for m in genai.list_models()]
+                    logger.error(f"Available models for this key: {available_models}")
+                except Exception as list_err:
+                    logger.error(f"Failed to list models: {list_err}")
             continue
             
     raise last_error
