@@ -15,6 +15,8 @@ import os
 import yfinance as yf
 import pandas as pd
 import requests
+from utils.edinet_enhanced import get_financial_history, format_financial_data
+from utils.growth_analysis import analyze_growth_quality
 
 # Load environment variables
 load_dotenv()
@@ -982,9 +984,32 @@ async def lookup_yahoo_finance(
                     </tr>
                 """
         
+        # -------------------------------------------------------------------------
+        # Growth & Quality Analysis
+        # -------------------------------------------------------------------------
+        growth_analysis = analyze_growth_quality(ticker)
+        
+        # Prepare growth chart data (10% target)
+        growth_labels = []
+        growth_rev_actual = []
+        growth_rev_target = []
+        
+        if growth_analysis["history"]:
+            # Use up to 5 years for the growth comparison
+            hist = growth_analysis["history"][-5:]
+            if len(hist) > 0:
+                start_rev = hist[0]["revenue"]
+                for i, h in enumerate(hist):
+                    growth_labels.append(h["date"][:4])
+                    growth_rev_actual.append(to_oku(h["revenue"]))
+                    # Target line: Start revenue * (1.10 ^ years)
+                    target = start_rev * (1.10 ** i)
+                    growth_rev_target.append(to_oku(target))
+
         # Generate unique chart IDs
         chart_id1 = f"perf_{code_input}_{int(time.time())}"
         chart_id2 = f"cf_{code_input}_{int(time.time())}"
+        chart_id3 = f"growth_{code_input}_{int(time.time())}"
         
         # Build clean HTML response with cookie to remember last ticker
         html_content = f"""
@@ -1102,6 +1127,106 @@ async def lookup_yahoo_finance(
                                 x: {{ grid: {{ display: false }}, ticks: {{ color: '#64748b', font: {{ size: 10 }} }} }}
                             }},
                             plugins: {{ legend: {{ labels: {{ color: '#94a3b8', font: {{ size: 10 }} }} }} }}
+                        }}
+                    }});
+                }})();
+                </script>
+            </div>
+
+            <!-- Growth & Quality Analysis (OOB Swap) -->
+            <div id="growth-analysis-section" class="section" hx-swap-oob="true" style="margin-top: 1rem;">
+                <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; margin-bottom: 1rem; color: #10b981; text-align: center;">
+                    🚀 成長性・クオリティ分析 (年率10%目標)
+                </h2>
+                
+                <!-- Growth Charts & Scorecards -->
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+                    <!-- Growth vs Target Line Chart -->
+                    <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem;">
+                        <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 0.75rem 0; text-align: center;">売上高成長 vs 10%目標ライン</h4>
+                        <div style="height: 250px; position: relative;">
+                            <canvas id="{chart_id3}"></canvas>
+                        </div>
+                        <p style="font-size: 0.7rem; color: #475569; margin-top: 0.5rem; text-align: center;">
+                            ※点線は5年前(または開始点)からの年率10%成長のシミュレーション
+                        </p>
+                    </div>
+                    
+                    <!-- Growth Scorecards -->
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 1rem;">
+                            <div style="color: #10b981; font-size: 0.75rem; font-weight: 600;">売上高 CAGR (3年)</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: #f8fafc; margin-top: 0.25rem;">
+                                {f'{growth_analysis["revenue_cagr_3y"]}%' if growth_analysis["revenue_cagr_3y"] is not None else '-'}
+                            </div>
+                            <div style="font-size: 0.7rem; color: {'#10b981' if growth_analysis['is_high_growth'] else '#64748b'}; margin-top: 0.25rem;">
+                                {'✅ 10%目標達成' if growth_analysis['is_high_growth'] else '基準未達 / データ不足'}
+                            </div>
+                        </div>
+                        
+                        <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 1rem;">
+                            <div style="color: #818cf8; font-size: 0.75rem; font-weight: 600;">EPS CAGR (3年)</div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: #f8fafc; margin-top: 0.25rem;">
+                                {f'{growth_analysis["eps_cagr_3y"]}%' if growth_analysis["eps_cagr_3y"] is not None else '-'}
+                            </div>
+                            <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 0.25rem;">
+                                連続増収: {growth_analysis["consecutive_growth_years"]}年
+                            </div>
+                        </div>
+
+                        <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 1rem;">
+                            <div style="color: #f59e0b; font-size: 0.75rem; font-weight: 600;">利益率トレンド</div>
+                            <div style="font-size: 1.1rem; font-weight: 700; color: #f8fafc; margin-top: 0.25rem; text-transform: capitalize;">
+                                {growth_analysis["margin_trend"]}
+                            </div>
+                            <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 0.25rem;">
+                                最新の収益安定性判定
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                (function() {{
+                    const ctx = document.getElementById('{chart_id3}').getContext('2d');
+                    new Chart(ctx, {{
+                        type: 'bar',
+                        data: {{
+                            labels: {growth_labels},
+                            datasets: [
+                                {{
+                                    label: '実績売上高',
+                                    data: {growth_rev_actual},
+                                    backgroundColor: 'rgba(16, 185, 129, 0.6)',
+                                    borderColor: '#10b981',
+                                    borderWidth: 1
+                                }},
+                                {{
+                                    label: '10%成長目標ライン',
+                                    data: {growth_rev_target},
+                                    type: 'line',
+                                    borderColor: '#fbbf24',
+                                    borderDash: [5, 5],
+                                    borderWidth: 2,
+                                    fill: false,
+                                    pointRadius: 0
+                                }}
+                            ]
+                        }},
+                        options: {{
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {{
+                                y: {{ 
+                                    grid: {{ color: 'rgba(255,255,255,0.05)' }},
+                                    ticks: {{ color: '#64748b' }},
+                                    title: {{ display: true, text: '億円', color: '#64748b' }}
+                                }},
+                                x: {{ grid: {{ display: false }}, ticks: {{ color: '#64748b' }} }}
+                            }},
+                            plugins: {{
+                                legend: {{ labels: {{ color: '#94a3b8' }} }}
+                            }}
                         }}
                     }});
                 }})();
@@ -1773,6 +1898,11 @@ async def get_edinet_ratios(code: str, current_user: User = Depends(get_current_
     
     try:
         from utils.edinet_enhanced import get_financial_history, format_financial_data
+        from utils.growth_analysis import analyze_growth_quality
+        import pandas as pd
+        import numpy as np
+        import time
+        import yfinance as yf
         from utils.financial_analysis import analyze_company_performance
         
         # Fetch history (reuse the same function)
