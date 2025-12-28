@@ -909,6 +909,69 @@ async def lookup_yahoo_finance(
                         <div style="color: #f8fafc; font-weight: 600;">{roe_str}</div>
                     </div>
                 </div>
+                </div>
+            </div>
+
+            <!-- OOB Swap for Financial Chart Section -->
+            <div id="chart-section" class="section" hx-swap-oob="true">
+                <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
+                    📊 業績推移グラフ
+                </h2>
+                <div id="chart-container" style="height: 300px; min-height: 300px; position: relative; width: 100%;">
+                    <canvas id="financialChart"></canvas>
+                </div>
+                <script>
+                    (function() {{
+                        // Destroy existing chart if any
+                        const canvas = document.getElementById('financialChart');
+                        const oldChart = Chart.getChart(canvas);
+                        if (oldChart) {{
+                            oldChart.destroy();
+                        }}
+                        
+                        // Fetch new data via HTMX or simply re-render if data is available in the OOB payload
+                        // For now, simpler approach: trigger a reload of the chart via the existing endpoint?
+                        // Actually, let's inject a button or script to fetch the chart data for THIS company.
+                        // Or better yet, render the chart script directly here if we have data.
+                        
+                        // Let's call the EDINET history endpoint to populate this chart properly
+                        htmx.ajax('GET', '/api/edinet/history/{symbol}', {{target: '#chart-container', swap: 'innerHTML'}});
+                    }})();
+                </script>
+            </div>
+
+            <!-- OOB Swap for Financial Data Section -->
+            <div id="financial-data-section" class="section" hx-swap-oob="true">
+                <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
+                    📈 {name} 財務推移
+                </h2>
+                
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>決算期</th>
+                                <th>売上収益 (億円)</th>
+                                <th>営業利益 (億円)</th>
+                                <th>純利益 (億円)</th>
+                                <th>EPS (円)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 2rem; color: #64748b;">
+                                    データ取得中...<br>
+                                    <button class="mt-2 px-4 py-2 bg-indigo-600 rounded text-white text-sm"
+                                            hx-get="/api/edinet/history/{symbol}" 
+                                            hx-target="#chart-container" 
+                                            hx-swap="innerHTML">
+                                        詳細データをロード
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         """)
         
@@ -943,7 +1006,7 @@ async def get_edinet_history(code: str, current_user: User = Depends(get_current
         fin_cf_data = []     # 財務CF
         net_cf_data = []     # ネットCF
         
-        table_rows = ""
+        financial_table_rows = ""
         
         # Sort oldest to newest
         for data in history:
@@ -971,44 +1034,27 @@ async def get_edinet_history(code: str, current_user: User = Depends(get_current
             net_cf_val = op_cf_val + inv_cf_val + fin_cf_val
             net_cf_data.append(round(net_cf_val, 1))
             
-            # Add to table
+            # Add to financial table rows
             formatted = format_financial_data(norm)
-            table_rows += f"""
+            financial_table_rows += f"""
             <tr class="hover:bg-gray-700/30 transition-colors">
-                <td class="p-2 text-gray-300 border-b border-gray-700/50">{period}</td>
-                <td class="p-2 text-right text-blue-300 border-b border-gray-700/50">{formatted.get('営業CF', '-')}</td>
-                <td class="p-2 text-right text-red-300 border-b border-gray-700/50">{formatted.get('投資CF', '-')}</td>
-                <td class="p-2 text-right text-yellow-300 border-b border-gray-700/50">{formatted.get('財務CF', '-')}</td>
-                <td class="p-2 text-right text-green-300 border-b border-gray-700/50">{round(net_cf_val, 1)}億円</td>
+                <td class="p-3 text-gray-300 border-b border-gray-700/50">{period}</td>
+                <td class="p-3 text-right text-gray-300 border-b border-gray-700/50">{formatted.get('売上高', '-')}</td>
+                <td class="p-3 text-right text-emerald-400 border-b border-gray-700/50">{formatted.get('営業利益', '-')}</td>
+                <td class="p-3 text-right text-rose-400 border-b border-gray-700/50">{formatted.get('当期純利益', '-')}</td>
+                <td class="p-3 text-right text-gray-300 border-b border-gray-700/50">{formatted.get('EPS', '-')}</td>
             </tr>
             """
 
-        # Generate unique chart ID
-        chart_id = f"historyChart_{code}_{int(time.time())}"
+        chart_id = f"cfChart_{code}_{int(time.time())}"
         
-        return HTMLResponse(content=f"""
+        # Prepare Chart HTML
+        chart_html = f"""
             <div class="mt-6 bg-gray-900/50 rounded-xl p-4 border border-gray-700">
                 <h4 class="text-lg font-bold text-gray-200 mb-4">キャッシュフロー推移 (5年)</h4>
                 
                 <div class="h-64 mb-6">
                     <canvas id="{chart_id}"></canvas>
-                </div>
-                
-                <div class="overflow-x-auto">
-                    <table class="w-full text-xs text-left">
-                        <thead>
-                            <tr>
-                                <th class="p-2 text-gray-500">決算期</th>
-                                <th class="p-2 text-right text-blue-400">営業CF</th>
-                                <th class="p-2 text-right text-red-400">投資CF</th>
-                                <th class="p-2 text-right text-yellow-400">財務CF</th>
-                                <th class="p-2 text-right text-green-400">ネットCF</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {table_rows}
-                        </tbody>
-                    </table>
                 </div>
                 
                 <script>
@@ -1022,33 +1068,32 @@ async def get_edinet_history(code: str, current_user: User = Depends(get_current
                                     {{
                                         label: '営業CF (億円)',
                                         data: {op_cf_data},
-                                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
-                                        borderColor: 'rgba(59, 130, 246, 1)',
-                                        borderWidth: 1,
+                                        backgroundColor: 'rgba(16, 185, 129, 0.5)',
+                                        borderColor: '#10b981',
+                                        borderWidth: 1
                                     }},
                                     {{
                                         label: '投資CF (億円)',
                                         data: {inv_cf_data},
-                                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
-                                        borderColor: 'rgba(239, 68, 68, 1)',
-                                        borderWidth: 1,
+                                        backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                                        borderColor: '#3b82f6',
+                                        borderWidth: 1
                                     }},
                                     {{
                                         label: '財務CF (億円)',
                                         data: {fin_cf_data},
-                                        backgroundColor: 'rgba(234, 179, 8, 0.7)',
-                                        borderColor: 'rgba(234, 179, 8, 1)',
-                                        borderWidth: 1,
+                                        backgroundColor: 'rgba(244, 63, 94, 0.5)',
+                                        borderColor: '#f43f5e',
+                                        borderWidth: 1
                                     }},
                                     {{
                                         label: 'ネットCF (億円)',
                                         data: {net_cf_data},
                                         type: 'line',
-                                        borderColor: 'rgba(34, 197, 94, 1)',
-                                        backgroundColor: 'rgba(34, 197, 94, 0.2)',
-                                        borderWidth: 3,
-                                        fill: false,
-                                        tension: 0.1,
+                                        borderColor: '#fbbf24',
+                                        borderWidth: 2,
+                                        tension: 0.3,
+                                        pointBackgroundColor: '#fbbf24'
                                     }}
                                 ]
                             }},
@@ -1084,12 +1129,57 @@ async def get_edinet_history(code: str, current_user: User = Depends(get_current
                         hx-target="#edinet-ratios-container" 
                         hx-swap="innerHTML"
                         class="mt-6 w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-all">
-                    <span class="btn-default">財務指標グラフを表示 (ROE・自己資本比率・EPS)</span>
+                    <span class="btn-default">財務指標グラフを表示 (ROE・自己資本比率・EPS) (+投資分析サマリー)</span>
                     <span class="btn-loading">⏳ データ取得中...</span>
                 </button>
                 <div id="edinet-ratios-container" class="mt-4"></div>
             </div>
-        """)
+        """
+        
+        # Prepare Financial Data Table OOB
+        # But OOB swap replaces the whole element. So we should query DB or just use code.
+        
+        # Simple DB query for name
+        db = SessionLocal()
+        try:
+            company = db.query(Company).filter(Company.ticker == code).first()
+            if not company and code.endswith('.T'):
+                 company = db.query(Company).filter(Company.ticker == code[:-2]).first()
+            company_name = company.name if company else code
+        except:
+             company_name = code
+        finally:
+            db.close()
+            
+        data_table_oob = f"""
+        <div id="financial-data-section" class="section" hx-swap-oob="true">
+            <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
+                📈 {company_name} 財務推移
+            </h2>
+            
+            <div style="overflow-x: auto;">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr>
+                            <th class="p-3 text-gray-400 border-b border-gray-700">決算期</th>
+                            <th class="p-3 text-right text-gray-400 border-b border-gray-700">売上高</th>
+                            <th class="p-3 text-right text-emerald-400 border-b border-gray-700">営業利益</th>
+                            <th class="p-3 text-right text-rose-400 border-b border-gray-700">純利益</th>
+                            <th class="p-3 text-right text-gray-400 border-b border-gray-700">EPS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {financial_table_rows}
+                    </tbody>
+                </table>
+            </div>
+            <p style="font-size: 0.75rem; color: #64748b; margin-top: 1.5rem; text-align: center;">
+                ※ EDINET (有価証券報告書) データおよび XBRL から抽出
+            </p>
+        </div>
+        """
+        
+        return HTMLResponse(content=chart_html + data_table_oob)
         
     except Exception as e:
         import traceback
