@@ -85,15 +85,9 @@ def analyze_stock_with_ai(ticker_code: str, financial_context: Dict[str, Any], c
         </div>
         """
 
-    # 1. EDINETから定性情報を取得（試行）
+    # 1. EDINETから定性情報を取得
     edinet_text = ""
     try:
-        # 直近30日の書類を取得（有価証券報告書 or 四半期報告書）
-        from main import get_latest_edinet_doc_id_by_ticker # 必要に応じてmainからインポート
-        doc_id = None
-        # main.py の既存ロジックを流用して doc_id を特定することを想定
-        # ここでは後ほど main.py 側で doc_id を渡すか、内部で検索する
-        # ※ 実装の簡略化のため、financial_context に edinet_data が入っているか確認する
         edinet_data = financial_context.get("edinet_data", {})
         if edinet_data and "text_data" in edinet_data:
             text_blocks = edinet_data["text_data"]
