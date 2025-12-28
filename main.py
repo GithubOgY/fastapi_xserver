@@ -912,23 +912,24 @@ async def search_edinet_company(
                     🤖 AIアナリスト・レポート
                 </h4>
                 <div id="ai-analysis-container">
-                    <button style="width: 100%; padding: 1rem; background: linear-gradient(135deg, #9333ea, #db2777); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: opacity 0.2s;"
+                    <button id="ai-gen-btn-{code_only}" 
+                        style="width: 100%; padding: 1rem; background: linear-gradient(135deg, #9333ea, #db2777); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s;"
                         onmouseover="this.style.opacity='0.9'"
                         onmouseout="this.style.opacity='1'"
                         hx-post="/api/ai/analyze"
                         hx-target="#ai-analysis-content"
-                        hx-indicator="#ai-spinner-edinet"
-                        hx-vals='{{"ticker_code": "{code_only}"}}'>
-                        <span class="btn-text">AIによる詳細分析を生成 (Gemini 2.0 Flash)</span>
-                        <span class="btn-loading" style="display: none;">✨ 分析を生成中... (Gemini 2.0 Flash)</span>
-                        <span id="ai-spinner-edinet" class="htmx-indicator" style="border: 2px solid white; border-top-color: transparent; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: none; margin-left: 0.5rem;"></span>
+                        hx-vals='{{"ticker_code": "{code_only}"}}'
+                        onclick="document.getElementById('btn-txt-{code_only}').style.display='none'; document.getElementById('btn-load-{code_only}').style.display='flex'; this.disabled=true; this.style.opacity='0.7'; this.style.cursor='wait';"
+                        hx-on::after-request="document.getElementById('btn-txt-{code_only}').style.display='block'; document.getElementById('btn-load-{code_only}').style.display='none'; this.disabled=false; this.style.opacity='1'; this.style.cursor='pointer';">
+                        
+                        <span id="btn-txt-{code_only}">AIによる詳細分析を生成 (Gemini 2.0 Flash)</span>
+                        
+                        <span id="btn-load-{code_only}" style="display: none; align-items: center; gap: 0.5rem;">
+                            <span style="border: 2px solid white; border-top-color: transparent; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite;"></span>
+                            <span>分析を生成中... (数秒かかります)</span>
+                        </span>
                     </button>
-                    <style> 
-                        @keyframes spin {{ to {{ transform: rotate(360deg); }} }}
-                        .htmx-request #ai-spinner-edinet {{ display: inline-block !important; }}
-                        .htmx-request .btn-text {{ display: none; }}
-                        .htmx-request .btn-loading {{ display: inline !important; }}
-                    </style>
+                    <style>@keyframes spin {{ to {{ transform: rotate(360deg); }} }}</style>
                     <div id="ai-analysis-content" style="margin-top: 1rem; color: #e2e8f0; line-height: 1.7; font-size: 0.95rem;"></div>
                 </div>
             </div>
