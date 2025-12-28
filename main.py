@@ -756,6 +756,107 @@ async def search_edinet_company(
         """, status_code=500)
 
 
+@app.post("/api/yahoo-finance/lookup")
+async def lookup_yahoo_finance(
+    ticker_code: str = Form(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Lookup any stock by code using Yahoo Finance API"""
+    if not current_user:
+        return HTMLResponse(content="<div class='text-red-400 p-4'>ログインが必要です</div>")
+    
+    # Clean the ticker code
+    code = ticker_code.strip()
+    if not code:
+        return HTMLResponse(content="<div class='text-yellow-400 p-4'>銘柄コードを入力してください</div>")
+    
+    # For Japanese stocks, append .T for Tokyo Stock Exchange
+    if code.isdigit() and len(code) == 4:
+        symbol = f"{code}.T"
+    else:
+        symbol = code
+    
+    try:
+        ticker = yf.Ticker(symbol)
+        info = ticker.info
+        
+        # Check if valid
+        if not info or info.get("regularMarketPrice") is None:
+            return HTMLResponse(content=f"""
+                <div style="color: #fb7185; padding: 1rem; text-align: center; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
+                    ❌ 銘柄コード「{code}」のデータが見つかりませんでした。<br>
+                    4桁の証券コード（例: 7203）を入力してください。
+                </div>
+            """)
+        
+        # Extract key data
+        name = info.get("longName") or info.get("shortName") or symbol
+        price = info.get("regularMarketPrice", 0)
+        prev_close = info.get("previousClose", 0)
+        change = price - prev_close if price and prev_close else 0
+        change_pct = (change / prev_close * 100) if prev_close else 0
+        
+        market_cap = info.get("marketCap", 0)
+        market_cap_str = f"{market_cap / 1e12:.2f}兆円" if market_cap > 1e12 else f"{market_cap / 1e8:.0f}億円" if market_cap else "-"
+        
+        per = info.get("trailingPE") or info.get("forwardPE") or "-"
+        pbr = info.get("priceToBook") or "-"
+        dividend_yield = info.get("dividendYield")
+        dividend_str = f"{dividend_yield * 100:.2f}%" if dividend_yield else "-"
+        
+        roe = info.get("returnOnEquity")
+        roe_str = f"{roe * 100:.1f}%" if roe else "-"
+        
+        # Color for price change
+        change_color = "#10b981" if change >= 0 else "#f43f5e"
+        change_sign = "+" if change >= 0 else ""
+        
+        return HTMLResponse(content=f"""
+            <div style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <div style="font-size: 1.2rem; font-weight: bold; color: #f8fafc;">{name}</div>
+                        <div style="font-size: 0.85rem; color: #94a3b8;">{symbol}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #f8fafc;">¥{price:,.0f}</div>
+                        <div style="color: {change_color}; font-size: 0.9rem;">{change_sign}{change:,.0f} ({change_sign}{change_pct:.2f}%)</div>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.75rem; font-size: 0.85rem;">
+                    <div style="background: rgba(99, 102, 241, 0.1); padding: 0.75rem; border-radius: 8px; text-align: center;">
+                        <div style="color: #94a3b8; font-size: 0.75rem;">時価総額</div>
+                        <div style="color: #f8fafc; font-weight: 600;">{market_cap_str}</div>
+                    </div>
+                    <div style="background: rgba(99, 102, 241, 0.1); padding: 0.75rem; border-radius: 8px; text-align: center;">
+                        <div style="color: #94a3b8; font-size: 0.75rem;">PER</div>
+                        <div style="color: #f8fafc; font-weight: 600;">{per if isinstance(per, str) else f'{per:.1f}'}</div>
+                    </div>
+                    <div style="background: rgba(99, 102, 241, 0.1); padding: 0.75rem; border-radius: 8px; text-align: center;">
+                        <div style="color: #94a3b8; font-size: 0.75rem;">PBR</div>
+                        <div style="color: #f8fafc; font-weight: 600;">{pbr if isinstance(pbr, str) else f'{pbr:.2f}'}</div>
+                    </div>
+                    <div style="background: rgba(99, 102, 241, 0.1); padding: 0.75rem; border-radius: 8px; text-align: center;">
+                        <div style="color: #94a3b8; font-size: 0.75rem;">配当利回り</div>
+                        <div style="color: #f8fafc; font-weight: 600;">{dividend_str}</div>
+                    </div>
+                    <div style="background: rgba(99, 102, 241, 0.1); padding: 0.75rem; border-radius: 8px; text-align: center;">
+                        <div style="color: #94a3b8; font-size: 0.75rem;">ROE</div>
+                        <div style="color: #f8fafc; font-weight: 600;">{roe_str}</div>
+                    </div>
+                </div>
+            </div>
+        """)
+        
+    except Exception as e:
+        logger.error(f"Yahoo Finance lookup error for {code}: {e}")
+        return HTMLResponse(content=f"""
+            <div style="color: #fb7185; padding: 1rem; text-align: center; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
+                ❌ データの取得に失敗しました: {str(e)}
+            </div>
+        """)
+
+
 @app.get("/api/edinet/history/{code}")
 async def get_edinet_history(code: str, current_user: User = Depends(get_current_user)):
     """Get 5-year financial history charts"""

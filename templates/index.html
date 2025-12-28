@@ -266,7 +266,7 @@
         </div>
         {% endif %}
 
-        <!-- Ticker Select with Favorite Button -->
+        <!-- Ticker Select with Favorite Button + Custom Code Input -->
         <div
             style="margin-bottom: 2.5rem; display: flex; justify-content: center; align-items: center; gap: 1rem; flex-wrap: wrap;">
             <label style="font-size: 0.9rem; color: var(--text-dim);">表示銘柄を選択:</label>
@@ -296,6 +296,34 @@
                 </button>
             </form>
             {% endif %}
+        </div>
+
+        <!-- Yahoo Finance Custom Ticker Lookup -->
+        <div class="section" style="margin-bottom: 1.5rem;">
+            <h2
+                style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1rem; color: #818cf8; text-align: center;">
+                🔎 任意銘柄コードで検索 (Yahoo Finance)
+            </h2>
+            <p style="text-align: center; color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1rem;">
+                銘柄コードを入力して、Yahoo Finance から最新データを取得します
+            </p>
+            <form hx-post="/api/yahoo-finance/lookup" hx-target="#yf-lookup-result" hx-swap="innerHTML"
+                hx-indicator="#yf-lookup-spinner"
+                style="display: flex; gap: 0.5rem; justify-content: center; margin-bottom: 1rem;">
+                <input type="text" name="ticker_code" placeholder="銘柄コード（例: 7203, 6758）"
+                    style="width: 200px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.8rem 1rem; color: white; outline: none; text-align: center;">
+                <button type="submit"
+                    style="background: linear-gradient(135deg, #10b981, #059669); white-space: nowrap;">
+                    <span>取得</span>
+                    <span id="yf-lookup-spinner" class="htmx-indicator"
+                        style="display: inline-block; width: 14px; height: 14px; border: 2px solid white; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; margin-left: 0.5rem;"></span>
+                </button>
+            </form>
+            <div id="yf-lookup-result" style="min-height: 50px;">
+                <p style="color: #64748b; text-align: center; font-size: 0.85rem;">
+                    銘柄コード（証券コード4桁）を入力してください
+                </p>
+            </div>
         </div>
 
         <!-- 業績グラフセクション -->
