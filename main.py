@@ -872,6 +872,231 @@ async def lookup_yahoo_finance(
                 </form>
             """
         
+        # -------------------------------------------------------------------------
+        # Fetch Financial Data (Hybrid: Yahoo Finance + EDINET) & Generate Charts
+        # -------------------------------------------------------------------------
+        # This logic is integrated here to show charts immediately without extra clicks.
+        
+        from utils.edinet_enhanced import get_financial_history, format_financial_data
+        import pandas as pd
+        import time
+        
+        # 1. Try fetching from Yahoo Finance first (Fast, Reliable)
+        yf_history = []
+        try:
+            # We already have 'ticker' object
+            fin = ticker.financials
+            cf = ticker.cashflow
+            
+            # Check if we have data
+            if not fin.empty:
+                # Get all unique dates from the columns (usually 4 years)
+                # Ensure they are timestamps or convertable
+                dates = sorted(fin.columns, reverse=False) # Oldest to Newest
+                
+                for date in dates:
+                    # Extract data for this date
+                    date_str = date.strftime("%Y-%m-%d") if hasattr(date, 'strftime') else str(date)[:10]
+                    data_entry = {
+                        "metadata": {
+                            "period_end": date_str,
+                            "source": "YahooFinance"
+                        },
+                        "normalized_data": {}
+                    }
+                    
+                    # Helper to safely get value from DF
+                    def get_val(df, key, date_col):
+                        try:
+                            if key in df.index:
+                                val = df.loc[key, date_col]
+                                return val if pd.notna(val) else 0
+                        except:
+                            pass
+                        return 0
+
+                    data_entry["normalized_data"]["売上高"] = get_val(fin, "Total Revenue", date)
+                    data_entry["normalized_data"]["営業利益"] = get_val(fin, "Operating Income", date)
+                    data_entry["normalized_data"]["当期純利益"] = get_val(fin, "Net Income", date)
+                    data_entry["normalized_data"]["EPS"] = get_val(fin, "Basic EPS", date)
+                    
+                    # CF keys vary by yfinance version
+                    op_cf = get_val(cf, "Operating Cash Flow", date) or get_val(cf, "Total Cash From Operating Activities", date)
+                    inv_cf = get_val(cf, "Investing Cash Flow", date) or get_val(cf, "Total Cashflows From Investing Activities", date)
+                    fin_cf = get_val(cf, "Financing Cash Flow", date) or get_val(cf, "Total Cash From Financing Activities", date)
+                    
+                    data_entry["normalized_data"]["営業CF"] = op_cf
+                    data_entry["normalized_data"]["投資CF"] = inv_cf
+                    data_entry["normalized_data"]["財務CF"] = fin_cf
+                    data_entry["normalized_data"]["ネットCF"] = op_cf + inv_cf + fin_cf 
+                    
+                    yf_history.append(data_entry)
+        except Exception as e:
+            logger.error(f"YFinance financials fetch failed for {symbol}: {e}")
+            
+        # 2. Try fetching from EDINET (Limit years to keep it decently fast if YF failed or for latest)
+        edinet_history = []
+        try:
+             # Attempt to get latest data from EDINET (3 years)
+             edinet_history = get_financial_history(company_code=code_input, years=3)
+        except Exception as e:
+             logger.warning(f"EDINET fetch failed for {code_input}: {e}")
+
+        # 3. Merge Strategies
+        merged_data = {}
+        
+        # Fill with YF first
+        for item in yf_history:
+            period = item["metadata"]["period_end"][:7] # YYYY-MM
+            merged_data[period] = item
+            
+        # Overwrite with EDINET if available (Higher precision/Japanese standards)
+        if edinet_history:
+            for item in edinet_history:
+                period = item["metadata"]["period_end"][:7]
+                item["metadata"]["source"] = "EDINET"
+                merged_data[period] = item
+                
+        # Convert back to list and sort
+        final_history = sorted(merged_data.values(), key=lambda x: x["metadata"]["period_end"])
+        history = final_history[-5:] # Last 5 years
+        
+        # -------------------------------------------------------
+        # Generate Chart & Table HTML
+        # -------------------------------------------------------
+        chart_html = ""
+        financial_table_rows = ""
+        
+        if not history:
+            chart_html = """
+                <div class="h-64 flex items-center justify-center bg-gray-900/30 rounded-xl border border-dashed border-gray-600">
+                    <div class="text-center text-gray-500">
+                        <p class="text-3xl mb-2">📉</p>
+                        <p>財務データが見つかりませんでした</p>
+                        <p class="text-xs mt-1">Yahoo Finance / EDINET 共にデータなし</p>
+                    </div>
+                </div>
+            """
+            financial_table_rows = """<tr><td colspan="5" class="p-4 text-center text-gray-500">データなし</td></tr>"""
+        else:
+            # Prepare data
+            years_label = []
+            op_cf_data = []
+            inv_cf_data = []
+            fin_cf_data = []
+            net_cf_data = []
+            
+            for data in history:
+                meta = data.get("metadata", {})
+                norm = data.get("normalized_data", {})
+                period = meta.get("period_end", "")[:4] # Just Year for chart
+                source = meta.get("source", "Unknown")
+                
+                years_label.append(period)
+                
+                # Chart values (Billions)
+                to_oku = lambda x: round(x/100000000, 1) if isinstance(x, (int, float)) else 0
+                
+                op_cf_data.append(to_oku(norm.get("営業CF", 0)))
+                inv_cf_data.append(to_oku(norm.get("投資CF", 0)))
+                fin_cf_data.append(to_oku(norm.get("財務CF", 0)))
+                
+                net = norm.get("ネットCF", 0)
+                if net == 0: net = norm.get("営業CF", 0) + norm.get("投資CF", 0) + norm.get("財務CF", 0)
+                net_cf_data.append(to_oku(net))
+                
+                # Table Rows
+                p_full = meta.get("period_end", "")[:7]
+                
+                # Format money helper
+                fmt = lambda x: f"{x/100000000:,.1f}" if isinstance(x, (int, float)) else "-"
+                
+                badge_color = "bg-blue-900 text-blue-300" if source == "EDINET" else "bg-gray-700 text-gray-400"
+                
+                financial_table_rows += f"""
+                <tr class="hover:bg-gray-700/30 transition-colors">
+                    <td class="p-3 text-gray-300 border-b border-gray-700/50">
+                        {p_full} <span class="text-[0.6rem] px-1 rounded {badge_color}">{source}</span>
+                    </td>
+                    <td class="p-3 text-right text-gray-300 border-b border-gray-700/50">{fmt(norm.get('売上高'))}</td>
+                    <td class="p-3 text-right text-emerald-400 border-b border-gray-700/50">{fmt(norm.get('営業利益'))}</td>
+                    <td class="p-3 text-right text-rose-400 border-b border-gray-700/50">{fmt(norm.get('当期純利益'))}</td>
+                    <td class="p-3 text-right text-gray-300 border-b border-gray-700/50">{norm.get('EPS', '-')}</td>
+                </tr>
+                """
+
+            # Build Chart Script
+            chart_id = f"cfChart_{code_input}_{int(time.time())}"
+            chart_html = f"""
+                <div class="relative h-[300px] w-full">
+                    <canvas id="{chart_id}"></canvas>
+                </div>
+                <script>
+                    (function() {{
+                        const ctx = document.getElementById('{chart_id}').getContext('2d');
+                        new Chart(ctx, {{
+                            type: 'bar',
+                            data: {{
+                                labels: {years_label},
+                                datasets: [
+                                    {{
+                                        label: '営業CF',
+                                        data: {op_cf_data},
+                                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                                        borderColor: '#10b981',
+                                        borderWidth: 1
+                                    }},
+                                    {{
+                                        label: '投資CF',
+                                        data: {inv_cf_data},
+                                        backgroundColor: 'rgba(244, 63, 94, 0.7)',
+                                        borderColor: '#f43f5e',
+                                        borderWidth: 1
+                                    }},
+                                    {{
+                                        label: '財務CF',
+                                        data: {fin_cf_data},
+                                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                                        borderColor: '#3b82f6',
+                                        borderWidth: 1
+                                    }},
+                                    {{
+                                        label: 'ネットCF',
+                                        data: {net_cf_data},
+                                        type: 'line',
+                                        borderColor: '#f59e0b',
+                                        borderWidth: 2,
+                                        tension: 0.3,
+                                        pointBackgroundColor: '#f59e0b'
+                                    }}
+                                ]
+                            }},
+                            options: {{
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {{
+                                    y: {{
+                                        grid: {{ color: 'rgba(255, 255, 255, 0.1)' }},
+                                        ticks: {{ color: '#94a3b8' }},
+                                        title: {{ display: true, text: '金額 (億円)', color: '#64748b' }}
+                                    }},
+                                    x: {{
+                                        grid: {{ display: false }},
+                                        ticks: {{ color: '#94a3b8' }}
+                                    }}
+                                }},
+                                plugins: {{
+                                    legend: {{ labels: {{ color: '#e2e8f0' }} }},
+                                    tooltip: {{ mode: 'index', intersect: false }}
+                                }},
+                                interaction: {{ mode: 'nearest', axis: 'x', intersect: false }}
+                            }}
+                        }});
+                    }})();
+                </script>
+            """
+
+        # Return the Combined Response
         return HTMLResponse(content=f"""
             <div style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 1.5rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
@@ -909,54 +1134,40 @@ async def lookup_yahoo_finance(
                         <div style="color: #f8fafc; font-weight: 600;">{roe_str}</div>
                     </div>
                 </div>
-                <!-- Simple action to load details if needed via button, not auto -->
-                <div class="mt-4 text-center">
-                    <button 
-                        id="edinet-load-btn"
-                        hx-get="/api/edinet/history/{symbol}"
-                        hx-target="#chart-container"
-                        hx-swap="innerHTML"
-                        hx-disabled-elt="this"
-                        class="py-2 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow transition-colors relative group">
-                        
-                        <!-- Normal State -->
-                        <span class="inline-flex items-center gap-2 group-[.htmx-request]:hidden">
-                            <span>📊 詳細分析・チャートを表示 (EDINET)</span>
-                        </span>
-
-                        <!-- Loading State -->
-                        <span class="hidden group-[.htmx-request]:inline-flex items-center gap-2">
-                            <span class="animate-spin">⏳</span>
-                            <span>EDINET検索中... (最大60秒)</span>
-                        </span>
-                    </button>
-                    <p class="text-xs text-gray-400 mt-2">※ 公式財務データを取得してグラフを描画します</p>
-                </div>
             </div>
 
-            <!-- OOB Swap to RESET Chart Section (Clear old data) -->
+            <!-- OOB Swap: Render Chart immediately -->
             <div id="chart-section" class="section" hx-swap-oob="true">
                 <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
                     📊 業績推移グラフ
                 </h2>
-                <div id="chart-container" style="height: 300px; min-height: 300px; position: relative; width: 100%; background: rgba(0,0,0,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                    <div style="text-align: center; color: #94a3b8;">
-                        <p style="margin-bottom: 0.5rem; font-size: 1.1rem;">📉 データ待機中...</p>
-                        <p style="font-size: 0.85rem;">「詳細分析・チャートを表示」ボタンを押してください</p>
-                    </div>
+                <div id="chart-container" style="height: 300px; min-height: 300px; position: relative; width: 100%;">
+                    {chart_html}
                 </div>
             </div>
 
-            <!-- OOB Swap to RESET Financial Data Section (Clear old data) -->
+            <!-- OOB Swap: Render Financial Data Table immediately -->
             <div id="financial-data-section" class="section" hx-swap-oob="true">
                 <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
                     📈 {name} 財務推移
                 </h2>
-                <div style="text-align: center; padding: 3rem; color: #64748b; background: rgba(0,0,0,0.2); border-radius: 12px;">
-                    「詳細分析・チャートを表示」ボタンを押すと<br>ここに詳細データが表示されます
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>決算期</th>
+                                <th>売上収益 (億円)</th>
+                                <th>営業利益 (億円)</th>
+                                <th>純利益 (億円)</th>
+                                <th>EPS (円)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {financial_table_rows}
+                        </tbody>
+                    </table>
                 </div>
             </div>
-        </div>
         """)
         
     except Exception as e:
