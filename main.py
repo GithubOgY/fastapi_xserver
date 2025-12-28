@@ -862,19 +862,27 @@ async def lookup_yahoo_finance(
         per = info.get("trailingPE") or info.get("forwardPE") or "-"
         pbr = info.get("priceToBook") or "-"
         
-        # 配当利回りの取得（フォールバックを追加）
-        dividend_yield = info.get("dividendYield")
-        if dividend_yield is None:
-            # フォールバック1: 実績配当利回り
-            dividend_yield = info.get("trailingAnnualDividendYield")
-        
-        if dividend_yield is None:
-            # フォールバック2: 配当額 / 株価 で計算
+        # 配当利回りの取得と計算（算出精度向上のためのロジック見直し）
+        # yfinance の dividendYield は単位が不安定な場合があるため、可能な限り自前で計算する
+        dividend_yield = None
+        if price and price > 0:
             div_rate = info.get("dividendRate") or info.get("trailingAnnualDividendRate")
-            if div_rate and price:
+            if div_rate:
                 dividend_yield = div_rate / price
+        
+        # 自前計算ができない、あるいは極端な値（50%超）の場合は yf の提供値を使用
+        if dividend_yield is None or dividend_yield > 0.5:
+            yf_yield = info.get("dividendYield") or info.get("trailingAnnualDividendYield")
+            if yf_yield:
+                # yf_yield が 1.0 (100%) を超える場合は既にパーセント表記の可能性があるため補正
+                if yf_yield > 1.0:
+                    yf_yield = yf_yield / 100.0
+                
+                # 自前計算がない場合のみ採用、または自前計算が異常な場合に採用
+                if dividend_yield is None or (yf_yield < dividend_yield and yf_yield > 0):
+                    dividend_yield = yf_yield
 
-        dividend_str = f"{dividend_yield * 100:.2f}%" if dividend_yield else "-"
+        dividend_str = f"{dividend_yield * 100:.3f}%" if dividend_yield else "-"
         
         roe = info.get("returnOnEquity")
         roe_str = f"{roe * 100:.1f}%" if roe else "-"
