@@ -690,14 +690,22 @@ async def search_edinet_company(
                     hx-target="#edinet-history-container" 
                     hx-swap="innerHTML"
                     hx-disabled-elt="this"
+                    id="history-btn-{code_only}"
                     class="mt-10 w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-wait text-white rounded-lg text-sm font-medium transition-all">
-                <span class="htmx-indicator-hide">直近の財務推移グラフを表示</span>
-                <span class="htmx-indicator-show hidden">⏳ データ取得中... (数十秒かかる場合があります)</span>
+                直近の財務推移グラフを表示
             </button>
-            <style>
-                button[disabled] .htmx-indicator-hide {{ display: none; }}
-                button[disabled] .htmx-indicator-show {{ display: inline !important; }}
-            </style>
+            <script>
+                (function() {{
+                    const btn = document.getElementById('history-btn-{code_only}');
+                    const originalText = btn.textContent;
+                    btn.addEventListener('htmx:beforeRequest', function() {{
+                        btn.textContent = '⏳ データ取得中... (数十秒かかる場合があります)';
+                    }});
+                    btn.addEventListener('htmx:afterRequest', function() {{
+                        btn.textContent = originalText;
+                    }});
+                }})();
+            </script>
             <div id="edinet-history-container" class="mt-4"></div>
             """
         
@@ -1020,10 +1028,22 @@ async def get_edinet_history(code: str, current_user: User = Depends(get_current
                         hx-target="#edinet-ratios-container" 
                         hx-swap="innerHTML"
                         hx-disabled-elt="this"
+                        id="ratios-btn-{code}"
                         class="mt-6 w-full py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-wait text-white rounded-lg text-sm font-medium transition-all">
-                    <span class="htmx-indicator-hide">財務指標グラフを表示 (ROE・自己資本比率・EPS)</span>
-                    <span class="htmx-indicator-show hidden">⏳ データ取得中...</span>
+                    財務指標グラフを表示 (ROE・自己資本比率・EPS)
                 </button>
+                <script>
+                    (function() {{
+                        const btn = document.getElementById('ratios-btn-{code}');
+                        const originalText = btn.textContent;
+                        btn.addEventListener('htmx:beforeRequest', function() {{
+                            btn.textContent = '⏳ データ取得中...';
+                        }});
+                        btn.addEventListener('htmx:afterRequest', function() {{
+                            btn.textContent = originalText;
+                        }});
+                    }})();
+                </script>
                 <div id="edinet-ratios-container" class="mt-4"></div>
             </div>
         """)
