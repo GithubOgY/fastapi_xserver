@@ -216,6 +216,8 @@
                     style="background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-main); padding: 0.4rem 0.8rem; border-radius: 8px; cursor: pointer; font-size: 0.8rem; transition: all 0.3s ease;">
                     Light
                 </button>
+                <a href="/edinet"
+                    style="font-size: 0.85rem; color: var(--text-dim); text-decoration: none; background: var(--glass-bg); padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid var(--glass-border);">EDINET検索</a>
 
                 <a href="/account" style="font-size: 0.9rem; color: var(--accent); text-decoration: none;">{{
                     user.username }}</a>
@@ -282,33 +284,6 @@
         <!-- 財務データセクション (初期は空、検索後に表示) -->
         <div class="section" id="financial-data-section" style="display: none;">
             <!-- Populated by HTMX OOB after stock search -->
-        </div>
-
-        <!-- EDINET 企業検索セクション -->
-        <div class="section">
-            <h2
-                style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
-                🔍 EDINET 企業財務検索
-            </h2>
-            <p style="text-align: center; color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1rem;">
-                企業名を入力して、EDINET から公式財務データを取得します（有価証券報告書）
-            </p>
-            <form hx-post="/api/edinet/search" hx-target="#edinet-result" hx-swap="innerHTML"
-                hx-indicator="#edinet-spinner" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                <input type="text" name="company_name" placeholder="企業名を入力（例: トヨタ自動車）"
-                    style="flex: 1; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.8rem 1rem; color: white; outline: none;">
-                <button type="submit"
-                    style="background: linear-gradient(135deg, #6366f1, #8b5cf6); white-space: nowrap;">
-                    <span id="edinet-btn-text">検索</span>
-                    <span id="edinet-spinner" class="htmx-indicator"
-                        style="display: inline-block; width: 14px; height: 14px; border: 2px solid white; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; margin-left: 0.5rem;"></span>
-                </button>
-            </form>
-            <div id="edinet-result" style="min-height: 50px;">
-                <p style="color: #64748b; text-align: center; font-size: 0.85rem;">
-                    企業名を入力して検索ボタンを押してください
-                </p>
-            </div>
         </div>
 
         <!-- インタラクティブ・セクション -->

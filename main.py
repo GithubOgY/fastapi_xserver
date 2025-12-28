@@ -293,6 +293,21 @@ async def dashboard(request: Request,
         }
     )
 
+@app.get("/edinet", response_class=HTMLResponse)
+async def edinet_page(request: Request, 
+                      current_user: User = Depends(get_current_user)):
+    """EDINET enterprise financial search page"""
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+    
+    return templates.TemplateResponse(
+        "edinet.html", 
+        {
+            "request": request, 
+            "user": current_user
+        }
+    )
+
 @app.get("/compare", response_class=HTMLResponse)
 async def compare_page(request: Request, 
                        tickers: str = Query(""),
