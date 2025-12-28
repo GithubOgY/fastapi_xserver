@@ -979,12 +979,12 @@ async def lookup_yahoo_finance(
             """
             financial_table_rows = """<tr><td colspan="5" class="p-4 text-center text-gray-500">データなし</td></tr>"""
         else:
-            # Prepare data
+            # Prepare data for Revenue/Operating Income/Margin/EPS chart
             years_label = []
-            op_cf_data = []
-            inv_cf_data = []
-            fin_cf_data = []
-            net_cf_data = []
+            revenue_data = []      # 売上高 (億円)
+            op_income_data = []    # 営業利益 (億円)
+            op_margin_data = []    # 営業利益率 (%)
+            eps_data = []          # EPS (円)
             
             for data in history:
                 meta = data.get("metadata", {})
@@ -994,22 +994,34 @@ async def lookup_yahoo_finance(
                 
                 years_label.append(period)
                 
-                # Chart values (Billions)
-                to_oku = lambda x: round(x/100000000, 1) if isinstance(x, (int, float)) else 0
+                # Chart values
+                to_oku = lambda x: round(x/100000000, 1) if isinstance(x, (int, float)) and x != 0 else 0
                 
-                op_cf_data.append(to_oku(norm.get("営業CF", 0)))
-                inv_cf_data.append(to_oku(norm.get("投資CF", 0)))
-                fin_cf_data.append(to_oku(norm.get("財務CF", 0)))
+                revenue = norm.get("売上高", 0)
+                op_income = norm.get("営業利益", 0)
                 
-                net = norm.get("ネットCF", 0)
-                if net == 0: net = norm.get("営業CF", 0) + norm.get("投資CF", 0) + norm.get("財務CF", 0)
-                net_cf_data.append(to_oku(net))
+                revenue_data.append(to_oku(revenue))
+                op_income_data.append(to_oku(op_income))
+                
+                # Calculate Operating Margin %
+                if isinstance(revenue, (int, float)) and revenue > 0 and isinstance(op_income, (int, float)):
+                    margin = round((op_income / revenue) * 100, 1)
+                else:
+                    margin = 0
+                op_margin_data.append(margin)
+                
+                # EPS
+                eps_val = norm.get("EPS", 0)
+                if isinstance(eps_val, (int, float)):
+                    eps_data.append(round(eps_val, 1))
+                else:
+                    eps_data.append(0)
                 
                 # Table Rows
                 p_full = meta.get("period_end", "")[:7]
                 
                 # Format money helper
-                fmt = lambda x: f"{x/100000000:,.1f}" if isinstance(x, (int, float)) else "-"
+                fmt = lambda x: f"{x/100000000:,.1f}" if isinstance(x, (int, float)) and x != 0 else "-"
                 
                 badge_color = "bg-blue-900 text-blue-300" if source == "EDINET" else "bg-gray-700 text-gray-400"
                 
@@ -1025,8 +1037,8 @@ async def lookup_yahoo_finance(
                 </tr>
                 """
 
-            # Build Chart Script
-            chart_id = f"cfChart_{code_input}_{int(time.time())}"
+            # Build Chart Script - Revenue/Operating Income/Margin/EPS
+            chart_id = f"fundChart_{code_input}_{int(time.time())}"
             chart_html = f"""
                 <div class="relative h-[300px] w-full">
                     <canvas id="{chart_id}"></canvas>
@@ -1040,34 +1052,42 @@ async def lookup_yahoo_finance(
                                 labels: {years_label},
                                 datasets: [
                                     {{
-                                        label: '営業CF',
-                                        data: {op_cf_data},
+                                        label: '売上高 (億円)',
+                                        data: {revenue_data},
+                                        backgroundColor: 'rgba(99, 102, 241, 0.7)',
+                                        borderColor: '#6366f1',
+                                        borderWidth: 1,
+                                        yAxisID: 'y'
+                                    }},
+                                    {{
+                                        label: '営業利益 (億円)',
+                                        data: {op_income_data},
                                         backgroundColor: 'rgba(16, 185, 129, 0.7)',
                                         borderColor: '#10b981',
-                                        borderWidth: 1
+                                        borderWidth: 1,
+                                        yAxisID: 'y'
                                     }},
                                     {{
-                                        label: '投資CF',
-                                        data: {inv_cf_data},
-                                        backgroundColor: 'rgba(244, 63, 94, 0.7)',
-                                        borderColor: '#f43f5e',
-                                        borderWidth: 1
-                                    }},
-                                    {{
-                                        label: '財務CF',
-                                        data: {fin_cf_data},
-                                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
-                                        borderColor: '#3b82f6',
-                                        borderWidth: 1
-                                    }},
-                                    {{
-                                        label: 'ネットCF',
-                                        data: {net_cf_data},
+                                        label: '営業利益率 (%)',
+                                        data: {op_margin_data},
                                         type: 'line',
                                         borderColor: '#f59e0b',
+                                        backgroundColor: 'rgba(245, 158, 11, 0.2)',
                                         borderWidth: 2,
                                         tension: 0.3,
-                                        pointBackgroundColor: '#f59e0b'
+                                        pointBackgroundColor: '#f59e0b',
+                                        yAxisID: 'y1',
+                                        fill: true
+                                    }},
+                                    {{
+                                        label: 'EPS (円)',
+                                        data: {eps_data},
+                                        type: 'line',
+                                        borderColor: '#ec4899',
+                                        borderWidth: 2,
+                                        tension: 0.3,
+                                        pointBackgroundColor: '#ec4899',
+                                        yAxisID: 'y2'
                                     }}
                                 ]
                             }},
@@ -1076,9 +1096,26 @@ async def lookup_yahoo_finance(
                                 maintainAspectRatio: false,
                                 scales: {{
                                     y: {{
+                                        type: 'linear',
+                                        position: 'left',
                                         grid: {{ color: 'rgba(255, 255, 255, 0.1)' }},
                                         ticks: {{ color: '#94a3b8' }},
                                         title: {{ display: true, text: '金額 (億円)', color: '#64748b' }}
+                                    }},
+                                    y1: {{
+                                        type: 'linear',
+                                        position: 'right',
+                                        grid: {{ drawOnChartArea: false }},
+                                        ticks: {{ color: '#f59e0b' }},
+                                        title: {{ display: true, text: '営業利益率 (%)', color: '#f59e0b' }},
+                                        min: 0
+                                    }},
+                                    y2: {{
+                                        type: 'linear',
+                                        position: 'right',
+                                        grid: {{ drawOnChartArea: false }},
+                                        ticks: {{ color: '#ec4899', display: false }},
+                                        display: false
                                     }},
                                     x: {{
                                         grid: {{ display: false }},
@@ -1135,6 +1172,20 @@ async def lookup_yahoo_finance(
                     </div>
                 </div>
             </div>
+            
+            <!-- EDINET Cash Flow Button -->
+            <div style="text-align: center; margin-top: 1rem;">
+                <button 
+                    hx-get="/api/edinet/cashflow/{symbol}"
+                    hx-target="#cashflow-container"
+                    hx-swap="innerHTML"
+                    hx-indicator="#cf-spinner"
+                    style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 0.6rem 1.5rem; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s;">
+                    💰 キャッシュフロー分析 (EDINET)
+                    <span id="cf-spinner" class="htmx-indicator" style="margin-left: 0.5rem;">⏳</span>
+                </button>
+                <p style="color: #64748b; font-size: 0.75rem; margin-top: 0.5rem;">※ EDINETから詳細なCFデータを取得します</p>
+            </div>
 
             <!-- OOB Swap: Render Chart immediately -->
             <div id="chart-section" class="section" hx-swap-oob="true">
@@ -1168,6 +1219,16 @@ async def lookup_yahoo_finance(
                     </table>
                 </div>
             </div>
+            
+            <!-- Cash Flow Container (populated by EDINET button) -->
+            <div id="cashflow-section" class="section" hx-swap-oob="true">
+                <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
+                    💰 キャッシュフロー分析
+                </h2>
+                <div id="cashflow-container" style="min-height: 100px; background: rgba(0,0,0,0.2); border-radius: 12px; padding: 2rem; text-align: center; color: #64748b;">
+                    「キャッシュフロー分析」ボタンを押すとEDINETからCFデータを取得して表示します
+                </div>
+            </div>
         """)
         
     except Exception as e:
@@ -1175,6 +1236,140 @@ async def lookup_yahoo_finance(
         return HTMLResponse(content=f"""
             <div style="color: #fb7185; padding: 1rem; text-align: center; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
                 ❌ データの取得に失敗しました: {str(e)}
+            </div>
+        """)
+
+
+@app.get("/api/edinet/cashflow/{code}")
+async def get_edinet_cashflow(code: str, current_user: User = Depends(get_current_user)):
+    """Get Cash Flow chart from EDINET data"""
+    if not current_user:
+        return HTMLResponse(content="<div class='text-red-400'>Login required</div>")
+    
+    try:
+        from utils.edinet_enhanced import get_financial_history
+        
+        # Clean code (remove .T if present)
+        clean_code = code.replace(".T", "")
+        
+        # Fetch history from EDINET (3 years for speed)
+        history = get_financial_history(company_code=clean_code, years=3)
+        
+        if not history:
+            return HTMLResponse(content="""
+                <div style="text-align: center; padding: 2rem; color: #94a3b8;">
+                    <p style="font-size: 1.5rem; margin-bottom: 0.5rem;">📉</p>
+                    <p>EDINETにキャッシュフローデータが見つかりませんでした</p>
+                </div>
+            """)
+        
+        # Prepare CF data
+        years_label = []
+        op_cf_data = []
+        inv_cf_data = []
+        fin_cf_data = []
+        net_cf_data = []
+        
+        for data in history:
+            meta = data.get("metadata", {})
+            norm = data.get("normalized_data", {})
+            period = meta.get("period_end", "")[:4]
+            years_label.append(period)
+            
+            to_oku = lambda x: round(x/100000000, 1) if isinstance(x, (int, float)) and x != 0 else 0
+            
+            op_cf = norm.get("営業CF", 0)
+            inv_cf = norm.get("投資CF", 0)
+            fin_cf = norm.get("財務CF", 0)
+            
+            op_cf_data.append(to_oku(op_cf))
+            inv_cf_data.append(to_oku(inv_cf))
+            fin_cf_data.append(to_oku(fin_cf))
+            
+            net = op_cf + inv_cf + fin_cf if all(isinstance(x, (int, float)) for x in [op_cf, inv_cf, fin_cf]) else 0
+            net_cf_data.append(to_oku(net))
+        
+        chart_id = f"cfChart_{clean_code}_{int(time.time())}"
+        
+        return HTMLResponse(content=f"""
+            <div class="relative h-[300px] w-full">
+                <canvas id="{chart_id}"></canvas>
+            </div>
+            <script>
+                (function() {{
+                    const ctx = document.getElementById('{chart_id}').getContext('2d');
+                    new Chart(ctx, {{
+                        type: 'bar',
+                        data: {{
+                            labels: {years_label},
+                            datasets: [
+                                {{
+                                    label: '営業CF (億円)',
+                                    data: {op_cf_data},
+                                    backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                                    borderColor: '#10b981',
+                                    borderWidth: 1
+                                }},
+                                {{
+                                    label: '投資CF (億円)',
+                                    data: {inv_cf_data},
+                                    backgroundColor: 'rgba(244, 63, 94, 0.7)',
+                                    borderColor: '#f43f5e',
+                                    borderWidth: 1
+                                }},
+                                {{
+                                    label: '財務CF (億円)',
+                                    data: {fin_cf_data},
+                                    backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                                    borderColor: '#3b82f6',
+                                    borderWidth: 1
+                                }},
+                                {{
+                                    label: 'ネットCF',
+                                    data: {net_cf_data},
+                                    type: 'line',
+                                    borderColor: '#f59e0b',
+                                    borderWidth: 2,
+                                    tension: 0.3,
+                                    pointBackgroundColor: '#f59e0b'
+                                }}
+                            ]
+                        }},
+                        options: {{
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {{
+                                y: {{
+                                    grid: {{ color: 'rgba(255, 255, 255, 0.1)' }},
+                                    ticks: {{ color: '#94a3b8' }},
+                                    title: {{ display: true, text: '金額 (億円)', color: '#64748b' }}
+                                }},
+                                x: {{
+                                    grid: {{ display: false }},
+                                    ticks: {{ color: '#94a3b8' }}
+                                }}
+                            }},
+                            plugins: {{
+                                legend: {{ labels: {{ color: '#e2e8f0' }} }},
+                                tooltip: {{ mode: 'index', intersect: false }}
+                            }},
+                            interaction: {{ mode: 'nearest', axis: 'x', intersect: false }}
+                        }}
+                    }});
+                }})();
+            </script>
+            <div style="margin-top: 1rem; padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                <p style="color: #94a3b8; font-size: 0.85rem; text-align: center;">
+                    ✅ EDINETから取得したキャッシュフローデータ (過去{len(history)}年分)
+                </p>
+            </div>
+        """)
+        
+    except Exception as e:
+        logger.error(f"EDINET cashflow error for {code}: {e}")
+        return HTMLResponse(content=f"""
+            <div style="color: #fb7185; padding: 1rem; text-align: center; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
+                ❌ キャッシュフローデータの取得に失敗しました: {str(e)}
             </div>
         """)
 
