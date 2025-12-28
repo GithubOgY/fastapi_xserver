@@ -1099,12 +1099,13 @@ async def get_edinet_history(code: str, current_user: User = Depends(get_current
 
 @app.get("/api/edinet/ratios/{code}")
 async def get_edinet_ratios(code: str, current_user: User = Depends(get_current_user)):
-    """Get financial ratios chart (ROE, Equity Ratio, EPS) from EDINET"""
+    """Get financial ratios chart AND analysis summary from EDINET"""
     if not current_user:
         return HTMLResponse(content="<div class='text-red-400'>Login required</div>")
     
     try:
         from utils.edinet_enhanced import get_financial_history, format_financial_data
+        from utils.financial_analysis import analyze_company_performance
         
         # Fetch history (reuse the same function)
         history = get_financial_history(company_code=code, years=5)
@@ -1112,7 +1113,7 @@ async def get_edinet_ratios(code: str, current_user: User = Depends(get_current_
         if not history:
             return HTMLResponse(content="<div class='text-gray-400 p-4 text-center'>財務指標データが見つかりませんでした</div>")
         
-        # Prepare data for Chart.js
+        # --- Prepare Chart Data ---
         years_label = []
         roe_data = []
         equity_ratio_data = []
@@ -1159,15 +1160,97 @@ async def get_edinet_ratios(code: str, current_user: User = Depends(get_current_
 
         chart_id = f"ratiosChart_{code}_{int(time.time())}"
         
+        # --- Prepare Analysis Summary ---
+        analysis = analyze_company_performance(history)
+        analysis_html = ""
+        
+        if analysis:
+            prof = analysis.get("profitability", {})
+            growth = analysis.get("growth_yoy", {})
+            safety = analysis.get("safety", {})
+            efficiency = analysis.get("efficiency", {})
+            
+            def get_color(val, threshold=0):
+                if val is None: return "text-gray-400"
+                return "text-emerald-400" if val >= threshold else "text-rose-400"
+            def fmt_pct(val): return f"{val}%" if val is not None else "-"
+            def fmt_val(val): return f"{val}" if val is not None else "-"
+            
+            analysis_html = f"""
+                <div class="mt-8 bg-slate-900/80 rounded-xl p-6 border border-indigo-500/30 backdrop-blur-sm shadow-xl animate-fade-in-up">
+                    <h4 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400 mb-6 flex items-center gap-2">
+                        <span>📊</span> 投資分析サマリー <span class="text-sm font-normal text-gray-400 ml-2">(最新期: {analysis.get("latest_period", "")})</span>
+                    </h4>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <!-- Profitability -->
+                        <div class="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50">
+                            <div class="text-xs uppercase tracking-wider text-purple-400 mb-3 font-bold border-b border-purple-500/20 pb-1">収益性 (Profitability)</div>
+                            <div class="flex justify-between mb-2">
+                                <span class="text-xs text-gray-400">営業利益率</span>
+                                <span class="font-bold {get_color(prof.get('営業利益率'), 10)}">{fmt_pct(prof.get('営業利益率'))}</span>
+                            </div>
+                            <div class="flex justify-between mb-2">
+                                <span class="text-xs text-gray-400">ROE</span>
+                                <span class="font-bold {get_color(prof.get('ROE'), 8)}">{fmt_pct(prof.get('ROE'))}</span>
+                            </div>
+                             <div class="flex justify-between">
+                                <span class="text-xs text-gray-400">ROA</span>
+                                <span class="font-bold {get_color(prof.get('ROA'), 5)}">{fmt_pct(prof.get('ROA'))}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Growth -->
+                        <div class="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50">
+                            <div class="text-xs uppercase tracking-wider text-emerald-400 mb-3 font-bold border-b border-emerald-500/20 pb-1">成長性 (Growth YoY)</div>
+                            <div class="flex justify-between mb-2">
+                                <span class="text-xs text-gray-400">売上高</span>
+                                <span class="font-bold {get_color(growth.get('売上高_成長率'), 0)}">{fmt_pct(growth.get('売上高_成長率'))}</span>
+                            </div>
+                            <div class="flex justify-between mb-2">
+                                <span class="text-xs text-gray-400">営業利益</span>
+                                <span class="font-bold {get_color(growth.get('営業利益_成長率'), 0)}">{fmt_pct(growth.get('営業利益_成長率'))}</span>
+                            </div>
+                             <div class="flex justify-between">
+                                <span class="text-xs text-gray-400">EPS</span>
+                                <span class="font-bold {get_color(growth.get('EPS_成長率'), 0)}">{fmt_pct(growth.get('EPS_成長率'))}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Safety -->
+                        <div class="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50">
+                            <div class="text-xs uppercase tracking-wider text-cyan-400 mb-3 font-bold border-b border-cyan-500/20 pb-1">安全性 (Safety)</div>
+                            <div class="flex justify-between mb-2">
+                                <span class="text-xs text-gray-400">自己資本比率</span>
+                                <span class="font-bold {get_color(safety.get('自己資本比率'), 40)}">{fmt_pct(safety.get('自己資本比率'))}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-xs text-gray-400">流動比率</span>
+                                <span class="font-bold {get_color(safety.get('流動比率'), 100)}">{fmt_pct(safety.get('流動比率'))}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Efficiency -->
+                        <div class="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50">
+                            <div class="text-xs uppercase tracking-wider text-orange-400 mb-3 font-bold border-b border-orange-500/20 pb-1">効率性 (Efficiency)</div>
+                            <div class="flex justify-between">
+                                <span class="text-xs text-gray-400">総資産回転率</span>
+                                <span class="font-bold text-blue-300">{fmt_val(efficiency.get('総資産回転率'))}回</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            """
+
         return HTMLResponse(content=f"""
-            <div class="mt-6 bg-gray-900/50 rounded-xl p-4 border border-purple-700/50">
-                <h4 class="text-lg font-bold text-gray-200 mb-4">財務指標推移 (5年)</h4>
+            <div class="mt-6 bg-gray-900/50 rounded-xl p-4 border border-purple-700/50 transition-all duration-500">
+                <h4 class="text-lg font-bold text-gray-200 mb-4 pl-2 border-l-4 border-purple-500">財務指標推移 (5年)</h4>
                 
                 <div class="h-64 mb-6">
                     <canvas id="{chart_id}"></canvas>
                 </div>
                 
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto mb-6">
                     <table class="w-full text-xs text-left">
                         <thead>
                             <tr>
@@ -1234,7 +1317,7 @@ async def get_edinet_ratios(code: str, current_user: User = Depends(get_current_
                                         type: 'linear',
                                         display: true,
                                         position: 'left',
-                                        title: {{ display: true, text: '%', color: 'rgba(255, 255, 255, 0.5)' }},
+                                        title: {{ display: true, text: '%' }},
                                         ticks: {{ color: 'rgba(255, 255, 255, 0.5)' }},
                                         grid: {{ color: 'rgba(255, 255, 255, 0.05)' }}
                                     }},
@@ -1242,7 +1325,7 @@ async def get_edinet_ratios(code: str, current_user: User = Depends(get_current_
                                         type: 'linear',
                                         display: true,
                                         position: 'right',
-                                        title: {{ display: true, text: '円', color: 'rgba(255, 255, 255, 0.5)' }},
+                                        title: {{ display: true, text: '円' }},
                                         ticks: {{ color: 'rgba(255, 255, 255, 0.5)' }},
                                         grid: {{ drawOnChartArea: false }}
                                     }}
@@ -1251,138 +1334,11 @@ async def get_edinet_ratios(code: str, current_user: User = Depends(get_current_
                         }});
                     }})();
                 </script>
+                
+                <!-- Investment Analysis Summary (Auto-Loaded) -->
+                {analysis_html}
             </div>
         """)
-        
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return HTMLResponse(content=f"<div class='text-red-400 p-4'>Error: {str(e)}</div>", status_code=500)
-
-
-@app.get("/api/edinet/analysis/{code}")
-async def analyze_edinet_performance(code: str, current_user: User = Depends(get_current_user)):
-    """Analyze stock performance using loaded EDINET data"""
-    if not current_user:
-        return HTMLResponse(content="<div class='text-red-400'>Login required</div>")
-    
-    try:
-        from utils.edinet_enhanced import get_financial_history
-        from utils.financial_analysis import analyze_company_performance
-        
-        # 1. Get History
-        history = get_financial_history(company_code=code, years=5)
-        
-        if not history:
-             return HTMLResponse(content="<div class='text-gray-400 p-4 text-center'>分析データが見つかりませんでした</div>")
-        
-        # 2. Analyze
-        analysis = analyze_company_performance(history)
-        
-        if not analysis:
-            return HTMLResponse(content="<div class='text-gray-400 p-4 text-center'>分析に失敗しました</div>")
-            
-        # 3. Format Output
-        prof = analysis.get("profitability", {})
-        growth = analysis.get("growth_yoy", {})
-        safety = analysis.get("safety", {})
-        efficiency = analysis.get("efficiency", {})
-        
-        # Helper for color
-        def get_color(val, threshold=0):
-            if val is None: return "text-gray-400"
-            return "text-emerald-400" if val >= threshold else "text-rose-400"
-
-        # Helpers for formatting
-        def fmt_pct(val):
-            return f"{val}%" if val is not None else "-"
-            
-        def fmt_val(val):
-            return f"{val}" if val is not None else "-"
-        
-        html_content = f"""
-            <div class="mt-6 bg-slate-900/80 rounded-xl p-6 border border-indigo-500/30 backdrop-blur-sm shadow-xl">
-                <h4 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400 mb-6 flex items-center gap-2">
-                    <span>📊</span> 投資分析サマリー (最新期: {analysis.get("latest_period", "")})
-                </h4>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    <!-- Profitability -->
-                    <div class="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50">
-                        <div class="text-sm text-gray-400 mb-2 font-semibold">収益性 (Profitability)</div>
-                        <div class="flex justify-between mb-1">
-                            <span class="text-xs text-gray-500">営業利益率</span>
-                            <span class="font-bold {get_color(prof.get('営業利益率'), 10)}">{fmt_pct(prof.get('営業利益率'))}</span>
-                        </div>
-                        <div class="flex justify-between mb-1">
-                            <span class="text-xs text-gray-500">ROE</span>
-                            <span class="font-bold {get_color(prof.get('ROE'), 8)}">{fmt_pct(prof.get('ROE'))}</span>
-                        </div>
-                         <div class="flex justify-between">
-                            <span class="text-xs text-gray-500">ROA</span>
-                            <span class="font-bold {get_color(prof.get('ROA'), 5)}">{fmt_pct(prof.get('ROA'))}</span>
-                        </div>
-                    </div>
-                    
-                    <!-- Growth (YoY) -->
-                    <div class="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50">
-                        <div class="text-sm text-gray-400 mb-2 font-semibold">成長性 (Growth YoY)</div>
-                        <div class="flex justify-between mb-1">
-                            <span class="text-xs text-gray-500">売上高</span>
-                            <span class="font-bold {get_color(growth.get('売上高_成長率'), 0)}">{fmt_pct(growth.get('売上高_成長率'))}</span>
-                        </div>
-                        <div class="flex justify-between mb-1">
-                            <span class="text-xs text-gray-500">営業利益</span>
-                            <span class="font-bold {get_color(growth.get('営業利益_成長率'), 0)}">{fmt_pct(growth.get('営業利益_成長率'))}</span>
-                        </div>
-                         <div class="flex justify-between">
-                            <span class="text-xs text-gray-500">EPS</span>
-                            <span class="font-bold {get_color(growth.get('EPS_成長率'), 0)}">{fmt_pct(growth.get('EPS_成長率'))}</span>
-                        </div>
-                    </div>
-                    
-                    <!-- Safety -->
-                    <div class="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50">
-                        <div class="text-sm text-gray-400 mb-2 font-semibold">安全性 (Safety)</div>
-                        <div class="flex justify-between mb-1">
-                            <span class="text-xs text-gray-500">自己資本比率</span>
-                            <span class="font-bold {get_color(safety.get('自己資本比率'), 40)}">{fmt_pct(safety.get('自己資本比率'))}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-xs text-gray-500">流動比率</span>
-                            <span class="font-bold {get_color(safety.get('流動比率'), 100)}">{fmt_pct(safety.get('流動比率'))}</span>
-                        </div>
-                    </div>
-                    
-                    <!-- Efficiency -->
-                    <div class="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50">
-                        <div class="text-sm text-gray-400 mb-2 font-semibold">効率性 (Efficiency)</div>
-                        <div class="flex justify-between">
-                            <span class="text-xs text-gray-500">総資産回転率</span>
-                            <span class="font-bold text-blue-300">{fmt_val(efficiency.get('総資産回転率'))}回</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Trends -->
-                <div class="bg-gray-800/30 p-4 rounded-lg border border-gray-700/30">
-                     <div class="text-sm text-gray-400 mb-2 font-semibold">📈 3期トレンド判定</div>
-                     <div class="grid grid-cols-2 gap-4 text-xs text-gray-300">
-                        <div class="text-center p-2 rounded bg-gray-900/50">
-                            売上高トレンド: <span class="font-bold {analysis.get('trends', {}).get('売上高', {}).get('direction') == 'up' and 'text-emerald-400' or 'text-rose-400'}">
-                                {analysis.get('trends', {}).get('売上高', {}).get('direction', '-').upper()}
-                            </span>
-                        </div>
-                        <div class="text-center p-2 rounded bg-gray-900/50">
-                            営業利益トレンド: <span class="font-bold {analysis.get('trends', {}).get('営業利益', {}).get('direction') == 'up' and 'text-emerald-400' or 'text-rose-400'}">
-                                {analysis.get('trends', {}).get('営業利益', {}).get('direction', '-').upper()}
-                            </span>
-                        </div>
-                     </div>
-                </div>
-            </div>
-        """
-        return HTMLResponse(content=html_content)
         
     except Exception as e:
         import traceback
