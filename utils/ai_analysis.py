@@ -1,0 +1,79 @@
+import os
+import logging
+import google.generativeai as genai
+import markdown
+from typing import Dict, Any, Optional
+from utils.edinet_enhanced import extract_financial_data, download_xbrl_package, get_document_list
+from datetime import datetime, timedelta
+
+logger = logging.getLogger(__name__)
+
+def setup_gemini():
+    api_key = os.getenv("GEMINI_API_KEY")
+    model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+    if not api_key:
+        logger.warning("GEMINI_API_KEY not set")
+        return None
+    
+    genai.configure(api_key=api_key)
+    return genai.GenerativeModel(model_name)
+
+def analyze_stock_with_ai(ticker_code: str, financial_context: Dict[str, Any], company_name: str = "") -> str:
+    """
+    Generate stock analysis using Gemini 1.5 Flash.
+    Combines Yahoo Finance data with EDINET qualitative data if available.
+    """
+    model = setup_gemini()
+    if not model:
+        return "<p class='error'>AI APIキーが設定されていないため、分析を実行できません。</p>"
+
+    # 1. EDINETから定性情報を取得（試行）
+    edinet_text = ""
+    try:
+        # 直近30日の書類を取得（有価証券報告書 or 四半期報告書）
+        from main import get_latest_edinet_doc_id_by_ticker # 必要に応じてmainからインポート
+        doc_id = None
+        # main.py の既存ロジックを流用して doc_id を特定することを想定
+        # ここでは後ほど main.py 側で doc_id を渡すか、内部で検索する
+        # ※ 実装の簡略化のため、financial_context に edinet_data が入っているか確認する
+        edinet_data = financial_context.get("edinet_data", {})
+        if edinet_data and "text_data" in edinet_data:
+            text_blocks = edinet_data["text_data"]
+            for title, content in text_blocks.items():
+                edinet_text += f"\n### {title}\n{content[:2000]}\n" # プロンプトサイズを考慮して制限
+    except Exception as e:
+        logger.error(f"Failed to fetch EDINET text for AI: {e}")
+
+    # 2. プロンプト構築
+    prompt = f"""
+あなたはプロの証券アナリストです。以下の提供されたデータに基づき、客観的かつ洞察に満ちた分析レポートを日本語で作成してください。
+
+## 対象企業
+銘柄コード: {ticker_code}
+企業名: {company_name}
+
+## 財務データ (Yahoo Finance等より)
+{financial_context.get('summary_text', 'データなし')}
+
+## 有価証券報告書からの定性情報 (EDINETより)
+{edinet_text if edinet_text else "定性情報データは見つかりませんでした。"}
+
+## 指示
+以下の構成でMarkdown形式で出力してください：
+1. **総評**: 現在の状態を簡潔に（強気、中立、弱気など）。
+2. **業績分析**: 数値から見える成長性や収益性の評価。
+3. **定性分析・リスク評価**: EDINET情報がある場合、将来の課題やリスクについて。
+4. **今後の展望**: 投資判断に資する予測。
+5. **結論**: (Strong Buy / Buy / Hold / Sell) とその理由。
+
+丁寧な日本語（敬体）で、読みやすく整形してください。
+"""
+
+    try:
+        response = model.generate_content(prompt)
+        # MarkdownをHTMLに変換
+        analysis_html = markdown.markdown(response.text, extensions=['extra', 'nl2br'])
+        return analysis_html
+    except Exception as e:
+        logger.error(f"AI Analysis failed: {e}")
+        return f"<p class='error'>分析の生成中にエラーが発生しました: {str(e)}</p>"

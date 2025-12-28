@@ -18,6 +18,7 @@ import pandas as pd
 import requests
 from utils.edinet_enhanced import get_financial_history, format_financial_data
 from utils.growth_analysis import analyze_growth_quality
+from utils.ai_analysis import analyze_stock_with_ai
 
 # Load environment variables
 load_dotenv()
@@ -1452,6 +1453,29 @@ async def lookup_yahoo_finance(
                     </p>
                 </div>
             </div>
+
+            <!-- AI Analysis Section (OOB Swap) -->
+            <div id="ai-analysis-section" hx-swap-oob="true" style="display: block; margin-top: 1rem;">
+                <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1rem; color: #a855f7; text-align: center;">
+                    🤖 AIアナリスト・レポート
+                </h2>
+                <div id="ai-analysis-container">
+                    <button class="ai-analysis-btn" id="ai-gen-btn"
+                        hx-post="/api/ai/analyze"
+                        hx-target="#ai-analysis-content"
+                        hx-indicator="#ai-spinner"
+                        hx-include="[name='ticker_code']">
+                        <span>AI分析を生成する (Gemini 1.5 Flash)</span>
+                        <span id="ai-spinner" class="htmx-indicator"
+                            style="display: inline-block; width: 18px; height: 18px; border: 3px solid white; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>
+                    </button>
+                    <div id="ai-analysis-content" class="ai-report-content">
+                        <p style="color: #64748b; text-align: center; font-size: 0.9rem;">
+                            有価証券報告書と直近の財務データをAIが解析し、投資判断の助けとなるレポートを作成します。
+                        </p>
+                    </div>
+                </div>
+            </div>
         """
         
         # Create response and set cookie to remember last searched ticker
@@ -1466,6 +1490,66 @@ async def lookup_yahoo_finance(
                 ❌ データの取得に失敗しました: {str(e)}
             </div>
         """)
+
+
+@app.post("/api/ai/analyze")
+async def ai_analyze_stock(ticker_code: Annotated[str, Form()]):
+    try:
+        # 1. データの再取得（コンテキスト構築用）
+        ticker = yf.Ticker(f"{ticker_code}.T")
+        info = ticker.info
+        name = info.get("longName") or info.get("shortName") or ticker_code
+        
+        # 財務履歴（最大4年）
+        fin = ticker.financials
+        summary_text = f"企業名: {name}\n"
+        if not fin.empty:
+            dates = sorted(fin.columns, reverse=True)[:3]
+            for d in dates:
+                rev = fin.loc["Total Revenue", d] if "Total Revenue" in fin.index else 0
+                op = fin.loc["Operating Income", d] if "Operating Income" in fin.index else 0
+                summary_text += f"- {d.year}年度: 売上 {rev/1e8:,.1f}億円, 営業利益 {op/1e8:,.1f}億円\n"
+        
+        # 投資指標
+        summary_text += f"- 時価総額: {info.get('marketCap', 0)/1e8:,.0f}億円\n"
+        summary_text += f"- PER: {info.get('trailingPE', '-')}\n"
+        summary_text += f"- PBR: {info.get('priceToBook', '-')}\n"
+        summary_text += f"- 配当利回り: {info.get('dividendYield', 0)*100:.2f}%\n"
+
+        # 2. EDINETから定性情報を取得（既存ツールを流用）
+        from utils.edinet_enhanced import get_document_list, download_xbrl_package, extract_financial_data
+        edinet_ctx = {}
+        try:
+            # 証券コード4桁で検索
+            docs = get_document_list() # 直近のリスト
+            target_doc = None
+            for d in docs:
+                if d.get('secCode') == ticker_code + '0': 
+                    if d.get('docTypeCode') in ['120', '130']: # 有報 or 四半期
+                        target_doc = d
+                        break
+            
+            if target_doc:
+                pkg_path = download_xbrl_package(target_doc['docID'])
+                if pkg_path:
+                    edinet_ctx = extract_financial_data(pkg_path)
+        except Exception as ee:
+            logger.error(f"EDINET fetch failed for AI analysis: {ee}")
+
+        # 3. AI分析実行
+        financial_context = {
+            "summary_text": summary_text,
+            "edinet_data": edinet_ctx
+        }
+        
+        report_html = analyze_stock_with_ai(ticker_code, financial_context, company_name=name)
+        
+        # 中身だけ返す (hx-target="#ai-analysis-content")
+        return HTMLResponse(content=report_html)
+
+    except Exception as e:
+        logger.error(f"AI Analysis endpoint error: {e}")
+        return HTMLResponse(content=f"<p style='color: #fb7185;'>AI分析中にエラーが発生しました: {str(e)}</p>")
 
 
 
