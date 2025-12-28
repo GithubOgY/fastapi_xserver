@@ -1609,25 +1609,25 @@ async def get_stock_news(ticker_code: str):
         # Render News Cards
         html = f"""
         <div class="space-y-4">
-            <h3 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-emerald-300 mb-4">
-                📰 {name} の最新ニュース (Google News)
+            <h3 class="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-emerald-300 mb-3 flex items-center gap-2">
+                <span>📰</span>
+                <span>最新ニュース</span>
+                <span class="text-xs text-gray-500 font-normal ml-auto">Google News</span>
             </h3>
-            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div class="flex flex-col gap-3">
         """
         
         for item in news_items:
             html += f"""
             <a href="{item['link']}" target="_blank" class="block group">
-                <div class="h-full bg-gray-800/50 hover:bg-gray-700/50 backdrop-blur border border-gray-700 hover:border-green-500/50 rounded-xl p-4 transition-all duration-200 shadow-sm hover:shadow-lg flex flex-col justify-between">
-                    <div>
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-xs font-mono text-green-400 border border-green-500/30 rounded px-1.5 py-0.5">{item['source']}</span>
-                            <span class="text-xs text-gray-500">{item['published']}</span>
-                        </div>
-                        <h4 class="text-sm font-semibold text-gray-200 group-hover:text-green-300 leading-relaxed mb-2 line-clamp-3">
-                            {item['title']}
-                        </h4>
+                <div class="bg-gray-800/50 hover:bg-gray-700/50 backdrop-blur border border-gray-700 hover:border-green-500/50 rounded-xl p-3 transition-all duration-200 shadow-sm hover:shadow-md">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-[0.7rem] font-mono text-green-400 border border-green-500/30 rounded px-1.5 py-0.5 truncate max-w-[100px]">{item['source']}</span>
+                        <span class="text-[0.7rem] text-gray-500">{item['published']}</span>
                     </div>
+                    <h4 class="text-sm font-medium text-gray-200 group-hover:text-green-300 leading-snug line-clamp-3">
+                        {item['title']}
+                    </h4>
                 </div>
             </a>
             """
