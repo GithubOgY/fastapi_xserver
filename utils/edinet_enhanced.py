@@ -871,16 +871,20 @@ def process_document(doc: Dict[str, Any]) -> Dict[str, Any]:
         ).first()
         
         if cached:
-            logger.info(f"Cache hit for {doc_id} ({doc.get('filerName')})")
+            print(f"[CACHE HIT] {doc_id} - {doc.get('filerName')}")
             db.close()
-            return json.loads(cached.data_json)
+            result = json.loads(cached.data_json)
+            # Add cache flag to metadata
+            if "metadata" in result:
+                result["metadata"]["from_cache"] = True
+            return result
         
         db.close()
     except Exception as e:
-        logger.warning(f"Cache check failed: {e}")
+        print(f"[CACHE ERROR] {e}")
     
     # Cache miss - download and process
-    logger.info(f"Processing: {doc.get('filerName')} - {doc.get('docDescription')} ({period_end})")
+    print(f"[CACHE MISS] Downloading: {doc.get('filerName')} - {doc.get('docDescription')} ({period_end})")
     
     # Download and extract
     xbrl_dir = download_xbrl_package(doc_id)
@@ -890,7 +894,7 @@ def process_document(doc: Dict[str, Any]) -> Dict[str, Any]:
     # Extract financial data
     result = extract_financial_data(xbrl_dir)
     
-    # Add metadata
+    # Add metadata with cache flag
     result["metadata"] = {
         "company_name": doc.get("filerName"),
         "document_type": doc.get("docDescription"),
@@ -898,6 +902,7 @@ def process_document(doc: Dict[str, Any]) -> Dict[str, Any]:
         "period_end": period_end,
         "securities_code": doc.get("secCode"),
         "doc_id": doc_id,
+        "from_cache": False,
     }
     
     # Cleanup temp files

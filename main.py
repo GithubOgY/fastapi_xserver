@@ -720,6 +720,7 @@ async def search_edinet_company(
                         <div class="flex items-center gap-2 mt-2 text-sm text-gray-400">
                             <span class="bg-gray-900/50 px-2 py-1 rounded">{metadata.get('document_type')}</span>
                             <span class="text-xs text-gray-500">提出: {metadata.get('submit_date')}</span>
+                            {'<span class="text-xs text-green-400 bg-green-900/30 px-2 py-1 rounded">⚡ キャッシュ</span>' if metadata.get('from_cache') else ''}
                         </div>
                     </div>
                 </div>
