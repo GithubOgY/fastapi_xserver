@@ -276,6 +276,14 @@ CONCEPT_GROUPS = {
         "CashAndCashEquivalents",
         "CashAndCashEquivalentsSummaryOfBusinessResults",
     ],
+    # ROA (Return on Assets)
+    "ROA": [
+        "RateOfReturnOnAssetsIFRS",
+        "RateOfReturnOnAssetsIFRSSummaryOfBusinessResults",
+        "RateOfReturnOnAssets",
+        "RateOfReturnOnAssetsSummaryOfBusinessResults",
+        "ReturnOnAssets",
+    ],
 }
 
 # Elements that represent ratios/percentages (value is 0-1 scale)
