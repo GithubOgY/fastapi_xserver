@@ -1524,7 +1524,22 @@ async def ai_analyze_stock(ticker_code: Annotated[str, Form()]):
         summary_text += f"- 時価総額: {info.get('marketCap', 0)/1e8:,.0f}億円\n"
         summary_text += f"- PER: {info.get('trailingPE', '-')}\n"
         summary_text += f"- PBR: {info.get('priceToBook', '-')}\n"
-        summary_text += f"- 配当利回り: {info.get('dividendYield', 0)*100:.2f}%\n"
+        
+        # 配当利回りの計算と補正
+        div_yield = info.get('dividendYield', 0)
+        div_rate = info.get('dividendRate', 0)
+        price = info.get('currentPrice') or info.get('regularMarketPrice')
+        
+        # 自前計算を優先（APIのスケール不整合を防ぐ）
+        if div_rate and price and price > 0:
+            final_yield = div_rate / price
+        elif div_yield:
+            # API値が1以上(例: 2.5)なら%表記とみなし1/100にする、そうでなければそのまま
+            final_yield = div_yield / 100.0 if div_yield > 1.0 else div_yield
+        else:
+            final_yield = 0
+            
+        summary_text += f"- 配当利回り: {final_yield*100:.2f}%\n"
 
         # 2. EDINETから定性情報を取得（既存ツールを流用）
         # 2. EDINETから定性情報を取得（Enhancedツールを使用）
