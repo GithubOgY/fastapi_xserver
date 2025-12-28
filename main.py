@@ -668,19 +668,17 @@ async def search_edinet_company(
                 # Truncate for preview (first 300 chars)
                 preview = content[:300] + "..." if len(content) > 300 else content
                 
-                # HTML for expandable section
+                # HTML for expandable section - NO SVG icons, simple text only
                 sections_html += f"""
-                <div class="mb-4 bg-gray-900/30 rounded-lg border border-gray-700/50 overflow-hidden" x-data="{{ open: false }}">
-                    <button @click="open = !open" class="w-full flex items-center justify-between p-4 bg-gray-800/50 hover:bg-gray-700/50 transition-colors">
-                        <span class="font-medium text-gray-200">{key}</span>
-                        <svg :class="{{'rotate-180': open}}" class="h-5 w-5 text-gray-500 transition-transform transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </button>
-                    <div x-show="open" class="p-6 text-base text-gray-200 leading-loose whitespace-pre-wrap border-t border-gray-700/50 bg-gray-900/50 animate-fade-in font-sans">
+                <details class="mb-3 bg-gray-900/30 rounded-lg border border-gray-700/50 overflow-hidden">
+                    <summary class="cursor-pointer p-4 bg-gray-800/50 hover:bg-gray-700/50 transition-colors font-medium text-gray-200 list-none flex items-center justify-between">
+                        <span>📄 {key}</span>
+                        <span class="text-gray-500 text-sm">クリックして展開</span>
+                    </summary>
+                    <div class="p-6 text-base text-gray-200 leading-loose border-t border-gray-700/50 bg-gray-900/50" style="white-space: pre-wrap; line-height: 2;">
                         {content}
                     </div>
-                </div>
+                </details>
                 """
 
         history_btn = ""
