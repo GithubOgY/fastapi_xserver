@@ -531,50 +531,6 @@ async def echo(message: Annotated[str, Form()]):
         return '<p class="echo-result">Please enter something!</p>'
     return f'<p class="echo-result">Server response: <strong>{message}</strong></p>'
 
-# --- Favorites API ---
-
-@app.post("/api/favorites/add")
-async def add_favorite(ticker: str = Form(...), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Login required")
-    
-    # Check if already favorited
-    existing = db.query(UserFavorite).filter(
-        UserFavorite.user_id == current_user.id,
-        UserFavorite.ticker == ticker
-    ).first()
-    
-    if not existing:
-        favorite = UserFavorite(user_id=current_user.id, ticker=ticker)
-        db.add(favorite)
-        db.commit()
-    
-    return RedirectResponse(url=f"/dashboard?ticker={ticker}", status_code=status.HTTP_303_SEE_OTHER)
-
-@app.post("/api/favorites/remove")
-async def remove_favorite(ticker: str = Form(...), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Login required")
-    
-    favorite = db.query(UserFavorite).filter(
-        UserFavorite.user_id == current_user.id,
-        UserFavorite.ticker == ticker
-    ).first()
-    
-    if favorite:
-        db.delete(favorite)
-        db.commit()
-    
-    return RedirectResponse(url=f"/dashboard?ticker={ticker}", status_code=status.HTTP_303_SEE_OTHER)
-
-@app.get("/api/favorites")
-async def get_favorites(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if not current_user:
-        return []
-    
-    favorites = db.query(UserFavorite).filter(UserFavorite.user_id == current_user.id).all()
-    return [f.ticker for f in favorites]
-
 @app.post("/api/test-email")
 async def send_test_email(email: str = Form(...), current_user: User = Depends(get_current_user)):
     """Test email sending functionality"""
@@ -611,6 +567,64 @@ async def send_test_email(email: str = Form(...), current_user: User = Depends(g
                 ❌ エラーが発生しました: {str(e)}
             </div>
         """, status_code=500)
+
+
+# --- Favorites API Endpoints ---
+@app.post("/api/favorites/add")
+async def add_favorite(
+    request: Request,
+    ticker: str = Form(...),
+    ticker_name: str = Form(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Add a stock to user's favorites"""
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=303)
+    
+    # Check if already exists
+    existing = db.query(UserFavorite).filter(
+        UserFavorite.user_id == current_user.id,
+        UserFavorite.ticker == ticker
+    ).first()
+    
+    if not existing:
+        # Add to favorites
+        fav = UserFavorite(user_id=current_user.id, ticker=ticker)
+        db.add(fav)
+        
+        # Also add/update Company record with name if provided
+        if ticker_name:
+            company = db.query(Company).filter(Company.ticker == ticker).first()
+            if not company:
+                company = Company(ticker=ticker, name=ticker_name)
+                db.add(company)
+            elif not company.name:
+                company.name = ticker_name
+        
+        db.commit()
+    
+    return RedirectResponse(url="/dashboard", status_code=303)
+
+
+@app.post("/api/favorites/remove")
+async def remove_favorite(
+    request: Request,
+    ticker: str = Form(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Remove a stock from user's favorites"""
+    if not current_user:
+        return RedirectResponse(url="/login", status_code=303)
+    
+    db.query(UserFavorite).filter(
+        UserFavorite.user_id == current_user.id,
+        UserFavorite.ticker == ticker
+    ).delete()
+    db.commit()
+    
+    return RedirectResponse(url="/dashboard", status_code=303)
 
 
 # --- EDINET API Endpoint ---
@@ -819,9 +833,19 @@ async def lookup_yahoo_finance(
                         <div style="font-size: 1.2rem; font-weight: bold; color: #f8fafc;">{name}</div>
                         <div style="font-size: 0.85rem; color: #94a3b8;">{symbol}</div>
                     </div>
-                    <div style="text-align: right;">
-                        <div style="font-size: 1.5rem; font-weight: bold; color: #f8fafc;">¥{price:,.0f}</div>
-                        <div style="color: {change_color}; font-size: 0.9rem;">{change_sign}{change:,.0f} ({change_sign}{change_pct:.2f}%)</div>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="text-align: right;">
+                            <div style="font-size: 1.5rem; font-weight: bold; color: #f8fafc;">¥{price:,.0f}</div>
+                            <div style="color: {change_color}; font-size: 0.9rem;">{change_sign}{change:,.0f} ({change_sign}{change_pct:.2f}%)</div>
+                        </div>
+                        <form action="/api/favorites/add" method="post" style="margin: 0;">
+                            <input type="hidden" name="ticker" value="{code}">
+                            <input type="hidden" name="ticker_name" value="{name}">
+                            <button type="submit"
+                                style="background: rgba(251, 191, 36, 0.2); border: 1px solid #fbbf24; color: #fbbf24; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; white-space: nowrap;">
+                                ☆ 登録
+                            </button>
+                        </form>
                     </div>
                 </div>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.75rem; font-size: 0.85rem;">
