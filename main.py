@@ -1449,6 +1449,16 @@ async def lookup_yahoo_finance(
                 </script>
             </div>
 
+            <!-- News Section (OOB Swap) -->
+            <div id="news-section" class="section" hx-swap-oob="true" style="margin-top: 2rem;">
+                <div hx-get="/api/news/{code_only}" hx-trigger="load delay:500ms" hx-swap="innerHTML">
+                    <div class="flex items-center justify-center p-8 space-x-3 text-gray-400">
+                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-green-400"></div>
+                        <span class="text-sm font-medium">最新ニュースを取得中...</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Financial Data Table (OOB Swap) -->
             <div id="financial-data-section" class="section" hx-swap-oob="true">
                 <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; margin-bottom: 1rem; color: #818cf8; text-align: center;">
@@ -1577,6 +1587,54 @@ async def ai_analyze_stock(ticker_code: Annotated[str, Form()]):
     except Exception as e:
         logger.error(f"AI Analysis endpoint error: {e}")
         return HTMLResponse(content=f"<p style='color: #fb7185;'>AI分析中にエラーが発生しました: {str(e)}</p>")
+
+@app.get("/api/news/{ticker_code}")
+async def get_stock_news(ticker_code: str):
+    try:
+        # Retrieve company name
+        ticker = yf.Ticker(f"{ticker_code}.T")
+        info = ticker.info
+        name = info.get("longName") or info.get("shortName") or ticker_code
+        
+        # Fetch news
+        from utils.news import fetch_company_news
+        news_items = fetch_company_news(name)
+        
+        if not news_items:
+            return HTMLResponse(content="<div class='text-gray-500 text-center py-4'>関連ニュースは見つかりませんでした</div>")
+            
+        # Render News Cards
+        html = f"""
+        <div class="space-y-4">
+            <h3 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-emerald-300 mb-4">
+                📰 {name} の最新ニュース (Google News)
+            </h3>
+            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        """
+        
+        for item in news_items:
+            html += f"""
+            <a href="{item['link']}" target="_blank" class="block group">
+                <div class="h-full bg-gray-800/50 hover:bg-gray-700/50 backdrop-blur border border-gray-700 hover:border-green-500/50 rounded-xl p-4 transition-all duration-200 shadow-sm hover:shadow-lg flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-mono text-green-400 border border-green-500/30 rounded px-1.5 py-0.5">{item['source']}</span>
+                            <span class="text-xs text-gray-500">{item['published']}</span>
+                        </div>
+                        <h4 class="text-sm font-semibold text-gray-200 group-hover:text-green-300 leading-relaxed mb-2 line-clamp-3">
+                            {item['title']}
+                        </h4>
+                    </div>
+                </div>
+            </a>
+            """
+            
+        html += "</div></div>"
+        return HTMLResponse(content=html)
+
+    except Exception as e:
+        logger.error(f"News API error: {e}")
+        return HTMLResponse(content="<div class='text-gray-500 text-sm'>ニュースの取得中にエラーが発生しました</div>")
 
 
 
