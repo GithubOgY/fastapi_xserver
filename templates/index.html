@@ -58,13 +58,26 @@
 
         .container {
             width: 100%;
-            max-width: 900px;
+            max-width: 1200px;
             backdrop-filter: blur(12px);
             background: var(--glass-bg);
             border: 1px solid var(--glass-border);
             border-radius: 24px;
             padding: 3rem;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        @media (max-width: 900px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .header {
@@ -276,24 +289,33 @@
             </div>
         </div>
 
-        <!-- 業績グラフセクション (初期は空、検索後に表示) -->
-        <div class="section" id="chart-section" style="display: none;">
-            <!-- Populated by HTMX OOB after stock search -->
-        </div>
+        <!-- Checkpoint for grid layout -->
+        <div class="dashboard-grid">
+            <!-- Main Content Column -->
+            <div class="main-content">
+                <!-- 業績グラフセクション (初期は空、検索後に表示) -->
+                <div class="section" id="chart-section" style="display: none;">
+                    <!-- Populated by HTMX OOB after stock search -->
+                </div>
 
-        <!-- 成長性・クオリティ分析 (初期は空、検索後に表示) -->
-        <div class="section" id="growth-analysis-section" style="display: none;">
-            <!-- Populated by HTMX OOB after stock search -->
-        </div>
+                <!-- 成長性・クオリティ分析 (初期は空、検索後に表示) -->
+                <div class="section" id="growth-analysis-section" style="display: none;">
+                    <!-- Populated by HTMX OOB after stock search -->
+                </div>
 
-        <!-- 財務データセクション (初期は空、検索後に表示) -->
-        <div class="section" id="financial-data-section" style="display: none;">
-            <!-- Populated by HTMX OOB after stock search -->
-        </div>
+                <!-- 財務データセクション (初期は空、検索後に表示) -->
+                <div class="section" id="financial-data-section" style="display: none;">
+                    <!-- Populated by HTMX OOB after stock search -->
+                </div>
+            </div>
 
-        <!-- 掲示板セクション (初期は空、検索後に表示) -->
-        <div id="discussion-section" style="display: none;">
-            <!-- Populated by HTMX OOB after stock search -->
+            <!-- Sidebar Column -->
+            <div class="sidebar">
+                <!-- 掲示板セクション (初期は空、検索後に表示) -->
+                <div id="discussion-section" style="display: none;">
+                    <!-- Populated by HTMX OOB after stock search -->
+                </div>
+            </div>
         </div>
 
     </div>
