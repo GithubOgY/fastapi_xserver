@@ -919,12 +919,15 @@ async def search_edinet_company(
                         hx-target="#ai-analysis-content"
                         hx-indicator="#ai-spinner-edinet"
                         hx-vals='{{"ticker_code": "{code_only}"}}'>
-                        <span>AIによる詳細分析を生成 (Gemini 1.5 Flash)</span>
+                        <span class="btn-text">AIによる詳細分析を生成 (Gemini 2.0 Flash)</span>
+                        <span class="btn-loading" style="display: none;">✨ 分析を生成中... (Gemini 2.0 Flash)</span>
                         <span id="ai-spinner-edinet" class="htmx-indicator" style="border: 2px solid white; border-top-color: transparent; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: none; margin-left: 0.5rem;"></span>
                     </button>
                     <style> 
                         @keyframes spin {{ to {{ transform: rotate(360deg); }} }}
-                        .htmx-request #ai-spinner-edinet {{ display: inline-block !important; }} 
+                        .htmx-request #ai-spinner-edinet {{ display: inline-block !important; }}
+                        .htmx-request .btn-text {{ display: none; }}
+                        .htmx-request .btn-loading {{ display: inline !important; }}
                     </style>
                     <div id="ai-analysis-content" style="margin-top: 1rem; color: #e2e8f0; line-height: 1.7; font-size: 0.95rem;"></div>
                 </div>
