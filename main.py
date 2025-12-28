@@ -687,13 +687,16 @@ async def search_edinet_company(
             history_btn = f"""
             <button hx-get="/api/edinet/history/{code_only}" 
                     hx-target="#edinet-history-container" 
-                    hx-indicator="#loading-history"
-                    class="mt-6 w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-all">
-                直近の財務推移グラフを表示
+                    hx-swap="innerHTML"
+                    hx-disabled-elt="this"
+                    class="mt-6 w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-wait text-white rounded-lg text-sm font-medium transition-all">
+                <span class="htmx-indicator-hide">直近の財務推移グラフを表示</span>
+                <span class="htmx-indicator-show hidden">⏳ データ取得中... (数十秒かかる場合があります)</span>
             </button>
-            <div id="loading-history" class="htmx-indicator flex justify-center py-4">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
-            </div>
+            <style>
+                button[disabled] .htmx-indicator-hide {{ display: none; }}
+                button[disabled] .htmx-indicator-show {{ display: inline !important; }}
+            </style>
             <div id="edinet-history-container" class="mt-4"></div>
             """
         
