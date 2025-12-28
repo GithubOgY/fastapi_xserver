@@ -97,9 +97,21 @@ def analyze_stock_with_ai(ticker_code: str, financial_context: Dict[str, Any], c
         edinet_data = financial_context.get("edinet_data", {})
         if edinet_data and "text_data" in edinet_data:
             text_blocks = edinet_data["text_data"]
+            # Priority order for prompt (most important first)
+            priority_keys = ["事業等のリスク", "対処すべき課題", "経営者による分析", "研究開発活動"]
+            
+            # Add priority keys first
+            for key in priority_keys:
+                if key in text_blocks:
+                    content = text_blocks[key]
+                    edinet_text += f"\n### {key}\n{content[:3000]}\n"  # Increased limit to 3000 chars
+            
+            # Add any remaining keys
             for title, content in text_blocks.items():
-                edinet_text += f"\n### {title}\n{content[:2000]}\n" # プロンプトサイズを考慮して制限
-            logger.info(f"AI Prompt: Included {len(text_blocks)} EDINET text blocks for context.")
+                if title not in priority_keys:
+                    edinet_text += f"\n### {title}\n{content[:2000]}\n"
+            
+            logger.info(f"AI Prompt: Included {len(text_blocks)} EDINET text blocks: {list(text_blocks.keys())}")
     except Exception as e:
         logger.error(f"Failed to fetch EDINET text for AI: {e}")
 

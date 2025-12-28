@@ -924,6 +924,10 @@ def process_document(doc: Dict[str, Any]) -> Dict[str, Any]:
     # Extract financial data
     result = extract_financial_data(xbrl_dir)
     
+    # Log text_data extraction result for debugging
+    text_data_keys = list(result.get("text_data", {}).keys())
+    logger.info(f"EDINET text_data keys extracted for {doc_id}: {text_data_keys}")
+    
     # Add metadata with cache flag
     result["metadata"] = {
         "company_name": doc.get("filerName"),
