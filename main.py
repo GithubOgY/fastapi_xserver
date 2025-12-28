@@ -582,10 +582,16 @@ async def add_favorite(
     if not current_user:
         return RedirectResponse(url="/login", status_code=303)
     
-    # Check if already exists
+    # Check if already exists (flexible check)
+    possible_tickers = [ticker]
+    if ticker.endswith(".T"):
+        possible_tickers.append(ticker[:-2])
+    else:
+        possible_tickers.append(f"{ticker}.T")
+    
     existing = db.query(UserFavorite).filter(
         UserFavorite.user_id == current_user.id,
-        UserFavorite.ticker == ticker
+        UserFavorite.ticker.in_(possible_tickers)
     ).first()
     
     if not existing:
@@ -618,10 +624,17 @@ async def remove_favorite(
     if not current_user:
         return RedirectResponse(url="/login", status_code=303)
     
+    # Remove all variations (flexible remove)
+    possible_tickers = [ticker]
+    if ticker.endswith(".T"):
+        possible_tickers.append(ticker[:-2])
+    else:
+        possible_tickers.append(f"{ticker}.T")
+    
     db.query(UserFavorite).filter(
         UserFavorite.user_id == current_user.id,
-        UserFavorite.ticker == ticker
-    ).delete()
+        UserFavorite.ticker.in_(possible_tickers)
+    ).delete(synchronize_session=False)
     db.commit()
     
     return RedirectResponse(url="/dashboard", status_code=303)
@@ -827,10 +840,14 @@ async def lookup_yahoo_finance(
         change_color = "#10b981" if change >= 0 else "#f43f5e"
         change_sign = "+" if change >= 0 else ""
         
-        # Check if favorite
+        # Check if favorite (Check both with and without .T to be safe)
+        possible_tickers = [symbol]
+        if symbol.endswith(".T"):
+            possible_tickers.append(symbol[:-2]) # Add code without .T
+        
         is_favorite = db.query(UserFavorite).filter(
             UserFavorite.user_id == current_user.id,
-            UserFavorite.ticker == symbol
+            UserFavorite.ticker.in_(possible_tickers)
         ).first() is not None
         
         if is_favorite:
