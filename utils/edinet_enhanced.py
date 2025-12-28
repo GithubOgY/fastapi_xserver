@@ -275,6 +275,36 @@ CONCEPT_GROUPS = {
         "CashAndCashEquivalentsIFRSSummaryOfBusinessResults",
         "CashAndCashEquivalents",
         "CashAndCashEquivalentsSummaryOfBusinessResults",
+        "CashAndDeposits",
+    ],
+    # Current Assets (Safety)
+    "流動資産": [
+        "CurrentAssetsIFRS",
+        "CurrentAssetsIFRSSummaryOfBusinessResults",
+        "CurrentAssets", 
+        "CurrentAssetsSummaryOfBusinessResults",
+    ],
+    # Current Liabilities (Safety)
+    "流動負債": [
+        "CurrentLiabilitiesIFRS",
+        "CurrentLiabilitiesIFRSSummaryOfBusinessResults",
+        "CurrentLiabilities", 
+        "CurrentLiabilitiesSummaryOfBusinessResults",
+    ],
+    # Inventories (Efficiency)
+    "棚卸資産": [
+        "InventoriesIFRS",
+        "InventoriesIFRSSummaryOfBusinessResults",
+        "Inventories", 
+        "InventoriesSummaryOfBusinessResults",
+        "MerchandiseAndFinishedGoods", # Breakdown sum might be needed but main tag usually exists
+    ],
+    # Receivables (Efficiency - Notes & Accounts Receivable)
+    "受取手形及び売掛金": [
+        "TradeAndOtherReceivablesIFRS",
+        "TradeAndOtherReceivablesIFRSSummaryOfBusinessResults",
+        "NotesAndAccountsReceivableTrade", 
+        "NotesAndAccountsReceivableTradeSummaryOfBusinessResults",
     ],
     # ROA (Return on Assets)
     "ROA": [
