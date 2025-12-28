@@ -11,8 +11,10 @@ logger = logging.getLogger(__name__)
 def setup_gemini():
     api_key = os.getenv("GEMINI_API_KEY")
     model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
-    if not api_key:
-        logger.warning("GEMINI_API_KEY not set")
+    
+    # Check for missing or placeholder key
+    if not api_key or "your-gemini-api-key" in api_key:
+        logger.warning("GEMINI_API_KEY is not set or is a placeholder.")
         return None
     
     genai.configure(api_key=api_key)
@@ -25,7 +27,13 @@ def analyze_stock_with_ai(ticker_code: str, financial_context: Dict[str, Any], c
     """
     model = setup_gemini()
     if not model:
-        return "<p class='error'>AI APIキーが設定されていないため、分析を実行できません。</p>"
+        return """
+        <div class="error-box" style="padding: 1rem; border: 1px solid #f43f5e; border-radius: 8px; background: rgba(244, 63, 94, 0.1); color: #f43f5e;">
+            <p style="font-weight: bold; margin-bottom: 0.5rem;">⚠️ APIキー設定エラー</p>
+            <p style="font-size: 0.9rem;">GeminiのAPIキーが正しく設定されていません。</p>
+            <p style="font-size: 0.85rem; margin-top: 0.5rem;"><code>.env</code>ファイルの <code>GEMINI_API_KEY</code> に有効なキーを設定し、サーバーを再起動してください。</p>
+        </div>
+        """
 
     # 1. EDINETから定性情報を取得（試行）
     edinet_text = ""
@@ -76,4 +84,12 @@ def analyze_stock_with_ai(ticker_code: str, financial_context: Dict[str, Any], c
         return analysis_html
     except Exception as e:
         logger.error(f"AI Analysis failed: {e}")
-        return f"<p class='error'>分析の生成中にエラーが発生しました: {str(e)}</p>"
+        error_msg = str(e)
+        if "API key not valid" in error_msg:
+             return """
+            <div class="error-box" style="padding: 1rem; border: 1px solid #f43f5e; border-radius: 8px; background: rgba(244, 63, 94, 0.1); color: #f43f5e;">
+                <p style="font-weight: bold;">⚠️ APIキーが無効です</p>
+                <p style="font-size: 0.9rem;">Google AI Studioで取得した正しいキーが設定されているか確認してください。</p>
+            </div>
+            """
+        return f"<p class='error' style='color: #fb7185;'>分析の生成中にエラーが発生しました: {error_msg}</p>"
