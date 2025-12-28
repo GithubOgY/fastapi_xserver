@@ -687,15 +687,15 @@ async def list_comments(
     comments = db.query(StockComment).filter(StockComment.ticker == ticker).order_by(StockComment.created_at.desc()).all()
     
     html = f"""
-        <div style="background: rgba(15, 23, 42, 0.4); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); padding: 1.5rem;">
+        <div id="discussion-board-{ticker}" style="background: rgba(15, 23, 42, 0.4); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); padding: 1.5rem;">
             <h3 style="color: #818cf8; font-family: 'Outfit', sans-serif; font-size: 1.1rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
                 💬 {ticker} 投資家掲示板
             </h3>
             
             <!-- Post Form -->
             <div style="margin-bottom: 2rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 12px;">
-                <form hx-post="/api/comments/{ticker}" hx-target="#comments-list-container" hx-on::after-request="this.reset()">
-                    <textarea name="content" placeholder="この銘柄についての意見や分析を投稿しましょう..." 
+                <form hx-post="/api/comments/{ticker}" hx-target="#comments-list-{ticker}" hx-swap="afterbegin" hx-on::after-request="this.reset()">
+                    <textarea name="content" placeholder="この銘柄についての意見や分析を投稿しましょう..." required
                         style="width: 100%; min-height: 80px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 0.75rem; color: #f8fafc; font-size: 0.9rem; resize: vertical; outline: none; margin-bottom: 0.5rem;"></textarea>
                     <div style="text-align: right;">
                         <button type="submit" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); border: none; padding: 0.5rem 1.2rem; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; font-size: 0.85rem;">
@@ -706,11 +706,13 @@ async def list_comments(
             </div>
 
             <!-- Comments List -->
-            <div id="comments-list-container" style="display: flex; flex-direction: column; gap: 1rem; max-height: 500px; overflow-y: auto; padding-right: 0.5rem;">
+            <div id="comments-list-{ticker}" style="display: flex; flex-direction: column; gap: 1rem; max-height: 500px; overflow-y: auto; padding-right: 0.5rem;">
     """
     
     if not comments:
-        html += "<p id='no-comments' style='color: #475569; text-align: center; font-size: 0.85rem; padding: 2rem;'>まだ投稿がありません。最初の意見を投稿しましょう！</p>"
+        # Initial empty state (will be hidden if a comment is added via JS logic, or just appended to)
+        # However, hx-swap="afterbegin" pre-pends. If we leave this message, it stays at bottom. That's fine.
+        html += f"<p id='no-comments-{ticker}' style='color: #475569; text-align: center; font-size: 0.85rem; padding: 2rem;'>まだ投稿がありません。最初の意見を投稿しましょう！</p>"
     else:
         for comment in comments:
             is_owner = comment.user_id == current_user.id
@@ -749,7 +751,7 @@ async def post_comment(
         raise HTTPException(status_code=401)
     
     if not content.strip():
-        return "" # Ignore empty posts
+        return "" 
         
     comment = StockComment(
         user_id=current_user.id,
@@ -760,19 +762,27 @@ async def post_comment(
     db.commit()
     db.refresh(comment)
     
-    # Return JUST the new comment to be prepended via HTMX if we wanted, 
-    # but for simplicity, let's just refresh the whole list by triggering a GET /api/comments/{ticker}
-    # Actually, simpler: just return the new comment card and let HTMX append/prepend it.
-    # To refresh the whole list correctly we use hx-get.
+    # Return JUST the new comment card. 
+    # HTMX swap="afterbegin" on #comments-list-{ticker} will insert this at the top.
     
-    # Let's return the new comment card to be prepended to the list
     html = f"""
-        <div class="comment-card" hx-get="/api/comments/{ticker}" hx-trigger="load delay:100ms" hx-target="closest #comments-list-container" hx-swap="outerHTML" 
-            style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 1rem; position: relative; animation: fadeIn 0.5s ease-out;">
+        <div class="comment-card" style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 1rem; position: relative; animation: fadeIn 0.5s ease-out;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                <span style="color: #10b981; font-size: 0.8rem; font-weight: 600;">投稿完了!</span>
+                <span style="color: #10b981; font-size: 0.8rem; font-weight: 600;">@{current_user.username}</span>
+                <span style="color: #475569; font-size: 0.75rem;">Now</span>
             </div>
-            <div style="color: #94a3b8; font-size: 0.85rem;">リストを更新中...</div>
+            <div style="color: #f8fafc; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap;">{comment.content}</div>
+            <div style="text-align: right; margin-top: 0.5rem;">
+                 <button hx-delete="/api/comments/{comment.id}" hx-confirm="この投稿を削除しますか？" hx-target="closest .comment-card" hx-swap="outerHTML"
+                    style="background: transparent; border: none; color: #f43f5e; cursor: pointer; font-size: 0.75rem; opacity: 0.6; padding: 0;">
+                    削除
+                </button>
+            </div>
+            <script>
+                // Hide "no comments" message if exists
+                var noCommentMsg = document.getElementById('no-comments-{ticker}');
+                if(noCommentMsg) noCommentMsg.style.display = 'none';
+            </script>
         </div>
     """
     return html
