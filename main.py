@@ -656,6 +656,7 @@ async def search_edinet_company(
         metadata = result.get("metadata", {})
         normalized = result.get("normalized_data", {})
         text_data = result.get("text_data", {})
+        website_url = result.get("website_url")
         formatted_normalized = format_financial_data(normalized)
         
         # Qualitative Information Sections
@@ -689,7 +690,7 @@ async def search_edinet_company(
                     hx-target="#edinet-history-container" 
                     hx-swap="innerHTML"
                     hx-disabled-elt="this"
-                    class="mt-6 w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-wait text-white rounded-lg text-sm font-medium transition-all">
+                    class="mt-10 w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-wait text-white rounded-lg text-sm font-medium transition-all">
                 <span class="htmx-indicator-hide">直近の財務推移グラフを表示</span>
                 <span class="htmx-indicator-show hidden">⏳ データ取得中... (数十秒かかる場合があります)</span>
             </button>
@@ -700,6 +701,11 @@ async def search_edinet_company(
             <div id="edinet-history-container" class="mt-4"></div>
             """
         
+        # Website link HTML
+        website_html = ""
+        if website_url:
+            website_html = f'<a href="{website_url}" target="_blank" rel="noopener" class="text-blue-400 hover:text-blue-300 underline text-sm">企業サイト</a>'
+        
         return HTMLResponse(content=f"""
             <div class="bg-gray-800/80 backdrop-blur-md border border-gray-700 rounded-xl p-6 shadow-2xl animate-fade-in-up">
                 <div class="flex items-start justify-between mb-6 pb-4 border-b border-gray-700">
@@ -709,6 +715,7 @@ async def search_edinet_company(
                                 {metadata.get('company_name')}
                             </h3>
                             <span class="px-2 py-1 bg-gray-700 text-gray-300 text-xs font-mono rounded-md border border-gray-600">{sec_code}</span>
+                            {website_html}
                         </div>
                         <div class="flex items-center gap-2 mt-2 text-sm text-gray-400">
                             <span class="bg-gray-900/50 px-2 py-1 rounded">{metadata.get('document_type')}</span>

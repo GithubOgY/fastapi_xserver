@@ -511,6 +511,20 @@ def extract_financial_data(xbrl_dir: str) -> Dict[str, Any]:
         
         result["text_data"] = text_data
         
+        # Extract company website URL
+        website_url = None
+        website_tags = ["URLOfCompanyWebsite", "WebsiteOfCompany", "CompanyWebsite", "InformationAboutOfficialWebsiteOfCompany"]
+        for elem in root.iter():
+            tag = elem.tag
+            if not isinstance(tag, str):
+                continue
+            if any(wt in tag for wt in website_tags):
+                if elem.text and elem.text.strip().startswith("http"):
+                    website_url = elem.text.strip()
+                    break
+        
+        result["website_url"] = website_url
+        
         # Extract all elements with values (numeric)
         for elem in root.iter():
             tag = elem.tag
