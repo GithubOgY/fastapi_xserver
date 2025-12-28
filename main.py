@@ -672,12 +672,7 @@ async def search_edinet_company(
                 sections_html += f"""
                 <div class="mb-4 bg-gray-900/30 rounded-lg border border-gray-700/50 overflow-hidden" x-data="{{ open: false }}">
                     <button @click="open = !open" class="w-full flex items-center justify-between p-4 bg-gray-800/50 hover:bg-gray-700/50 transition-colors">
-                        <span class="font-medium text-gray-200 flex items-center gap-2">
-                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            {key}
-                        </span>
+                        <span class="font-medium text-gray-200">{key}</span>
                         <svg :class="{{'rotate-180': open}}" class="h-5 w-5 text-gray-500 transition-transform transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
@@ -753,10 +748,7 @@ async def search_edinet_company(
                     </div>
                 </div>
                 
-                <h4 class="text-lg font-bold text-gray-200 mb-4 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+                <h4 class="text-lg font-bold text-gray-200 mb-4 border-l-4 border-indigo-500 pl-3">
                     定性情報レポート
                 </h4>
                 
