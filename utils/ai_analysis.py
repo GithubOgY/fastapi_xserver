@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 def setup_gemini():
     api_key = os.getenv("GEMINI_API_KEY")
-    model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+    model_name = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
     
     # Check for missing or placeholder key
     if not api_key or "your-gemini-api-key" in api_key:
@@ -25,7 +25,15 @@ def setup_gemini():
 
 def generate_with_fallback(prompt: str, api_key: str, preferred_model: str) -> str:
     """Try to generate content with preferred model, fallback if not found"""
-    models_to_try = [preferred_model, "gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-flash-001", "gemini-pro"]
+    models_to_try = [
+        preferred_model, 
+        "gemini-1.5-flash", 
+        "gemini-1.5-flash-latest", 
+        "gemini-2.0-flash", 
+        "gemini-2.0-flash-exp",
+        "gemini-flash-latest",
+        "gemini-pro"
+    ]
     # Remove duplicates while preserving order
     models_to_try = list(dict.fromkeys(models_to_try))
     
@@ -122,7 +130,7 @@ def analyze_stock_with_ai(ticker_code: str, financial_context: Dict[str, Any], c
     try:
         # Use fallback mechanism
         api_key = os.getenv("GEMINI_API_KEY")
-        model_name = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+        model_name = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
         
         response_text = generate_with_fallback(prompt, api_key, model_name)
         
@@ -133,7 +141,7 @@ def analyze_stock_with_ai(ticker_code: str, financial_context: Dict[str, Any], c
         logger.error(f"AI Analysis failed: {e}")
         error_msg = str(e)
         if "API key not valid" in error_msg:
-             return """
+            return """
             <div class="error-box" style="padding: 1rem; border: 1px solid #f43f5e; border-radius: 8px; background: rgba(244, 63, 94, 0.1); color: #f43f5e;">
                 <p style="font-weight: bold;">⚠️ APIキーが無効です</p>
                 <p style="font-size: 0.9rem;">Google AI Studioで取得した正しいキーが設定されているか確認してください。</p>
