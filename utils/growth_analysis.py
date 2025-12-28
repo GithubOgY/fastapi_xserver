@@ -60,10 +60,12 @@ def analyze_growth_quality(ticker_obj: Any) -> Dict[str, Any]:
         # Prepare history for charting
         history_data = []
         for date, row in df.iterrows():
+            rev_val = row.get(rev_key)
+            op_val = row.get(op_key)
             history_data.append({
                 "date": date.strftime("%Y-%m-%d") if hasattr(date, 'strftime') else str(date)[:10],
-                "revenue": row.get(rev_key, 0),
-                "op_income": row.get(op_key, 0)
+                "revenue": float(rev_val) if pd.notna(rev_val) else 0,
+                "op_income": float(op_val) if pd.notna(op_val) else 0
             })
         results["history"] = history_data
 

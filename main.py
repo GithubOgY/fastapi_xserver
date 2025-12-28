@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 import logging
 import time
 import os
+import json
 import yfinance as yf
 import pandas as pd
 import requests
@@ -1015,6 +1016,22 @@ async def lookup_yahoo_finance(
                     target = start_rev * (1.10 ** i)
                     growth_rev_target.append(to_oku(target))
 
+        # Sanitize lists for JSON dump (replace NaN with None/null)
+        def clean_list(lst):
+            return [x if pd.notna(x) else None for x in lst]
+        
+        years_label_js = json.dumps(years_label)
+        revenue_data_js = json.dumps(clean_list(revenue_data))
+        op_income_data_js = json.dumps(clean_list(op_income_data))
+        op_margin_data_js = json.dumps(clean_list(op_margin_data))
+        op_cf_data_js = json.dumps(clean_list(op_cf_data))
+        inv_cf_data_js = json.dumps(clean_list(inv_cf_data))
+        fin_cf_data_js = json.dumps(clean_list(fin_cf_data))
+        net_cf_data_js = json.dumps(clean_list(net_cf_data))
+        growth_labels_js = json.dumps(growth_labels)
+        growth_rev_actual_js = json.dumps(clean_list(growth_rev_actual))
+        growth_rev_target_js = json.dumps(clean_list(growth_rev_target))
+
         # Generate unique chart IDs
         chart_id1 = f"perf_{code_input}_{int(time.time())}"
         chart_id2 = f"cf_{code_input}_{int(time.time())}"
@@ -1099,11 +1116,11 @@ async def lookup_yahoo_finance(
                     new Chart(document.getElementById('{chart_id1}').getContext('2d'), {{
                         type: 'bar',
                         data: {{
-                            labels: {years_label},
+                            labels: {years_label_js},
                             datasets: [
-                                {{ label: '売上高', data: {revenue_data}, backgroundColor: 'rgba(99,102,241,0.7)', borderColor: '#6366f1', borderWidth: 1 }},
-                                {{ label: '営業利益', data: {op_income_data}, backgroundColor: 'rgba(16,185,129,0.7)', borderColor: '#10b981', borderWidth: 1 }},
-                                {{ label: '営業利益率(%)', data: {op_margin_data}, type: 'line', borderColor: '#f59e0b', borderWidth: 2, yAxisID: 'y1', tension: 0.3, pointRadius: 4 }}
+                                {{ label: '売上高', data: {revenue_data_js}, backgroundColor: 'rgba(99,102,241,0.7)', borderColor: '#6366f1', borderWidth: 1 }},
+                                {{ label: '営業利益', data: {op_income_data_js}, backgroundColor: 'rgba(16,185,129,0.7)', borderColor: '#10b981', borderWidth: 1 }},
+                                {{ label: '営業利益率(%)', data: {op_margin_data_js}, type: 'line', borderColor: '#f59e0b', borderWidth: 2, yAxisID: 'y1', tension: 0.3, pointRadius: 4 }}
                             ]
                         }},
                         options: {{
@@ -1121,12 +1138,12 @@ async def lookup_yahoo_finance(
                     new Chart(document.getElementById('{chart_id2}').getContext('2d'), {{
                         type: 'bar',
                         data: {{
-                            labels: {years_label},
+                            labels: {years_label_js},
                             datasets: [
-                                {{ label: '営業CF', data: {op_cf_data}, backgroundColor: 'rgba(16,185,129,0.7)', borderColor: '#10b981', borderWidth: 1 }},
-                                {{ label: '投資CF', data: {inv_cf_data}, backgroundColor: 'rgba(244,63,94,0.7)', borderColor: '#f43f5e', borderWidth: 1 }},
-                                {{ label: '財務CF', data: {fin_cf_data}, backgroundColor: 'rgba(59,130,246,0.7)', borderColor: '#3b82f6', borderWidth: 1 }},
-                                {{ label: 'ネットCF', data: {net_cf_data}, type: 'line', borderColor: '#f59e0b', borderWidth: 2, tension: 0.3, pointRadius: 4 }}
+                                {{ label: '営業CF', data: {op_cf_data_js}, backgroundColor: 'rgba(16,185,129,0.7)', borderColor: '#10b981', borderWidth: 1 }},
+                                {{ label: '投資CF', data: {inv_cf_data_js}, backgroundColor: 'rgba(244,63,94,0.7)', borderColor: '#f43f5e', borderWidth: 1 }},
+                                {{ label: '財務CF', data: {fin_cf_data_js}, backgroundColor: 'rgba(59,130,246,0.7)', borderColor: '#3b82f6', borderWidth: 1 }},
+                                {{ label: 'ネットCF', data: {net_cf_data_js}, type: 'line', borderColor: '#f59e0b', borderWidth: 2, tension: 0.3, pointRadius: 4 }}
                             ]
                         }},
                         options: {{
@@ -1166,7 +1183,7 @@ async def lookup_yahoo_finance(
                         <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 1rem;">
                             <div style="color: #10b981; font-size: 0.75rem; font-weight: 600;">売上高 CAGR (3年)</div>
                             <div style="font-size: 1.5rem; font-weight: 700; color: #f8fafc; margin-top: 0.25rem;">
-                                {f'{growth_analysis["revenue_cagr_3y"]}%' if growth_analysis["revenue_cagr_3y"] is not None else '-'}
+                                {f'{growth_analysis["revenue_cagr_3y"]}%' if pd.notna(growth_analysis["revenue_cagr_3y"]) else '-'}
                             </div>
                             <div style="font-size: 0.7rem; color: {'#10b981' if growth_analysis['is_high_growth'] else '#64748b'}; margin-top: 0.25rem;">
                                 {'✅ 10%目標達成' if growth_analysis['is_high_growth'] else '基準未達 / データ不足'}
@@ -1176,7 +1193,7 @@ async def lookup_yahoo_finance(
                         <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 1rem;">
                             <div style="color: #818cf8; font-size: 0.75rem; font-weight: 600;">EPS CAGR (3年)</div>
                             <div style="font-size: 1.5rem; font-weight: 700; color: #f8fafc; margin-top: 0.25rem;">
-                                {f'{growth_analysis["eps_cagr_3y"]}%' if growth_analysis["eps_cagr_3y"] is not None else '-'}
+                                {f'{growth_analysis["eps_cagr_3y"]}%' if pd.notna(growth_analysis["eps_cagr_3y"]) else '-'}
                             </div>
                             <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 0.25rem;">
                                 連続増収: {growth_analysis["consecutive_growth_years"]}年
@@ -1201,18 +1218,18 @@ async def lookup_yahoo_finance(
                     new Chart(ctx, {{
                         type: 'bar',
                         data: {{
-                            labels: {growth_labels},
+                            labels: {growth_labels_js},
                             datasets: [
                                 {{
                                     label: '実績売上高',
-                                    data: {growth_rev_actual},
+                                    data: {growth_rev_actual_js},
                                     backgroundColor: 'rgba(16, 185, 129, 0.6)',
                                     borderColor: '#10b981',
                                     borderWidth: 1
                                 }},
                                 {{
                                     label: '10%成長目標ライン',
-                                    data: {growth_rev_target},
+                                    data: {growth_rev_target_js},
                                     type: 'line',
                                     borderColor: '#fbbf24',
                                     borderDash: [5, 5],
