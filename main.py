@@ -764,11 +764,12 @@ async def get_edinet_history(code: str, current_user: User = Depends(get_current
         if not history:
             return HTMLResponse(content="<div class='text-gray-400 p-4 text-center'>履歴データが見つかりませんでした</div>")
         
-        # Prepare data for Chart.js
+        # Prepare data for Chart.js - Cash Flow focused
         years_label = []
-        sales_data = []
-        profit_data = []
-        op_cf_data = []
+        op_cf_data = []      # 営業CF
+        inv_cf_data = []     # 投資CF
+        fin_cf_data = []     # 財務CF
+        net_cf_data = []     # ネットCF
         
         table_rows = ""
         
@@ -782,27 +783,31 @@ async def get_edinet_history(code: str, current_user: User = Depends(get_current
             years_label.append(period)
             
             # Values (convert to 億円 for easy reading in chart)
-            sales = norm.get("売上高", 0)
-            sales_val = sales / 100000000 if isinstance(sales, (int, float)) else 0
-            sales_data.append(round(sales_val, 1))
-            
-            profit = norm.get("営業利益", 0)
-            profit_val = profit / 100000000 if isinstance(profit, (int, float)) else 0
-            profit_data.append(round(profit_val, 1))
-            
             op_cf = norm.get("営業CF", 0)
             op_cf_val = op_cf / 100000000 if isinstance(op_cf, (int, float)) else 0
             op_cf_data.append(round(op_cf_val, 1))
+            
+            inv_cf = norm.get("投資CF", 0)
+            inv_cf_val = inv_cf / 100000000 if isinstance(inv_cf, (int, float)) else 0
+            inv_cf_data.append(round(inv_cf_val, 1))
+            
+            fin_cf = norm.get("財務CF", 0)
+            fin_cf_val = fin_cf / 100000000 if isinstance(fin_cf, (int, float)) else 0
+            fin_cf_data.append(round(fin_cf_val, 1))
+            
+            # Net CF = Operating + Investing + Financing
+            net_cf_val = op_cf_val + inv_cf_val + fin_cf_val
+            net_cf_data.append(round(net_cf_val, 1))
             
             # Add to table
             formatted = format_financial_data(norm)
             table_rows += f"""
             <tr class="hover:bg-gray-700/30 transition-colors">
                 <td class="p-2 text-gray-300 border-b border-gray-700/50">{period}</td>
-                <td class="p-2 text-right text-gray-300 border-b border-gray-700/50">{formatted.get('売上高', '-')}</td>
-                <td class="p-2 text-right text-gray-300 border-b border-gray-700/50">{formatted.get('営業利益', '-')}</td>
-                <td class="p-2 text-right text-indigo-300 border-b border-gray-700/50">{formatted.get('営業CF', '-')}</td>
-                <td class="p-2 text-right text-gray-300 border-b border-gray-700/50">{formatted.get('ROE', '-')}</td>
+                <td class="p-2 text-right text-blue-300 border-b border-gray-700/50">{formatted.get('営業CF', '-')}</td>
+                <td class="p-2 text-right text-red-300 border-b border-gray-700/50">{formatted.get('投資CF', '-')}</td>
+                <td class="p-2 text-right text-yellow-300 border-b border-gray-700/50">{formatted.get('財務CF', '-')}</td>
+                <td class="p-2 text-right text-green-300 border-b border-gray-700/50">{round(net_cf_val, 1)}億円</td>
             </tr>
             """
 
@@ -811,7 +816,7 @@ async def get_edinet_history(code: str, current_user: User = Depends(get_current
         
         return HTMLResponse(content=f"""
             <div class="mt-6 bg-gray-900/50 rounded-xl p-4 border border-gray-700">
-                <h4 class="text-lg font-bold text-gray-200 mb-4">📈 業績推移 (5年)</h4>
+                <h4 class="text-lg font-bold text-gray-200 mb-4">キャッシュフロー推移 (5年)</h4>
                 
                 <div class="h-64 mb-6">
                     <canvas id="{chart_id}"></canvas>
@@ -822,10 +827,10 @@ async def get_edinet_history(code: str, current_user: User = Depends(get_current
                         <thead>
                             <tr>
                                 <th class="p-2 text-gray-500">決算期</th>
-                                <th class="p-2 text-right text-gray-500">売上高</th>
-                                <th class="p-2 text-right text-gray-500">営業利益</th>
-                                <th class="p-2 text-right text-indigo-400">営業CF</th>
-                                <th class="p-2 text-right text-gray-500">ROE</th>
+                                <th class="p-2 text-right text-blue-400">営業CF</th>
+                                <th class="p-2 text-right text-red-400">投資CF</th>
+                                <th class="p-2 text-right text-yellow-400">財務CF</th>
+                                <th class="p-2 text-right text-green-400">ネットCF</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -843,31 +848,35 @@ async def get_edinet_history(code: str, current_user: User = Depends(get_current
                                 labels: {years_label},
                                 datasets: [
                                     {{
-                                        label: '売上高 (億円)',
-                                        data: {sales_data},
-                                        backgroundColor: 'rgba(99, 102, 241, 0.5)',
-                                        borderColor: 'rgba(99, 102, 241, 1)',
-                                        borderWidth: 1,
-                                        yAxisID: 'y',
-                                    }},
-                                    {{
-                                        label: '営業利益 (億円)',
-                                        data: {profit_data},
-                                        type: 'line',
-                                        borderColor: 'rgba(20, 184, 166, 1)',
-                                        backgroundColor: 'rgba(20, 184, 166, 0.2)',
-                                        borderWidth: 2,
-                                        yAxisID: 'y1',
-                                    }},
-                                    {{
                                         label: '営業CF (億円)',
                                         data: {op_cf_data},
+                                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                                        borderColor: 'rgba(59, 130, 246, 1)',
+                                        borderWidth: 1,
+                                    }},
+                                    {{
+                                        label: '投資CF (億円)',
+                                        data: {inv_cf_data},
+                                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                                        borderColor: 'rgba(239, 68, 68, 1)',
+                                        borderWidth: 1,
+                                    }},
+                                    {{
+                                        label: '財務CF (億円)',
+                                        data: {fin_cf_data},
+                                        backgroundColor: 'rgba(234, 179, 8, 0.7)',
+                                        borderColor: 'rgba(234, 179, 8, 1)',
+                                        borderWidth: 1,
+                                    }},
+                                    {{
+                                        label: 'ネットCF (億円)',
+                                        data: {net_cf_data},
                                         type: 'line',
-                                        borderColor: 'rgba(244, 114, 182, 1)',
-                                        backgroundColor: 'rgba(244, 114, 182, 0.2)',
-                                        borderWidth: 2,
-                                        borderDash: [5, 5],
-                                        yAxisID: 'y1',
+                                        borderColor: 'rgba(34, 197, 94, 1)',
+                                        backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                                        borderWidth: 3,
+                                        fill: false,
+                                        tension: 0.1,
                                     }}
                                 ]
                             }},
@@ -878,18 +887,19 @@ async def get_edinet_history(code: str, current_user: User = Depends(get_current
                                     mode: 'index',
                                     intersect: false,
                                 }},
+                                plugins: {{
+                                    legend: {{
+                                        labels: {{ color: 'rgba(255, 255, 255, 0.7)' }}
+                                    }}
+                                }},
                                 scales: {{
-                                    y: {{
-                                        type: 'linear',
-                                        display: true,
-                                        position: 'left',
+                                    x: {{
+                                        ticks: {{ color: 'rgba(255, 255, 255, 0.5)' }},
                                         grid: {{ color: 'rgba(255, 255, 255, 0.05)' }}
                                     }},
-                                    y1: {{
-                                        type: 'linear',
-                                        display: true,
-                                        position: 'right',
-                                        grid: {{ drawOnChartArea: false }}
+                                    y: {{
+                                        ticks: {{ color: 'rgba(255, 255, 255, 0.5)' }},
+                                        grid: {{ color: 'rgba(255, 255, 255, 0.05)' }}
                                     }}
                                 }}
                             }}
