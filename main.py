@@ -1620,12 +1620,13 @@ async def get_stock_news(ticker_code: str):
         for item in news_items:
             html += f"""
             <a href="{item['link']}" target="_blank" class="block group" style="text-decoration: none;">
-                <div class="bg-gray-800/50 hover:bg-gray-700/50 backdrop-blur border border-gray-700 hover:border-green-500/50 rounded-xl p-3 transition-all duration-200 shadow-sm hover:shadow-md">
-                    <div class="flex items-center justify-between mb-1.5">
-                        <span class="text-[0.7rem] font-mono text-green-400 border border-green-500/30 rounded px-1.5 py-0.5 truncate max-w-[100px]">{item['source']}</span>
-                        <span class="text-[0.7rem] text-gray-500">{item['published']}</span>
+                <!-- Updated Card Style: Lighter background, clearer text -->
+                <div class="bg-slate-800 hover:bg-slate-700 border border-slate-600 hover:border-green-400 rounded-lg p-3 transition-all duration-200 shadow-md">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-[0.7rem] font-bold text-green-300 bg-green-900/40 rounded px-1.5 py-0.5 truncate max-w-[120px]">{item['source']}</span>
+                        <span class="text-[0.75rem] text-gray-300 font-mono">{item['published']}</span>
                     </div>
-                    <h4 class="text-sm font-medium text-white group-hover:text-green-300 leading-snug line-clamp-3" style="color: white !important;">
+                    <h4 class="text-sm font-bold text-white leading-normal line-clamp-3" style="color: #ffffff !important; letter-spacing: 0.02em;">
                         {item['title']}
                     </h4>
                 </div>

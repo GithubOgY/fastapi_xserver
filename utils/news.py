@@ -42,14 +42,19 @@ def fetch_company_news(company_name: str, limit: int = 5):
                 "summary": entry.summary if "summary" in entry else ""
             }
             
-            # Formatting Date (Optional: Convert to simpler string)
+            # Formatting Date
             # Google RSS date format: "Fri, 27 Dec 2024 07:00:00 GMT"
-            try:
-                # Simple parsing or keeping as is. Keeping as is for MVP lightness.
-                pass
-            except:
-                pass
+            formatted_date = ""
+            if "published" in entry:
+                try:
+                    # Parse GMT date string
+                    dt = datetime.strptime(entry.published, "%a, %d %b %Y %H:%M:%S %Z")
+                    formatted_date = f"{dt.year}年{dt.month}月{dt.day}日"
+                except Exception:
+                    # Fallback or keep original if parsing fails
+                    formatted_date = entry.published
 
+            item["published"] = formatted_date
             news_items.append(item)
             
         return news_items
