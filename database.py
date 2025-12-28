@@ -1,6 +1,6 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float, Text, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, Float, Text, DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, relationship
 import os
 from dotenv import load_dotenv
 from datetime import datetime
@@ -42,12 +42,26 @@ class User(Base):
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     is_admin = Column(Integer, default=0)  # 0=normal user, 1=admin
+    
+    # Relationships
+    comments = relationship("StockComment", back_populates="user")
 
 class UserFavorite(Base):
     __tablename__ = "user_favorites"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, index=True)
     ticker = Column(String, index=True)
+
+class StockComment(Base):
+    __tablename__ = "stock_comments"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    ticker = Column(String, index=True)
+    content = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", back_populates="comments")
 
 class EdinetCache(Base):
     """Cache for EDINET financial data - expires after 7 days"""

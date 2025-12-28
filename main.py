@@ -3,7 +3,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
 from typing import Annotated, Optional
 from sqlalchemy.orm import Session
-from database import SessionLocal, CompanyFundamental, User, Company, UserFavorite
+from database import SessionLocal, CompanyFundamental, User, Company, UserFavorite, StockComment
 from utils.email import send_email
 from passlib.context import CryptContext
 from jose import JWTError, jwt
@@ -534,9 +534,13 @@ async def account_page(request: Request, db: Session = Depends(get_db), current_
     if not current_user:
         return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
     
+    # Fetch user's comment history
+    user_comments = db.query(StockComment).filter(StockComment.user_id == current_user.id).order_by(StockComment.created_at.desc()).all()
+    
     return templates.TemplateResponse("account.html", {
         "request": request,
-        "user": current_user
+        "user": current_user,
+        "comments": user_comments
     })
 
 @app.post("/account/delete")
@@ -665,6 +669,134 @@ async def remove_favorite(
     
     return RedirectResponse(url="/dashboard", status_code=303)
 
+
+
+# --- Discussion Board API Endpoints ---
+
+@app.get("/api/comments/{ticker}", response_class=HTMLResponse)
+async def list_comments(
+    request: Request,
+    ticker: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """List all comments for a specific ticker and provide a post form"""
+    if not current_user:
+        return "<p class='text-gray-400 text-center p-4'>掲示板を表示するにはログインが必要です。</p>"
+    
+    comments = db.query(StockComment).filter(StockComment.ticker == ticker).order_by(StockComment.created_at.desc()).all()
+    
+    html = f"""
+        <div style="background: rgba(15, 23, 42, 0.4); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); padding: 1.5rem;">
+            <h3 style="color: #818cf8; font-family: 'Outfit', sans-serif; font-size: 1.1rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                💬 {ticker} 投資家掲示板
+            </h3>
+            
+            <!-- Post Form -->
+            <div style="margin-bottom: 2rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 12px;">
+                <form hx-post="/api/comments/{ticker}" hx-target="#comments-list-container" hx-on::after-request="this.reset()">
+                    <textarea name="content" placeholder="この銘柄についての意見や分析を投稿しましょう..." 
+                        style="width: 100%; min-height: 80px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 0.75rem; color: #f8fafc; font-size: 0.9rem; resize: vertical; outline: none; margin-bottom: 0.5rem;"></textarea>
+                    <div style="text-align: right;">
+                        <button type="submit" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); border: none; padding: 0.5rem 1.2rem; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; font-size: 0.85rem;">
+                            投稿する
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Comments List -->
+            <div id="comments-list-container" style="display: flex; flex-direction: column; gap: 1rem; max-height: 500px; overflow-y: auto; padding-right: 0.5rem;">
+    """
+    
+    if not comments:
+        html += "<p id='no-comments' style='color: #475569; text-align: center; font-size: 0.85rem; padding: 2rem;'>まだ投稿がありません。最初の意見を投稿しましょう！</p>"
+    else:
+        for comment in comments:
+            is_owner = comment.user_id == current_user.id
+            delete_btn = f"""
+                <button hx-delete="/api/comments/{comment.id}" hx-confirm="この投稿を削除しますか？" hx-target="closest .comment-card" hx-swap="outerHTML"
+                    style="background: transparent; border: none; color: #f43f5e; cursor: pointer; font-size: 0.75rem; opacity: 0.6; padding: 0;">
+                    削除
+                </button>
+            """ if is_owner else ""
+            
+            html += f"""
+                <div class="comment-card" style="background: rgba(255,110,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 1rem; position: relative;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <span style="color: #94a3b8; font-size: 0.8rem; font-weight: 600;">@{comment.user.username}</span>
+                        <span style="color: #475569; font-size: 0.75rem;">{comment.created_at.strftime('%Y-%m-%d %H:%M')}</span>
+                    </div>
+                    <div style="color: #f8fafc; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap;">{comment.content}</div>
+                    <div style="text-align: right; margin-top: 0.5rem;">
+                        {delete_btn}
+                    </div>
+                </div>
+            """
+            
+    html += "</div></div>"
+    return html
+
+@app.post("/api/comments/{ticker}", response_class=HTMLResponse)
+async def post_comment(
+    ticker: str,
+    content: str = Form(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Create a new comment for a ticker"""
+    if not current_user:
+        raise HTTPException(status_code=401)
+    
+    if not content.strip():
+        return "" # Ignore empty posts
+        
+    comment = StockComment(
+        user_id=current_user.id,
+        ticker=ticker,
+        content=content
+    )
+    db.add(comment)
+    db.commit()
+    db.refresh(comment)
+    
+    # Return JUST the new comment to be prepended via HTMX if we wanted, 
+    # but for simplicity, let's just refresh the whole list by triggering a GET /api/comments/{ticker}
+    # Actually, simpler: just return the new comment card and let HTMX append/prepend it.
+    # To refresh the whole list correctly we use hx-get.
+    
+    # Let's return the new comment card to be prepended to the list
+    html = f"""
+        <div class="comment-card" hx-get="/api/comments/{ticker}" hx-trigger="load delay:100ms" hx-target="closest #comments-list-container" hx-swap="outerHTML" 
+            style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 1rem; position: relative; animation: fadeIn 0.5s ease-out;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <span style="color: #10b981; font-size: 0.8rem; font-weight: 600;">投稿完了!</span>
+            </div>
+            <div style="color: #94a3b8; font-size: 0.85rem;">リストを更新中...</div>
+        </div>
+    """
+    return html
+
+@app.delete("/api/comments/{comment_id}")
+async def delete_comment(
+    comment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a comment if owner"""
+    if not current_user:
+        raise HTTPException(status_code=401)
+        
+    comment = db.query(StockComment).filter(StockComment.id == comment_id).first()
+    if not comment:
+        raise HTTPException(status_code=404)
+        
+    if comment.user_id != current_user.id and not current_user.is_admin:
+        raise HTTPException(status_code=403)
+        
+    db.delete(comment)
+    db.commit()
+    return Response(status_code=status.HTTP_200_OK)
 
 # --- EDINET API Endpoint ---
 @app.post("/api/edinet/search")
@@ -1301,6 +1433,15 @@ async def lookup_yahoo_finance(
 
             <!-- Clear cashflow section since we now show it inline -->
             <div id="cashflow-section" class="section" hx-swap-oob="true" style="display: none;"></div>
+
+            <!-- Discussion Board (OOB Swap) -->
+            <div id="discussion-section" hx-swap-oob="true" style="display: block; margin-top: 1rem;">
+                <div hx-get="/api/comments/{code_input}" hx-trigger="load">
+                    <p style="color: #64748b; text-align: center; font-size: 0.85rem; padding: 2rem;">
+                        掲示板を読み込み中...
+                    </p>
+                </div>
+            </div>
         """
         
         # Create response and set cookie to remember last searched ticker

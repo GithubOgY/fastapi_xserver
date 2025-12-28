@@ -238,6 +238,43 @@
                 <div id="email-result"></div>
             </div>
 
+
+            <!-- Discussion Post Management -->
+            <div class="info-section">
+                <h3 style="color: #818cf8; font-size: 1rem; margin-bottom: 1rem;">💬 掲示板の投稿管理</h3>
+                {% if comments %}
+                <div style="max-height: 300px; overflow-y: auto; padding-right: 0.5rem;">
+                    {% for comment in comments %}
+                    <div class="comment-item"
+                        style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 0.75rem; margin-bottom: 0.75rem; border: 1px solid rgba(255,255,255,0.05);">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                            <span style="color: #818cf8; font-size: 0.8rem; font-weight: 600;">{{ comment.ticker
+                                }}</span>
+                            <span style="color: #475569; font-size: 0.7rem;">{{ comment.created_at.strftime('%Y-%m-%d')
+                                }}</span>
+                        </div>
+                        <p
+                            style="color: #cbd5e1; font-size: 0.85rem; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            {{ comment.content }}
+                        </p>
+                        <div style="text-align: right; margin-top: 0.5rem;">
+                            <button hx-delete="/api/comments/{{ comment.id }}" hx-confirm="この投稿を削除しますか？"
+                                hx-target="closest .comment-item" hx-swap="outerHTML"
+                                style="background: transparent; border: none; color: #f43f5e; cursor: pointer; font-size: 0.75rem; opacity: 0.7; padding: 0;">
+                                削除
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p style="color: #64748b; font-size: 0.85rem; text-align: center; padding: 1rem;">
+                    まだ投稿はありません
+                </p>
+                {% endif %}
+            </div>
+
             <div class="danger-zone">
                 <h3>⚠️ 危険な操作</h3>
                 <p>アカウントを削除すると、すべてのデータが失われます。この操作は取り消せません。</p>
