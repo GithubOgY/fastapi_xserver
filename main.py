@@ -909,7 +909,6 @@ async def lookup_yahoo_finance(
                         <div style="color: #f8fafc; font-weight: 600;">{roe_str}</div>
                     </div>
                 </div>
-                
                 <!-- Simple action to load details if needed via button, not auto -->
                 <div class="mt-4 text-center">
                     <button 
@@ -917,16 +916,10 @@ async def lookup_yahoo_finance(
                         hx-get="/api/edinet/history/{symbol}"
                         hx-target="#chart-container"
                         hx-swap="innerHTML"
-                        onclick="
-                            this.disabled = true;
-                            this.classList.add('opacity-50', 'cursor-not-allowed');
-                            this.innerHTML = '<span class=\'inline-block animate-spin mr-2\'>⏳</span> EDINET検索中... (最大60秒)';
-                            document.getElementById('chart-container').innerHTML = '<div class=\'flex flex-col items-center justify-center h-full text-gray-400\'><div class=\'text-2xl mb-2 animate-bounce\'>🔍</div><div>EDINETから有価証券報告書を検索・収集中です...</div><div class=\'text-xs mt-2 text-gray-500\'>※過去5年分を走査するため時間がかかります</div></div>';
-                            document.getElementById('chart-section').scrollIntoView({{behavior: 'smooth'}});
-                        "
-                        class="py-2 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow transition-colors flex items-center justify-center gap-2 mx-auto">
-                        <span>📊 詳細分析・チャートを表示 (EDINET)</span>
-                        <span class="htmx-indicator">⏳</span>
+                        hx-indicator="#edinet-load-spinner"
+                        class="py-2 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow transition-colors">
+                        <span id="edinet-load-text">📊 詳細分析・チャートを表示 (EDINET)</span>
+                        <span id="edinet-load-spinner" class="htmx-indicator ml-2">⏳</span>
                     </button>
                     <p class="text-xs text-gray-400 mt-2">※ 公式財務データを取得してグラフを描画します</p>
                 </div>
