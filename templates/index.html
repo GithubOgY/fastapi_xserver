@@ -440,6 +440,20 @@
             applyTheme(nw);
         }
         applyTheme(localStorage.getItem('theme') || 'dark');
+
+        // Auto-search last ticker on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            var lastTicker = '{{ last_ticker }}';
+            if (lastTicker && lastTicker.trim() !== '') {
+                // Set the input value
+                var input = document.getElementById('yf-ticker-input');
+                if (input) {
+                    input.value = lastTicker;
+                    // Trigger HTMX request
+                    htmx.trigger(input.form, 'submit');
+                }
+            }
+        });
     </script>
 </body>
 

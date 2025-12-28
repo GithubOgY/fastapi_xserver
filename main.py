@@ -255,6 +255,9 @@ async def dashboard(request: Request,
     if not current_user:
         return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
     
+    # Read last searched ticker from cookie
+    last_ticker = request.cookies.get("last_ticker", "")
+    
     fundamentals = db.query(CompanyFundamental).filter(CompanyFundamental.ticker == ticker).order_by(CompanyFundamental.year.desc()).all()
     company = db.query(Company).filter(Company.ticker == ticker).first()
     ticker_display = company.name if company else ticker
@@ -285,7 +288,8 @@ async def dashboard(request: Request,
             "ticker_list": ticker_list,
             "user": current_user,
             "is_favorite": is_favorite,
-            "favorite_companies": favorite_companies
+            "favorite_companies": favorite_companies,
+            "last_ticker": last_ticker
         }
     )
 
@@ -955,8 +959,8 @@ async def lookup_yahoo_finance(
         chart_id1 = f"perf_{code_input}_{int(time.time())}"
         chart_id2 = f"cf_{code_input}_{int(time.time())}"
         
-        # Build clean HTML response
-        return HTMLResponse(content=f"""
+        # Build clean HTML response with cookie to remember last ticker
+        html_content = f"""
             <!-- Stock Info Card -->
             <div style="background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1)); border: 1px solid rgba(99,102,241,0.3); border-radius: 16px; padding: 1.5rem; margin-bottom: 1rem;">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
@@ -1106,7 +1110,12 @@ async def lookup_yahoo_finance(
 
             <!-- Clear cashflow section since we now show it inline -->
             <div id="cashflow-section" class="section" hx-swap-oob="true" style="display: none;"></div>
-        """)
+        """
+        
+        # Create response and set cookie to remember last searched ticker
+        response = HTMLResponse(content=html_content)
+        response.set_cookie(key="last_ticker", value=code_input, max_age=86400*30)  # 30 days
+        return response
         
     except Exception as e:
         logger.error(f"Yahoo Finance lookup error for {code_input}: {e}")
