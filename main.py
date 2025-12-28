@@ -1527,22 +1527,23 @@ async def ai_analyze_stock(ticker_code: Annotated[str, Form()]):
         summary_text += f"- 配当利回り: {info.get('dividendYield', 0)*100:.2f}%\n"
 
         # 2. EDINETから定性情報を取得（既存ツールを流用）
-        from utils.edinet_enhanced import get_document_list, download_xbrl_package, extract_financial_data
+        # 2. EDINETから定性情報を取得（Enhancedツールを使用）
+        from utils.edinet_enhanced import search_company_reports, process_document
         edinet_ctx = {}
         try:
-            # 証券コード4桁で検索
-            docs = get_document_list() # 直近のリスト
-            target_doc = None
-            for d in docs:
-                if d.get('secCode') == ticker_code + '0': 
-                    if d.get('docTypeCode') in ['120', '130']: # 有報 or 四半期
-                        target_doc = d
-                        break
+            # 有価証券報告書 (120) を過去1年分検索
+            docs = search_company_reports(company_code=ticker_code, doc_type="120", days_back=365)
             
-            if target_doc:
-                pkg_path = download_xbrl_package(target_doc['docID'])
-                if pkg_path:
-                    edinet_ctx = extract_financial_data(pkg_path)
+            # なければ四半期報告書 (140) を過去半年検索
+            if not docs:
+                docs = search_company_reports(company_code=ticker_code, doc_type="140", days_back=180)
+            
+            if docs:
+                # 最新の書類を処理
+                processed = process_document(docs[0])
+                if processed:
+                     edinet_ctx = processed
+                     logger.info(f"EDINET context loaded for {ticker_code}: {len(edinet_ctx.get('text_data', {}))} text blocks")
         except Exception as ee:
             logger.error(f"EDINET fetch failed for AI analysis: {ee}")
 
