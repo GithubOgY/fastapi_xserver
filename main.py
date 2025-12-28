@@ -909,70 +909,21 @@ async def lookup_yahoo_finance(
                         <div style="color: #f8fafc; font-weight: 600;">{roe_str}</div>
                     </div>
                 </div>
-                </div>
+            
+            <!-- Simple action to load details if needed via button, not auto -->
+            <div class="mt-4 text-center">
+                <button 
+                    hx-get="/api/edinet/history/{symbol}"
+                    hx-target="#chart-container"
+                    hx-swap="innerHTML"
+                    onclick="document.getElementById('chart-section').scrollIntoView({{behavior: 'smooth'}})"
+                    class="py-2 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow transition-colors flex items-center justify-center gap-2 mx-auto">
+                    <span>📊 詳細分析・チャートを表示 (EDINET)</span>
+                    <span class="htmx-indicator">⏳</span>
+                </button>
+                <p class="text-xs text-gray-400 mt-2">※ 公式財務データを取得してグラフを描画します</p>
             </div>
-
-            <!-- OOB Swap for Financial Chart Section -->
-            <div id="chart-section" class="section" hx-swap-oob="true">
-                <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
-                    📊 業績推移グラフ
-                </h2>
-                <div id="chart-container" style="height: 300px; min-height: 300px; position: relative; width: 100%;">
-                    <canvas id="financialChart"></canvas>
-                </div>
-                <script>
-                    (function() {{
-                        // Destroy existing chart if any
-                        const canvas = document.getElementById('financialChart');
-                        const oldChart = Chart.getChart(canvas);
-                        if (oldChart) {{
-                            oldChart.destroy();
-                        }}
-                        
-                        // Fetch new data via HTMX or simply re-render if data is available in the OOB payload
-                        // For now, simpler approach: trigger a reload of the chart via the existing endpoint?
-                        // Actually, let's inject a button or script to fetch the chart data for THIS company.
-                        // Or better yet, render the chart script directly here if we have data.
-                        
-                        // Let's call the EDINET history endpoint to populate this chart properly
-                        htmx.ajax('GET', '/api/edinet/history/{symbol}', {{target: '#chart-container', swap: 'innerHTML'}});
-                    }})();
-                </script>
-            </div>
-
-            <!-- OOB Swap for Financial Data Section -->
-            <div id="financial-data-section" class="section" hx-swap-oob="true">
-                <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
-                    📈 {name} 財務推移
-                </h2>
-                
-                <div style="overflow-x: auto;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>決算期</th>
-                                <th>売上収益 (億円)</th>
-                                <th>営業利益 (億円)</th>
-                                <th>純利益 (億円)</th>
-                                <th>EPS (円)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="5" style="text-align: center; padding: 2rem; color: #64748b;">
-                                    データ取得中...<br>
-                                    <button class="mt-2 px-4 py-2 bg-indigo-600 rounded text-white text-sm"
-                                            hx-get="/api/edinet/history/{symbol}" 
-                                            hx-target="#chart-container" 
-                                            hx-swap="innerHTML">
-                                        詳細データをロード
-                                    </button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+        </div>
         """)
         
     except Exception as e:
