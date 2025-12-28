@@ -909,7 +909,6 @@ async def lookup_yahoo_finance(
                         <div style="color: #f8fafc; font-weight: 600;">{roe_str}</div>
                     </div>
                 </div>
-            
             <!-- Simple action to load details if needed via button, not auto -->
             <div class="mt-4 text-center">
                 <button 
@@ -922,6 +921,29 @@ async def lookup_yahoo_finance(
                     <span class="htmx-indicator">⏳</span>
                 </button>
                 <p class="text-xs text-gray-400 mt-2">※ 公式財務データを取得してグラフを描画します</p>
+            </div>
+
+            <!-- OOB Swap to RESET Chart Section (Clear old data) -->
+            <div id="chart-section" class="section" hx-swap-oob="true">
+                <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
+                    📊 業績推移グラフ
+                </h2>
+                <div id="chart-container" style="height: 300px; min-height: 300px; position: relative; width: 100%; background: rgba(0,0,0,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    <div style="text-align: center; color: #94a3b8;">
+                        <p style="margin-bottom: 0.5rem; font-size: 1.1rem;">📉 データ待機中...</p>
+                        <p style="font-size: 0.85rem;">「詳細分析・チャートを表示」ボタンを押してください</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- OOB Swap to RESET Financial Data Section (Clear old data) -->
+            <div id="financial-data-section" class="section" hx-swap-oob="true">
+                <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
+                    📈 {name} 財務推移
+                </h2>
+                <div style="text-align: center; padding: 3rem; color: #64748b; background: rgba(0,0,0,0.2); border-radius: 12px;">
+                    「詳細分析・チャートを表示」ボタンを押すと<br>ここに詳細データが表示されます
+                </div>
             </div>
         </div>
         """)
