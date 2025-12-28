@@ -1012,6 +1012,9 @@ async def lookup_yahoo_finance(
         symbol = f"{code_input}.T"
     else:
         symbol = code_input
+        
+    # Ensure code_only is available for templates (e.g. News API, AI Analysis)
+    code_only = symbol.replace(".T", "")
     
     try:
         ticker = yf.Ticker(symbol)
