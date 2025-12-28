@@ -717,13 +717,19 @@ async def search_edinet_company(
                             </h3>
                             <span class="px-2 py-1 bg-gray-700 text-gray-300 text-xs font-mono rounded-md border border-gray-600">{sec_code}</span>
                         </div>
-                        <p class="text-sm text-gray-400 mt-1 flex items-center gap-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            {metadata.get('document_type')}
-                        </p>
-                        <p class="text-xs text-gray-500 mt-1 ml-5">提出日: {metadata.get('submit_date')}</p>
+                        <div class="flex items-center gap-2 mt-2 text-sm text-gray-400">
+                            <div class="flex items-center gap-1 bg-gray-900/50 px-2 py-1 rounded">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-500">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    <polyline points="10 9 9 9 8 9"></polyline>
+                                </svg>
+                                <span>{metadata.get('document_type')}</span>
+                            </div>
+                            <span class="text-xs text-gray-500">提出: {metadata.get('submit_date')}</span>
+                        </div>
                     </div>
                 </div>
                 
