@@ -1042,6 +1042,9 @@ async def lookup_yahoo_finance(
         per = info.get("trailingPE") or info.get("forwardPE") or "-"
         pbr = info.get("priceToBook") or "-"
         
+        # Extract corporate website URL
+        website = info.get("website")
+        
         # 配当利回りの取得と計算（表示倍率の補正を含む）
         dividend_yield = None
         
@@ -1875,9 +1878,13 @@ async def get_stock_news(ticker_code: str):
 
             <!-- OOB Swap: Render Financial Data Table immediately -->
             <div id="financial-data-section" class="section" hx-swap-oob="true">
-                <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
-                    📈 {name} 財務推移
-                </h2>
+                <h1 style="font-family: 'Outfit', sans-serif; font-size: 2rem; margin: 0; background: linear-gradient(to right, #fff, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                    {name}
+                </h1>
+                {f'<a href="{website}" target="_blank" style="display: inline-block; margin-top: 0.25rem; font-size: 0.8rem; color: #60a5fa; text-decoration: none; border-bottom: 1px dotted #60a5fa;">🌐 企業公式サイト</a>' if website else ''}
+                <div style="color: #94a3b8; font-family: monospace; font-size: 1rem; margin-top: 0.25rem;">
+                    {symbol}
+                </div>
                 <div style="overflow-x: auto;">
                     <table>
                         <thead>
