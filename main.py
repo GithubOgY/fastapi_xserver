@@ -901,6 +901,35 @@ async def search_edinet_company(
         website_html = ""
         if website_url:
             website_html = f'<a href="{website_url}" target="_blank" rel="noopener" class="text-blue-400 hover:text-blue-300 underline text-sm">企業サイト</a>'
+
+        # AI Analysis Button for EDINET
+        ai_btn = ""
+        if sec_code:
+            code_only = sec_code[:4]
+            ai_btn = f"""
+            <div style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1.5rem;">
+                <h4 style="font-size: 1.2rem; font-weight: bold; text-align: center; margin-bottom: 1rem; background: linear-gradient(to right, #c084fc, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-block; width: 100%;">
+                    🤖 AIアナリスト・レポート
+                </h4>
+                <div id="ai-analysis-container">
+                    <button style="width: 100%; padding: 1rem; background: linear-gradient(135deg, #9333ea, #db2777); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: opacity 0.2s;"
+                        onmouseover="this.style.opacity='0.9'"
+                        onmouseout="this.style.opacity='1'"
+                        hx-post="/api/ai/analyze"
+                        hx-target="#ai-analysis-content"
+                        hx-indicator="#ai-spinner-edinet"
+                        hx-vals='{{"ticker_code": "{code_only}"}}'>
+                        <span>AIによる詳細分析を生成 (Gemini 1.5 Flash)</span>
+                        <span id="ai-spinner-edinet" class="htmx-indicator" style="border: 2px solid white; border-top-color: transparent; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; display: none; margin-left: 0.5rem;"></span>
+                    </button>
+                    <style> 
+                        @keyframes spin {{ to {{ transform: rotate(360deg); }} }}
+                        .htmx-request #ai-spinner-edinet {{ display: inline-block !important; }} 
+                    </style>
+                    <div id="ai-analysis-content" style="margin-top: 1rem; color: #e2e8f0; line-height: 1.7; font-size: 0.95rem;"></div>
+                </div>
+            </div>
+            """
         
         return HTMLResponse(content=f"""
             <div class="bg-gray-800/80 backdrop-blur-md border border-gray-700 rounded-xl p-6 shadow-2xl animate-fade-in-up">
@@ -940,6 +969,7 @@ async def search_edinet_company(
                 {sections_html if sections_html else "<div class='text-gray-500 p-4 text-center bg-gray-900/30 rounded-lg'>詳細なテキスト情報はこのドキュメントに含まれていません。</div>"}
                 
                 {history_btn}
+                {ai_btn}
             </div>
         """)
         
@@ -1451,29 +1481,6 @@ async def lookup_yahoo_finance(
                     <p style="color: #64748b; text-align: center; font-size: 0.85rem; padding: 2rem;">
                         掲示板を読み込み中...
                     </p>
-                </div>
-            </div>
-
-            <!-- AI Analysis Section (OOB Swap) -->
-            <div id="ai-analysis-section" hx-swap-oob="true" style="display: block; margin-top: 1rem;">
-                <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1rem; color: #a855f7; text-align: center;">
-                    🤖 AIアナリスト・レポート
-                </h2>
-                <div id="ai-analysis-container">
-                    <button class="ai-analysis-btn" id="ai-gen-btn"
-                        hx-post="/api/ai/analyze"
-                        hx-target="#ai-analysis-content"
-                        hx-indicator="#ai-spinner"
-                        hx-include="[name='ticker_code']">
-                        <span>AI分析を生成する (Gemini 1.5 Flash)</span>
-                        <span id="ai-spinner" class="htmx-indicator"
-                            style="display: inline-block; width: 18px; height: 18px; border: 3px solid white; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>
-                    </button>
-                    <div id="ai-analysis-content" class="ai-report-content">
-                        <p style="color: #64748b; text-align: center; font-size: 0.9rem;">
-                            有価証券報告書と直近の財務データをAIが解析し、投資判断の助けとなるレポートを作成します。
-                        </p>
-                    </div>
                 </div>
             </div>
         """

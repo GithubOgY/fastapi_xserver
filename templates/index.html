@@ -353,28 +353,6 @@
                 <div class="section" id="financial-data-section" style="display: none;">
                     <!-- Populated by HTMX OOB after stock search -->
                 </div>
-
-                <!-- AIアナリスト・レポート (初期は空、検索後に表示) -->
-                <div class="section" id="ai-analysis-section" style="display: none;">
-                    <h2
-                        style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1rem; color: #a855f7; text-align: center;">
-                        🤖 AIアナリスト・レポート
-                    </h2>
-                    <div id="ai-analysis-container">
-                        <button class="ai-analysis-btn" id="ai-gen-btn" hx-post="/api/ai/analyze"
-                            hx-target="#ai-analysis-content" hx-indicator="#ai-spinner"
-                            hx-include="[name='ticker_code']">
-                            <span>AI分析を生成する (Gemini 1.5 Flash)</span>
-                            <span id="ai-spinner" class="htmx-indicator"
-                                style="display: inline-block; width: 18px; height: 18px; border: 3px solid white; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>
-                        </button>
-                        <div id="ai-analysis-content" class="ai-report-content">
-                            <p style="color: #64748b; text-align: center; font-size: 0.9rem;">
-                                有価証券報告書と直近の財務データをAIが解析し、投資判断の助けとなるレポートを作成します。
-                            </p>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <!-- Sidebar Column -->
