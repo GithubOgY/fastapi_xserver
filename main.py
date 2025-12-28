@@ -774,22 +774,23 @@ async def search_edinet_company(
 @app.post("/api/yahoo-finance/lookup")
 async def lookup_yahoo_finance(
     ticker_code: str = Form(...),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
     """Lookup any stock by code using Yahoo Finance API"""
     if not current_user:
         return HTMLResponse(content="<div class='text-red-400 p-4'>ログインが必要です</div>")
     
     # Clean the ticker code
-    code = ticker_code.strip()
-    if not code:
+    code_input = ticker_code.strip()
+    if not code_input:
         return HTMLResponse(content="<div class='text-yellow-400 p-4'>銘柄コードを入力してください</div>")
     
     # For Japanese stocks, append .T for Tokyo Stock Exchange
-    if code.isdigit() and len(code) == 4:
-        symbol = f"{code}.T"
+    if code_input.isdigit() and len(code_input) == 4:
+        symbol = f"{code_input}.T"
     else:
-        symbol = code
+        symbol = code_input
     
     try:
         ticker = yf.Ticker(symbol)
@@ -799,11 +800,11 @@ async def lookup_yahoo_finance(
         if not info or info.get("regularMarketPrice") is None:
             return HTMLResponse(content=f"""
                 <div style="color: #fb7185; padding: 1rem; text-align: center; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
-                    ❌ 銘柄コード「{code}」のデータが見つかりませんでした。<br>
+                    ❌ 銘柄コード「{symbol}」のデータが見つかりませんでした。<br>
                     4桁の証券コード（例: 7203）を入力してください。
                 </div>
             """)
-        
+            
         # Extract key data
         name = info.get("longName") or info.get("shortName") or symbol
         price = info.get("regularMarketPrice", 0)
@@ -826,6 +827,34 @@ async def lookup_yahoo_finance(
         change_color = "#10b981" if change >= 0 else "#f43f5e"
         change_sign = "+" if change >= 0 else ""
         
+        # Check if favorite
+        is_favorite = db.query(UserFavorite).filter(
+            UserFavorite.user_id == current_user.id,
+            UserFavorite.ticker == symbol
+        ).first() is not None
+        
+        if is_favorite:
+            fav_button = f"""
+                <form action="/api/favorites/remove" method="post" style="margin: 0;">
+                    <input type="hidden" name="ticker" value="{symbol}">
+                    <button type="submit"
+                        style="background: rgba(244, 63, 94, 0.2); border: 1px solid #f43f5e; color: #f43f5e; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; white-space: nowrap;">
+                        ★ 解除
+                    </button>
+                </form>
+            """
+        else:
+            fav_button = f"""
+                <form action="/api/favorites/add" method="post" style="margin: 0;">
+                    <input type="hidden" name="ticker" value="{symbol}">
+                    <input type="hidden" name="ticker_name" value="{name}">
+                    <button type="submit"
+                        style="background: rgba(251, 191, 36, 0.2); border: 1px solid #fbbf24; color: #fbbf24; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; white-space: nowrap;">
+                        ☆ 登録
+                    </button>
+                </form>
+            """
+        
         return HTMLResponse(content=f"""
             <div style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 1.5rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
@@ -838,14 +867,7 @@ async def lookup_yahoo_finance(
                             <div style="font-size: 1.5rem; font-weight: bold; color: #f8fafc;">¥{price:,.0f}</div>
                             <div style="color: {change_color}; font-size: 0.9rem;">{change_sign}{change:,.0f} ({change_sign}{change_pct:.2f}%)</div>
                         </div>
-                        <form action="/api/favorites/add" method="post" style="margin: 0;">
-                            <input type="hidden" name="ticker" value="{code}">
-                            <input type="hidden" name="ticker_name" value="{name}">
-                            <button type="submit"
-                                style="background: rgba(251, 191, 36, 0.2); border: 1px solid #fbbf24; color: #fbbf24; padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; white-space: nowrap;">
-                                ☆ 登録
-                            </button>
-                        </form>
+                        {fav_button}
                     </div>
                 </div>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.75rem; font-size: 0.85rem;">
