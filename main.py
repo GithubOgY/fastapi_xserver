@@ -619,54 +619,144 @@ async def search_edinet_company(
     company_name: str = Form(...),
     current_user: User = Depends(get_current_user)
 ):
-    """Search company financial data from EDINET"""
+    """Search company financial data from EDINET (Latest)"""
     if not current_user:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
     try:
-        from utils.edinet_api import search_company_documents, download_xbrl_document, parse_xbrl_financial_data
+        from utils.edinet_enhanced import search_company_reports, process_document, format_financial_data
         
         # Search for documents
-        docs = search_company_documents(company_name=company_name, doc_type="120", days_back=365)
+        docs = search_company_reports(company_name=company_name, doc_type="120", days_back=365)
         
         if not docs:
             # Try quarterly report
-            docs = search_company_documents(company_name=company_name, doc_type="140", days_back=180)
+            docs = search_company_reports(company_name=company_name, doc_type="140", days_back=180)
         
         if not docs:
             return HTMLResponse(content=f"""
-                <div style="color: #f43f5e; padding: 1rem; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
+                <div class="alert alert-error">
                     ❌ 「{company_name}」の書類が見つかりませんでした。
                 </div>
             """)
         
         doc = docs[0]
-        doc_desc = doc.get("docDescription", "")
-        filer_name = doc.get("filerName", "")
+        sec_code = doc.get("secCode", "")
         
-        # Download and parse XBRL
-        xbrl_dir = download_xbrl_document(doc.get("docID"))
-        if not xbrl_dir:
-            return HTMLResponse(content="""
-                <div style="color: #f43f5e; padding: 1rem; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
-                    ❌ データのダウンロードに失敗しました。
+        # Process document
+        result = process_document(doc)
+        
+        if not result:
+             return HTMLResponse(content="""
+                <div class="alert alert-error">
+                    ❌ データの取得・解析に失敗しました。
                 </div>
             """)
+            
+        metadata = result.get("metadata", {})
+        normalized = result.get("normalized_data", {})
+        text_data = result.get("text_data", {})
+        formatted_normalized = format_financial_data(normalized)
         
-        financial_data = parse_xbrl_financial_data(xbrl_dir)
+        # Qualitative Information Sections
+        sections_html = ""
+        text_keys = ["経営者による分析", "対処すべき課題", "事業等のリスク", "研究開発活動"]
         
-        # Build HTML response
-        rows = ""
-        for label, value in financial_data.items():
-            rows += f"<tr><td style='padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1);'>{label}</td><td style='padding: 0.5rem; text-align: right; border-bottom: 1px solid rgba(255,255,255,0.1);'>{value}</td></tr>"
+        for key in text_keys:
+            content = text_data.get(key)
+            if content:
+                # Truncate for preview (first 300 chars)
+                preview = content[:300] + "..." if len(content) > 300 else content
+                
+                # HTML for expandable section
+                sections_html += f"""
+                <div class="mb-4 bg-gray-900/30 rounded-lg border border-gray-700/50 overflow-hidden" x-data="{{ open: false }}">
+                    <button @click="open = !open" class="w-full flex items-center justify-between p-4 bg-gray-800/50 hover:bg-gray-700/50 transition-colors">
+                        <span class="font-medium text-gray-200 flex items-center gap-2">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            {key}
+                        </span>
+                        <svg :class="{{'rotate-180': open}}" class="h-5 w-5 text-gray-500 transition-transform transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div x-show="open" class="p-4 text-sm text-gray-300 leading-relaxed whitespace-pre-wrap border-t border-gray-700/50 bg-gray-900/50 animate-fade-in">
+                        {content}
+                    </div>
+                </div>
+                """
+
+        history_btn = ""
+        if sec_code:
+            code_only = sec_code[:4] # First 4 digits
+            history_btn = f"""
+            <button hx-get="/api/edinet/history/{code_only}" 
+                    hx-target="#edinet-history-container" 
+                    hx-indicator="#loading-history"
+                    class="mt-6 w-full py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                </svg>
+                直近の財務推移グラフを表示
+            </button>
+            <div id="loading-history" class="htmx-indicator flex justify-center py-4">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
+            </div>
+            <div id="edinet-history-container" class="mt-4"></div>
+            """
         
         return HTMLResponse(content=f"""
-            <div style="background: rgba(99, 102, 241, 0.1); border-radius: 12px; padding: 1.5rem;">
-                <h3 style="color: #818cf8; margin: 0 0 0.5rem 0; font-size: 1.1rem;">📊 {filer_name}</h3>
-                <p style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 1rem 0;">{doc_desc}</p>
-                <table style="width: 100%; border-collapse: collapse; color: #e2e8f0; font-size: 0.9rem;">
-                    {rows if rows else "<tr><td colspan='2'>財務データが取得できませんでした</td></tr>"}
-                </table>
+            <div class="bg-gray-800/80 backdrop-blur-md border border-gray-700 rounded-xl p-6 shadow-2xl animate-fade-in-up">
+                <div class="flex items-start justify-between mb-6 pb-4 border-b border-gray-700">
+                    <div>
+                        <div class="flex items-center gap-3">
+                            <h3 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
+                                {metadata.get('company_name')}
+                            </h3>
+                            <span class="px-2 py-1 bg-gray-700 text-gray-300 text-xs font-mono rounded-md border border-gray-600">{sec_code}</span>
+                        </div>
+                        <p class="text-sm text-gray-400 mt-1 flex items-center gap-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            {metadata.get('document_type')}
+                        </p>
+                        <p class="text-xs text-gray-500 mt-1 ml-5">提出日: {metadata.get('submit_date')}</p>
+                    </div>
+                </div>
+                
+                <!-- Key Financials Summary -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-gray-900/50 p-3 rounded-lg border border-gray-700/50">
+                        <div class="text-xs text-gray-500 mb-1">売上高</div>
+                        <div class="font-mono text-lg text-gray-200">{formatted_normalized.get("売上高", "-")}</div>
+                    </div>
+                    <div class="bg-gray-900/50 p-3 rounded-lg border border-gray-700/50">
+                        <div class="text-xs text-gray-500 mb-1">営業利益</div>
+                        <div class="font-mono text-lg text-emerald-400">{formatted_normalized.get("営業利益", "-")}</div>
+                    </div>
+                    <div class="bg-gray-900/50 p-3 rounded-lg border border-gray-700/50">
+                        <div class="text-xs text-gray-500 mb-1">当期純利益</div>
+                        <div class="font-mono text-lg text-blue-400">{formatted_normalized.get("当期純利益", "-")}</div>
+                    </div>
+                    <div class="bg-gray-900/50 p-3 rounded-lg border border-gray-700/50">
+                        <div class="text-xs text-gray-500 mb-1">ROE</div>
+                        <div class="font-mono text-lg text-purple-400">{formatted_normalized.get("ROE", "-")}</div>
+                    </div>
+                </div>
+                
+                <h4 class="text-lg font-bold text-gray-200 mb-4 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    定性情報レポート
+                </h4>
+                
+                {sections_html if sections_html else "<div class='text-gray-500 p-4 text-center bg-gray-900/30 rounded-lg'>詳細なテキスト情報はこのドキュメントに含まれていません。</div>"}
+                
+                {history_btn}
             </div>
         """)
         
@@ -674,7 +764,163 @@ async def search_edinet_company(
         import traceback
         traceback.print_exc()
         return HTMLResponse(content=f"""
-            <div style="color: #f43f5e; padding: 1rem; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
+            <div class="alert alert-error">
                 ❌ エラー: {str(e)}
             </div>
         """, status_code=500)
+
+
+@app.get("/api/edinet/history/{code}")
+async def get_edinet_history(code: str, current_user: User = Depends(get_current_user)):
+    """Get 5-year financial history charts"""
+    if not current_user:
+         return HTMLResponse(content="<div class='text-red-400'>Login required</div>")
+    
+    try:
+        from utils.edinet_enhanced import get_financial_history, format_financial_data
+        
+        # Fetch history (heavy operation)
+        history = get_financial_history(company_code=code, years=5)
+        
+        if not history:
+            return HTMLResponse(content="<div class='text-gray-400 p-4 text-center'>履歴データが見つかりませんでした</div>")
+        
+        # Prepare data for Chart.js
+        years_label = []
+        sales_data = []
+        profit_data = []
+        op_cf_data = []
+        
+        table_rows = ""
+        
+        # Sort oldest to newest
+        for data in history:
+            meta = data.get("metadata", {})
+            norm = data.get("normalized_data", {})
+            
+            # Label: use period end date (YYYY-MM)
+            period = meta.get("period_end", "")[:7] # YYYY-MM
+            years_label.append(period)
+            
+            # Values (convert to 億円 for easy reading in chart)
+            sales = norm.get("売上高", 0)
+            sales_val = sales / 100000000 if isinstance(sales, (int, float)) else 0
+            sales_data.append(round(sales_val, 1))
+            
+            profit = norm.get("営業利益", 0)
+            profit_val = profit / 100000000 if isinstance(profit, (int, float)) else 0
+            profit_data.append(round(profit_val, 1))
+            
+            op_cf = norm.get("営業CF", 0)
+            op_cf_val = op_cf / 100000000 if isinstance(op_cf, (int, float)) else 0
+            op_cf_data.append(round(op_cf_val, 1))
+            
+            # Add to table
+            formatted = format_financial_data(norm)
+            table_rows += f"""
+            <tr class="hover:bg-gray-700/30 transition-colors">
+                <td class="p-2 text-gray-300 border-b border-gray-700/50">{period}</td>
+                <td class="p-2 text-right text-gray-300 border-b border-gray-700/50">{formatted.get('売上高', '-')}</td>
+                <td class="p-2 text-right text-gray-300 border-b border-gray-700/50">{formatted.get('営業利益', '-')}</td>
+                <td class="p-2 text-right text-indigo-300 border-b border-gray-700/50">{formatted.get('営業CF', '-')}</td>
+                <td class="p-2 text-right text-gray-300 border-b border-gray-700/50">{formatted.get('ROE', '-')}</td>
+            </tr>
+            """
+
+        # Generate unique chart ID
+        chart_id = f"historyChart_{code}_{int(time.time())}"
+        
+        return HTMLResponse(content=f"""
+            <div class="mt-6 bg-gray-900/50 rounded-xl p-4 border border-gray-700">
+                <h4 class="text-lg font-bold text-gray-200 mb-4">📈 業績推移 (5年)</h4>
+                
+                <div class="h-64 mb-6">
+                    <canvas id="{chart_id}"></canvas>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left">
+                        <thead>
+                            <tr>
+                                <th class="p-2 text-gray-500">決算期</th>
+                                <th class="p-2 text-right text-gray-500">売上高</th>
+                                <th class="p-2 text-right text-gray-500">営業利益</th>
+                                <th class="p-2 text-right text-indigo-400">営業CF</th>
+                                <th class="p-2 text-right text-gray-500">ROE</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {table_rows}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <script>
+                    (function() {{
+                        const ctx = document.getElementById('{chart_id}').getContext('2d');
+                        new Chart(ctx, {{
+                            type: 'bar',
+                            data: {{
+                                labels: {years_label},
+                                datasets: [
+                                    {{
+                                        label: '売上高 (億円)',
+                                        data: {sales_data},
+                                        backgroundColor: 'rgba(99, 102, 241, 0.5)',
+                                        borderColor: 'rgba(99, 102, 241, 1)',
+                                        borderWidth: 1,
+                                        yAxisID: 'y',
+                                    }},
+                                    {{
+                                        label: '営業利益 (億円)',
+                                        data: {profit_data},
+                                        type: 'line',
+                                        borderColor: 'rgba(20, 184, 166, 1)',
+                                        backgroundColor: 'rgba(20, 184, 166, 0.2)',
+                                        borderWidth: 2,
+                                        yAxisID: 'y1',
+                                    }},
+                                    {{
+                                        label: '営業CF (億円)',
+                                        data: {op_cf_data},
+                                        type: 'line',
+                                        borderColor: 'rgba(244, 114, 182, 1)',
+                                        backgroundColor: 'rgba(244, 114, 182, 0.2)',
+                                        borderWidth: 2,
+                                        borderDash: [5, 5],
+                                        yAxisID: 'y1',
+                                    }}
+                                ]
+                            }},
+                            options: {{
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                interaction: {{
+                                    mode: 'index',
+                                    intersect: false,
+                                }},
+                                scales: {{
+                                    y: {{
+                                        type: 'linear',
+                                        display: true,
+                                        position: 'left',
+                                        grid: {{ color: 'rgba(255, 255, 255, 0.05)' }}
+                                    }},
+                                    y1: {{
+                                        type: 'linear',
+                                        display: true,
+                                        position: 'right',
+                                        grid: {{ drawOnChartArea: false }}
+                                    }}
+                                }}
+                            }}
+                        }});
+                    }})();
+                </script>
+            </div>
+        """)
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return HTMLResponse(content=f"<div class='text-red-400 p-4'>Error: {str(e)}</div>", status_code=500)
