@@ -583,19 +583,20 @@ def clean_text_block(html_content: str) -> str:
             # If line is very long and has periods but no line breaks, try to split
             if len(stripped) > 100:
                 # Add line breaks after periods (。) for better readability
-                stripped = stripped.replace("。", "。\n\n")
+                # Use single line break, not double
+                stripped = stripped.replace("。", "。\n")
                 
-                # Add line breaks before common list markers if they don't have one
-                markers = ["(1)", "(2)", "(3)", "(4)", "(5)", "①", "②", "③", "④", "⑤", "（１）", "（２）"]
+                # Add line breaks before common list markers (single line break)
+                markers = ["(1)", "(2)", "(3)", "(4)", "(5)", "①", "②", "③", "④", "⑤", "（１）", "（２）", "（３）", "（４）", "（５）"]
                 for marker in markers:
-                    stripped = stripped.replace(marker, f"\n\n{marker}")
+                    stripped = stripped.replace(marker, f"\n{marker}")
             
             lines.append(stripped)
         
-        # Re-join with proper spacing
-        formatted_text = "\n\n".join(lines)
+        # Re-join with single line break
+        formatted_text = "\n".join(lines)
         
-        # Reduce excessive newlines
+        # Reduce excessive newlines (3+ newlines -> 2 newlines for paragraph breaks)
         while "\n\n\n" in formatted_text:
             formatted_text = formatted_text.replace("\n\n\n", "\n\n")
             
