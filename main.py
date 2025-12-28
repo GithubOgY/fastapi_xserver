@@ -916,10 +916,19 @@ async def lookup_yahoo_finance(
                         hx-get="/api/edinet/history/{symbol}"
                         hx-target="#chart-container"
                         hx-swap="innerHTML"
-                        hx-indicator="#edinet-load-spinner"
-                        class="py-2 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow transition-colors">
-                        <span id="edinet-load-text">📊 詳細分析・チャートを表示 (EDINET)</span>
-                        <span id="edinet-load-spinner" class="htmx-indicator ml-2">⏳</span>
+                        hx-disabled-elt="this"
+                        class="py-2 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow transition-colors relative group">
+                        
+                        <!-- Normal State -->
+                        <span class="inline-flex items-center gap-2 group-[.htmx-request]:hidden">
+                            <span>📊 詳細分析・チャートを表示 (EDINET)</span>
+                        </span>
+
+                        <!-- Loading State -->
+                        <span class="hidden group-[.htmx-request]:inline-flex items-center gap-2">
+                            <span class="animate-spin">⏳</span>
+                            <span>EDINET検索中... (最大60秒)</span>
+                        </span>
                     </button>
                     <p class="text-xs text-gray-400 mt-2">※ 公式財務データを取得してグラフを描画します</p>
                 </div>
