@@ -274,84 +274,14 @@
             </div>
         </div>
 
-        <!-- 業績グラフセクション -->
-        <div class="section" id="chart-section">
-            <h2
-                style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
-                📊 業績推移グラフ
-            </h2>
-            <div id="chart-container" style="height: 300px; min-height: 300px; position: relative; width: 100%;">
-                <canvas id="financialChart"></canvas>
-            </div>
+        <!-- 業績グラフセクション (初期は空、検索後に表示) -->
+        <div class="section" id="chart-section" style="display: none;">
+            <!-- Populated by HTMX OOB after stock search -->
         </div>
 
-        <!-- 財務データセクション -->
-        <div class="section" id="financial-data-section">
-            <h2
-                style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
-                📈 {{ ticker_name }} 財務推移
-            </h2>
-
-            <!-- 同期ステータス表示 -->
-            {% if company and company.last_sync_at %}
-            <div style="text-align: center; margin-bottom: 1rem; font-size: 0.8rem; color: #94a3b8;">
-                最終同期: {{ company.last_sync_at }}
-                {% if company.last_sync_error %}
-                <span style="color: #fb7185; margin-left: 0.5rem;">⚠️ {{ company.last_sync_error }}</span>
-                {% else %}
-                <span style="color: #10b981; margin-left: 0.5rem;">✅ 成功</span>
-                {% endif %}
-            </div>
-            {% endif %}
-
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>決算期</th>
-                            <th>売上収益 (億円)</th>
-                            <th>営業利益 (億円)</th>
-                            <th>純利益 (億円)</th>
-                            <th>EPS (円)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% if fundamentals %}
-                        {% for f in fundamentals %}
-                        <tr>
-                            <td>{{ f.year }}年3月</td>
-                            <td>{{ "{:,.2f}".format(f.revenue) }}</td>
-                            <td>{{ "{:,.2f}".format(f.operating_income) }}</td>
-                            <td>{{ "{:,.2f}".format(f.net_income) }}</td>
-                            <td>{{ f.eps }}</td>
-                        </tr>
-                        {% endfor %}
-                        {% else %}
-                        <tr>
-                            <td colspan="5" style="text-align: center; padding: 2rem; color: #64748b;">
-                                データがありません。「同期」ボタンを押して取得してください。<br>
-                                (API制限により取得できない場合があります)
-                            </td>
-                        </tr>
-                        {% endif %}
-                    </tbody>
-                </table>
-            </div>
-            <p style="font-size: 0.75rem; color: #64748b; margin-top: 1.5rem; text-align: center;">
-                ※このデータは yfinance API より自動更新されています
-            </p>
-        </div>
-
-        <!-- キャッシュフロー分析セクション -->
-        <div class="section" id="cashflow-section">
-            <h2
-                style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
-                💰 キャッシュフロー分析
-            </h2>
-            <div id="cashflow-container"
-                style="min-height: 100px; background: rgba(0,0,0,0.2); border-radius: 12px; padding: 2rem; text-align: center; color: #64748b;">
-                「キャッシュフロー分析」ボタンを押すとEDINETからCFデータを取得して表示します
-            </div>
+        <!-- 財務データセクション (初期は空、検索後に表示) -->
+        <div class="section" id="financial-data-section" style="display: none;">
+            <!-- Populated by HTMX OOB after stock search -->
         </div>
 
         <!-- EDINET 企業検索セクション -->
