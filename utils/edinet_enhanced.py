@@ -849,9 +849,38 @@ def search_company_reports(
 def process_document(doc: Dict[str, Any]) -> Dict[str, Any]:
     """
     Process a single document: download, extract, and parse
+    Uses database cache to avoid repeated API calls (cache expires after 7 days)
     """
+    import json
+    from datetime import datetime, timedelta
+    
     doc_id = doc.get("docID")
-    logger.info(f"Processing: {doc.get('filerName')} - {doc.get('docDescription')} ({doc.get('periodEnd')})")
+    period_end = doc.get("periodEnd")
+    sec_code = doc.get("secCode", "")[:4] if doc.get("secCode") else ""
+    
+    # Try to get from cache first
+    try:
+        from database import SessionLocal, EdinetCache
+        db = SessionLocal()
+        
+        # Check cache (7 days expiry)
+        cache_expiry = datetime.utcnow() - timedelta(days=7)
+        cached = db.query(EdinetCache).filter(
+            EdinetCache.doc_id == doc_id,
+            EdinetCache.cached_at > cache_expiry
+        ).first()
+        
+        if cached:
+            logger.info(f"Cache hit for {doc_id} ({doc.get('filerName')})")
+            db.close()
+            return json.loads(cached.data_json)
+        
+        db.close()
+    except Exception as e:
+        logger.warning(f"Cache check failed: {e}")
+    
+    # Cache miss - download and process
+    logger.info(f"Processing: {doc.get('filerName')} - {doc.get('docDescription')} ({period_end})")
     
     # Download and extract
     xbrl_dir = download_xbrl_package(doc_id)
@@ -866,16 +895,38 @@ def process_document(doc: Dict[str, Any]) -> Dict[str, Any]:
         "company_name": doc.get("filerName"),
         "document_type": doc.get("docDescription"),
         "submit_date": doc.get("submitDateTime"),
-        "period_end": doc.get("periodEnd"),
+        "period_end": period_end,
         "securities_code": doc.get("secCode"),
         "doc_id": doc_id,
     }
     
-    # Cleanup
+    # Cleanup temp files
     try:
         shutil.rmtree(os.path.dirname(xbrl_dir))
     except:
         pass
+    
+    # Save to cache
+    try:
+        db = SessionLocal()
+        
+        # Remove old cache for this doc_id if exists
+        db.query(EdinetCache).filter(EdinetCache.doc_id == doc_id).delete()
+        
+        # Add new cache entry
+        cache_entry = EdinetCache(
+            company_code=sec_code,
+            doc_id=doc_id,
+            period_end=period_end,
+            data_json=json.dumps(result, ensure_ascii=False, default=str),
+            cached_at=datetime.utcnow()
+        )
+        db.add(cache_entry)
+        db.commit()
+        logger.info(f"Cached data for {doc_id}")
+        db.close()
+    except Exception as e:
+        logger.warning(f"Cache save failed: {e}")
     
     return result
 

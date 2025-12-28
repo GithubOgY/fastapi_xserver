@@ -1,8 +1,9 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float
+from sqlalchemy import create_engine, Column, Integer, String, Float, Text, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
 from dotenv import load_dotenv
+from datetime import datetime
 
 load_dotenv()
 
@@ -47,6 +48,16 @@ class UserFavorite(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, index=True)
     ticker = Column(String, index=True)
+
+class EdinetCache(Base):
+    """Cache for EDINET financial data - expires after 7 days"""
+    __tablename__ = "edinet_cache"
+    id = Column(Integer, primary_key=True, index=True)
+    company_code = Column(String, index=True)  # 4-digit security code (e.g., "7203")
+    doc_id = Column(String, index=True)  # EDINET document ID
+    period_end = Column(String, index=True)  # Period end date (e.g., "2024-03-31")
+    data_json = Column(Text)  # JSON string of the parsed financial data
+    cached_at = Column(DateTime, default=datetime.utcnow)
 
 # DB initialization
 Base.metadata.create_all(bind=engine)
