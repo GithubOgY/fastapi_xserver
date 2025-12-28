@@ -517,8 +517,8 @@ def extract_financial_data(xbrl_dir: str) -> Dict[str, Any]:
         # Text block mapping (Canonical Name -> Possible Tag Fragments)
         text_targets = {
             "対処すべき課題": ["IssuesToBeAddressedTextBlock"],
-            "事業等のリスク": ["BusinessRisksTextBlock"],
-            "経営者による分析": ["ManagementAnalysisOfFinancialPosition", "ManagementAnalysisOfFinancialPositionOperatingResultsAndCashFlowsTextBlock"],
+            "事業等のリスク": ["BusinessRisksTextBlock", "RiskManagementTextBlock", "RisksOfBusinessEtcTextBlock"],
+            "経営者による分析": ["ManagementAnalysisOfFinancialPosition", "ManagementAnalysisOfFinancialPositionOperatingResultsAndCashFlowsTextBlock", "OverviewOfBusinessResultsTextBlock"],
             "研究開発活動": ["ResearchAndDevelopmentActivitiesTextBlock"]
         }
         
@@ -535,7 +535,7 @@ def extract_financial_data(xbrl_dir: str) -> Dict[str, Any]:
                     raw_html = elem.text
                     if raw_html:
                         cleaned = clean_text_block(raw_html)
-                        if len(cleaned) > 50: # Ignore valid but empty/short content
+                        if len(cleaned) > 20: # Lowered threshold to 20 chars
                             text_data[concept] = cleaned
                             break # Found the best match for this concept
         
