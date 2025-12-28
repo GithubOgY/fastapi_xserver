@@ -849,7 +849,19 @@ async def lookup_yahoo_finance(
         
         per = info.get("trailingPE") or info.get("forwardPE") or "-"
         pbr = info.get("priceToBook") or "-"
+        
+        # 配当利回りの取得（フォールバックを追加）
         dividend_yield = info.get("dividendYield")
+        if dividend_yield is None:
+            # フォールバック1: 実績配当利回り
+            dividend_yield = info.get("trailingAnnualDividendYield")
+        
+        if dividend_yield is None:
+            # フォールバック2: 配当額 / 株価 で計算
+            div_rate = info.get("dividendRate") or info.get("trailingAnnualDividendRate")
+            if div_rate and price:
+                dividend_yield = div_rate / price
+
         dividend_str = f"{dividend_yield * 100:.2f}%" if dividend_yield else "-"
         
         roe = info.get("returnOnEquity")
