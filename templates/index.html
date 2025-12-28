@@ -296,19 +296,6 @@
             <!-- Populated by HTMX OOB after stock search -->
         </div>
 
-        <!-- インタラクティブ・セクション -->
-        <div class="section">
-            <div class="input-group">
-                <input type="text" name="message" placeholder="サーバーへエコー送信..." hx-post="/echo"
-                    hx-trigger="keyup[enterKey]" hx-target="#echo-target">
-                <button hx-post="/echo" hx-target="#echo-target" hx-include="[name='message']">
-                    送信
-                </button>
-            </div>
-            <div id="echo-target">
-                <p class="echo-result">API連携の準備はよろしいですか？</p>
-            </div>
-        </div>
     </div>
 
     <script id="fundamental-data" type="application/json">
