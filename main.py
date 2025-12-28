@@ -672,7 +672,7 @@ async def search_edinet_company(
                 sections_html += f"""
                 <details class="mb-3 bg-gray-900/30 rounded-lg border border-gray-700/50 overflow-hidden">
                     <summary class="cursor-pointer p-4 bg-gray-800/50 hover:bg-gray-700/50 transition-colors font-medium text-gray-200 list-none flex items-center justify-between">
-                        <span>📄 {key}</span>
+                        <span>{key}</span>
                         <span class="text-gray-500 text-sm">クリックして展開</span>
                     </summary>
                     <div class="p-6 text-base text-gray-200 leading-loose border-t border-gray-700/50 bg-gray-900/50" style="white-space: pre-wrap; line-height: 2;">
@@ -688,10 +688,7 @@ async def search_edinet_company(
             <button hx-get="/api/edinet/history/{code_only}" 
                     hx-target="#edinet-history-container" 
                     hx-indicator="#loading-history"
-                    class="mt-6 w-full py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-lg text-sm font-medium transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-                </svg>
+                    class="mt-6 w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-all">
                 直近の財務推移グラフを表示
             </button>
             <div id="loading-history" class="htmx-indicator flex justify-center py-4">
@@ -711,16 +708,7 @@ async def search_edinet_company(
                             <span class="px-2 py-1 bg-gray-700 text-gray-300 text-xs font-mono rounded-md border border-gray-600">{sec_code}</span>
                         </div>
                         <div class="flex items-center gap-2 mt-2 text-sm text-gray-400">
-                            <div class="flex items-center gap-1 bg-gray-900/50 px-2 py-1 rounded">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-500">
-                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                    <polyline points="14 2 14 8 20 8"></polyline>
-                                    <line x1="16" y1="13" x2="8" y2="13"></line>
-                                    <line x1="16" y1="17" x2="8" y2="17"></line>
-                                    <polyline points="10 9 9 9 8 9"></polyline>
-                                </svg>
-                                <span>{metadata.get('document_type')}</span>
-                            </div>
+                            <span class="bg-gray-900/50 px-2 py-1 rounded">{metadata.get('document_type')}</span>
                             <span class="text-xs text-gray-500">提出: {metadata.get('submit_date')}</span>
                         </div>
                     </div>
