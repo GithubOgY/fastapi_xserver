@@ -99,6 +99,7 @@ def analyze_stock_with_ai(ticker_code: str, financial_context: Dict[str, Any], c
             text_blocks = edinet_data["text_data"]
             for title, content in text_blocks.items():
                 edinet_text += f"\n### {title}\n{content[:2000]}\n" # プロンプトサイズを考慮して制限
+            logger.info(f"AI Prompt: Included {len(text_blocks)} EDINET text blocks for context.")
     except Exception as e:
         logger.error(f"Failed to fetch EDINET text for AI: {e}")
 
@@ -140,7 +141,7 @@ Step 2: 【割安度の評価】
 Step 3: 【質と健全性】
 - 利益だけでなく、営業キャッシュフローはプラスですか？
 - 財務基盤（自己資本比率など）は安心できる水準ですか？
-- EDINET情報から、経営陣のリスク認識や課題への取り組みを確認してください。
+- **重要:** EDINETの「事業等のリスク」や「対処すべき課題」セクションの内容を必ず確認し、具体的な懸念点（為替、原材料価格、法規制など）があれば明記してください。
 
 Step 4: 【投資効率】
 - S&P500などのインデックス投資と比較して、あえてこの銘柄を選ぶ理由（超過収益の可能性）はありますか？
