@@ -873,99 +873,251 @@ async def lookup_yahoo_finance(
             """
         
         # -------------------------------------------------------------------------
-        # Fetch Financial Data (Hybrid: Yahoo Finance + EDINET) & Generate Charts
+        # Fetch Financial Data from Yahoo Finance & Generate Charts
         # -------------------------------------------------------------------------
-        # This logic is integrated here to show charts immediately without extra clicks.
-        
-        from utils.edinet_enhanced import get_financial_history, format_financial_data
-        import pandas as pd
         import time
         
-        # 1. Try fetching from Yahoo Finance first (Fast, Reliable)
-        yf_history = []
-        try:
-            # We already have 'ticker' object
-            fin = ticker.financials
-            cf = ticker.cashflow
-            
-            # Check if we have data
-            if not fin.empty:
-                # Get all unique dates from the columns (usually 4 years)
-                # Ensure they are timestamps or convertable
-                dates = sorted(fin.columns, reverse=False) # Oldest to Newest
-                
-                for date in dates:
-                    # Extract data for this date
-                    date_str = date.strftime("%Y-%m-%d") if hasattr(date, 'strftime') else str(date)[:10]
-                    data_entry = {
-                        "metadata": {
-                            "period_end": date_str,
-                            "source": "YahooFinance"
-                        },
-                        "normalized_data": {}
-                    }
-                    
-                    # Helper to safely get value from DF
-                    def get_val(df, key, date_col):
-                        try:
-                            if key in df.index:
-                                val = df.loc[key, date_col]
-                                return val if pd.notna(val) else 0
-                        except:
-                            pass
-                        return 0
-
-                    data_entry["normalized_data"]["売上高"] = get_val(fin, "Total Revenue", date)
-                    data_entry["normalized_data"]["営業利益"] = get_val(fin, "Operating Income", date)
-                    data_entry["normalized_data"]["当期純利益"] = get_val(fin, "Net Income", date)
-                    data_entry["normalized_data"]["EPS"] = get_val(fin, "Basic EPS", date)
-                    
-                    # CF keys vary by yfinance version
-                    op_cf = get_val(cf, "Operating Cash Flow", date) or get_val(cf, "Total Cash From Operating Activities", date)
-                    inv_cf = get_val(cf, "Investing Cash Flow", date) or get_val(cf, "Total Cashflows From Investing Activities", date)
-                    fin_cf = get_val(cf, "Financing Cash Flow", date) or get_val(cf, "Total Cash From Financing Activities", date)
-                    
-                    data_entry["normalized_data"]["営業CF"] = op_cf
-                    data_entry["normalized_data"]["投資CF"] = inv_cf
-                    data_entry["normalized_data"]["財務CF"] = fin_cf
-                    data_entry["normalized_data"]["ネットCF"] = op_cf + inv_cf + fin_cf 
-                    
-                    yf_history.append(data_entry)
-        except Exception as e:
-            logger.error(f"YFinance financials fetch failed for {symbol}: {e}")
-            
-        # 2. Try fetching from EDINET (Limit years to keep it decently fast if YF failed or for latest)
-        edinet_history = []
-        try:
-             # Attempt to get latest data from EDINET (3 years)
-             edinet_history = get_financial_history(company_code=code_input, years=3)
-        except Exception as e:
-             logger.warning(f"EDINET fetch failed for {code_input}: {e}")
-
-        # 3. Merge Strategies
-        merged_data = {}
+        # Get financial statements from yfinance
+        fin = ticker.financials
+        cf = ticker.cashflow
         
-        # Fill with YF first
-        for item in yf_history:
-            period = item["metadata"]["period_end"][:7] # YYYY-MM
-            merged_data[period] = item
-            
-        # Overwrite with EDINET if available (Higher precision/Japanese standards)
-        if edinet_history:
-            for item in edinet_history:
-                period = item["metadata"]["period_end"][:7]
-                item["metadata"]["source"] = "EDINET"
-                merged_data[period] = item
-                
-        # Convert back to list and sort
-        final_history = sorted(merged_data.values(), key=lambda x: x["metadata"]["period_end"])
-        history = final_history[-5:] # Last 5 years
+        # Prepare data arrays
+        years_label = []
+        revenue_data = []
+        op_income_data = []
+        op_margin_data = []
+        eps_data = []
+        op_cf_data = []
+        inv_cf_data = []
+        fin_cf_data = []
+        net_cf_data = []
+        table_rows = ""
         
-        # -------------------------------------------------------
-        # Generate Chart & Table HTML
-        # -------------------------------------------------------
-        chart_html = ""
-        financial_table_rows = ""
+        # Helper function to safely get DataFrame values
+        def get_val(df, key, date_col):
+            try:
+                if not df.empty and key in df.index:
+                    val = df.loc[key, date_col]
+                    return float(val) if pd.notna(val) else 0
+            except:
+                pass
+            return 0
+        
+        # Convert to billions (億円)
+        to_oku = lambda x: round(x / 100000000, 1) if x else 0
+        
+        # Process data if available
+        if not fin.empty:
+            dates = sorted(fin.columns, reverse=False)[-4:]  # Last 4 years
+            
+            for date in dates:
+                year = date.strftime("%Y") if hasattr(date, 'strftime') else str(date)[:4]
+                years_label.append(year)
+                
+                # Revenue & Profit
+                revenue = get_val(fin, "Total Revenue", date)
+                op_income = get_val(fin, "Operating Income", date)
+                net_income = get_val(fin, "Net Income", date)
+                eps = get_val(fin, "Basic EPS", date)
+                
+                revenue_data.append(to_oku(revenue))
+                op_income_data.append(to_oku(op_income))
+                
+                # Operating Margin %
+                margin = round((op_income / revenue) * 100, 1) if revenue > 0 else 0
+                op_margin_data.append(margin)
+                eps_data.append(round(eps, 1) if eps else 0)
+                
+                # Cash Flow
+                op_cf = get_val(cf, "Operating Cash Flow", date) or get_val(cf, "Total Cash From Operating Activities", date)
+                inv_cf = get_val(cf, "Investing Cash Flow", date) or get_val(cf, "Total Cashflows From Investing Activities", date)
+                fcf = get_val(cf, "Financing Cash Flow", date) or get_val(cf, "Total Cash From Financing Activities", date)
+                
+                op_cf_data.append(to_oku(op_cf))
+                inv_cf_data.append(to_oku(inv_cf))
+                fin_cf_data.append(to_oku(fcf))
+                net_cf_data.append(to_oku(op_cf + inv_cf + fcf))
+                
+                # Table row
+                fmt = lambda x: f"{to_oku(x):,.1f}" if x else "-"
+                table_rows += f"""
+                    <tr>
+                        <td>{year}</td>
+                        <td>{fmt(revenue)}</td>
+                        <td>{fmt(op_income)}</td>
+                        <td>{fmt(net_income)}</td>
+                        <td>{round(eps, 1) if eps else '-'}</td>
+                        <td>{fmt(op_cf)}</td>
+                    </tr>
+                """
+        
+        # Generate unique chart IDs
+        chart_id1 = f"perf_{code_input}_{int(time.time())}"
+        chart_id2 = f"cf_{code_input}_{int(time.time())}"
+        
+        # Build clean HTML response
+        return HTMLResponse(content=f"""
+            <!-- Stock Info Card -->
+            <div style="background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1)); border: 1px solid rgba(99,102,241,0.3); border-radius: 16px; padding: 1.5rem; margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <h3 style="font-size: 1.4rem; font-weight: 700; color: #f8fafc; margin: 0;">{name}</h3>
+                        <p style="color: #94a3b8; font-size: 0.9rem; margin: 0.25rem 0 0 0;">{symbol}</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 2rem; font-weight: 700; color: #f8fafc;">¥{price:,.0f}</div>
+                        <div style="color: {change_color}; font-size: 1rem; font-weight: 600;">
+                            {change_sign}{change:,.0f} ({change_sign}{change_pct:.2f}%)
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Key Metrics Grid -->
+                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; margin-top: 1.25rem;">
+                    <div style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 10px; text-align: center;">
+                        <div style="color: #64748b; font-size: 0.7rem; margin-bottom: 0.25rem;">時価総額</div>
+                        <div style="color: #f8fafc; font-weight: 600; font-size: 0.95rem;">{market_cap_str}</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 10px; text-align: center;">
+                        <div style="color: #64748b; font-size: 0.7rem; margin-bottom: 0.25rem;">PER</div>
+                        <div style="color: #f8fafc; font-weight: 600; font-size: 0.95rem;">{per if isinstance(per, str) else f'{per:.1f}'}</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 10px; text-align: center;">
+                        <div style="color: #64748b; font-size: 0.7rem; margin-bottom: 0.25rem;">PBR</div>
+                        <div style="color: #f8fafc; font-weight: 600; font-size: 0.95rem;">{pbr if isinstance(pbr, str) else f'{pbr:.2f}'}</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 10px; text-align: center;">
+                        <div style="color: #64748b; font-size: 0.7rem; margin-bottom: 0.25rem;">配当利回り</div>
+                        <div style="color: #10b981; font-weight: 600; font-size: 0.95rem;">{dividend_str}</div>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 10px; text-align: center;">
+                        <div style="color: #64748b; font-size: 0.7rem; margin-bottom: 0.25rem;">ROE</div>
+                        <div style="color: #818cf8; font-weight: 600; font-size: 0.95rem;">{roe_str}</div>
+                    </div>
+                </div>
+                
+                <!-- Favorite Button -->
+                <div style="margin-top: 1rem; text-align: center;">
+                    {fav_button}
+                </div>
+            </div>
+
+            <!-- Charts Section (OOB Swap) -->
+            <div id="chart-section" class="section" hx-swap-oob="true">
+                <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; margin-bottom: 1rem; color: #818cf8; text-align: center;">
+                    📊 財務パフォーマンス
+                </h2>
+                
+                <!-- Two Column Charts -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <!-- Revenue/Profit Chart -->
+                    <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem;">
+                        <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 0.75rem 0; text-align: center;">売上 / 営業利益</h4>
+                        <div style="height: 220px; position: relative;">
+                            <canvas id="{chart_id1}"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Cash Flow Chart -->
+                    <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem;">
+                        <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 0.75rem 0; text-align: center;">キャッシュフロー</h4>
+                        <div style="height: 220px; position: relative;">
+                            <canvas id="{chart_id2}"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Chart.js Scripts -->
+                <script>
+                (function() {{
+                    // Revenue/Profit Chart
+                    new Chart(document.getElementById('{chart_id1}').getContext('2d'), {{
+                        type: 'bar',
+                        data: {{
+                            labels: {years_label},
+                            datasets: [
+                                {{ label: '売上高', data: {revenue_data}, backgroundColor: 'rgba(99,102,241,0.7)', borderColor: '#6366f1', borderWidth: 1 }},
+                                {{ label: '営業利益', data: {op_income_data}, backgroundColor: 'rgba(16,185,129,0.7)', borderColor: '#10b981', borderWidth: 1 }},
+                                {{ label: '営業利益率(%)', data: {op_margin_data}, type: 'line', borderColor: '#f59e0b', borderWidth: 2, yAxisID: 'y1', tension: 0.3, pointRadius: 4 }}
+                            ]
+                        }},
+                        options: {{
+                            responsive: true, maintainAspectRatio: false,
+                            scales: {{
+                                y: {{ grid: {{ color: 'rgba(255,255,255,0.05)' }}, ticks: {{ color: '#64748b', font: {{ size: 10 }} }}, title: {{ display: true, text: '億円', color: '#64748b', font: {{ size: 10 }} }} }},
+                                y1: {{ position: 'right', grid: {{ display: false }}, ticks: {{ color: '#f59e0b', font: {{ size: 10 }} }}, min: 0 }},
+                                x: {{ grid: {{ display: false }}, ticks: {{ color: '#64748b', font: {{ size: 10 }} }} }}
+                            }},
+                            plugins: {{ legend: {{ labels: {{ color: '#94a3b8', font: {{ size: 10 }} }} }} }}
+                        }}
+                    }});
+                    
+                    // Cash Flow Chart
+                    new Chart(document.getElementById('{chart_id2}').getContext('2d'), {{
+                        type: 'bar',
+                        data: {{
+                            labels: {years_label},
+                            datasets: [
+                                {{ label: '営業CF', data: {op_cf_data}, backgroundColor: 'rgba(16,185,129,0.7)', borderColor: '#10b981', borderWidth: 1 }},
+                                {{ label: '投資CF', data: {inv_cf_data}, backgroundColor: 'rgba(244,63,94,0.7)', borderColor: '#f43f5e', borderWidth: 1 }},
+                                {{ label: '財務CF', data: {fin_cf_data}, backgroundColor: 'rgba(59,130,246,0.7)', borderColor: '#3b82f6', borderWidth: 1 }},
+                                {{ label: 'ネットCF', data: {net_cf_data}, type: 'line', borderColor: '#f59e0b', borderWidth: 2, tension: 0.3, pointRadius: 4 }}
+                            ]
+                        }},
+                        options: {{
+                            responsive: true, maintainAspectRatio: false,
+                            scales: {{
+                                y: {{ grid: {{ color: 'rgba(255,255,255,0.05)' }}, ticks: {{ color: '#64748b', font: {{ size: 10 }} }}, title: {{ display: true, text: '億円', color: '#64748b', font: {{ size: 10 }} }} }},
+                                x: {{ grid: {{ display: false }}, ticks: {{ color: '#64748b', font: {{ size: 10 }} }} }}
+                            }},
+                            plugins: {{ legend: {{ labels: {{ color: '#94a3b8', font: {{ size: 10 }} }} }} }}
+                        }}
+                    }});
+                }})();
+                </script>
+            </div>
+
+            <!-- Financial Data Table (OOB Swap) -->
+            <div id="financial-data-section" class="section" hx-swap-oob="true">
+                <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; margin-bottom: 1rem; color: #818cf8; text-align: center;">
+                    📈 {name} 財務データ
+                </h2>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; font-size: 0.85rem;">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left; padding: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.1);">年度</th>
+                                <th style="text-align: right; padding: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.1);">売上 (億円)</th>
+                                <th style="text-align: right; padding: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.1);">営業利益</th>
+                                <th style="text-align: right; padding: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.1);">純利益</th>
+                                <th style="text-align: right; padding: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.1);">EPS</th>
+                                <th style="text-align: right; padding: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.1);">営業CF</th>
+                            </tr>
+                        </thead>
+                        <tbody style="color: #e2e8f0;">
+                            {table_rows if table_rows else '<tr><td colspan="6" style="text-align: center; padding: 2rem; color: #64748b;">データなし</td></tr>'}
+                        </tbody>
+                    </table>
+                </div>
+                <p style="font-size: 0.7rem; color: #475569; margin-top: 1rem; text-align: center;">
+                    データソース: Yahoo Finance | 単位: 億円
+                </p>
+            </div>
+
+            <!-- Clear cashflow section since we now show it inline -->
+            <div id="cashflow-section" class="section" hx-swap-oob="true" style="display: none;"></div>
+        """)
+        
+    except Exception as e:
+        logger.error(f"Yahoo Finance lookup error for {code_input}: {e}")
+        return HTMLResponse(content=f"""
+            <div style="color: #fb7185; padding: 1rem; text-align: center; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
+                ❌ データの取得に失敗しました: {str(e)}
+            </div>
+        """)
+
+
+
         
         if not history:
             chart_html = """
