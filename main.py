@@ -1014,6 +1014,187 @@ async def get_edinet_history(code: str, current_user: User = Depends(get_current
                         }});
                     }})();
                 </script>
+                
+                <!-- Button for Financial Ratios Chart -->
+                <button hx-get="/api/edinet/ratios/{code}" 
+                        hx-target="#edinet-ratios-container" 
+                        hx-swap="innerHTML"
+                        hx-disabled-elt="this"
+                        class="mt-6 w-full py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-wait text-white rounded-lg text-sm font-medium transition-all">
+                    <span class="htmx-indicator-hide">財務指標グラフを表示 (ROE・自己資本比率・EPS)</span>
+                    <span class="htmx-indicator-show hidden">⏳ データ取得中...</span>
+                </button>
+                <div id="edinet-ratios-container" class="mt-4"></div>
+            </div>
+        """)
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return HTMLResponse(content=f"<div class='text-red-400 p-4'>Error: {str(e)}</div>", status_code=500)
+
+
+@app.get("/api/edinet/ratios/{code}")
+async def get_edinet_ratios(code: str, current_user: User = Depends(get_current_user)):
+    """Get financial ratios chart (ROE, Equity Ratio, EPS) from EDINET"""
+    if not current_user:
+        return HTMLResponse(content="<div class='text-red-400'>Login required</div>")
+    
+    try:
+        from utils.edinet_enhanced import get_financial_history, format_financial_data
+        
+        # Fetch history (reuse the same function)
+        history = get_financial_history(company_code=code, years=5)
+        
+        if not history:
+            return HTMLResponse(content="<div class='text-gray-400 p-4 text-center'>財務指標データが見つかりませんでした</div>")
+        
+        # Prepare data for Chart.js
+        years_label = []
+        roe_data = []
+        equity_ratio_data = []
+        eps_data = []
+        
+        table_rows = ""
+        
+        for data in history:
+            meta = data.get("metadata", {})
+            norm = data.get("normalized_data", {})
+            
+            period = meta.get("period_end", "")[:7]
+            years_label.append(period)
+            
+            # ROE (already percentage from EDINET)
+            roe = norm.get("ROE", 0)
+            roe_val = roe if isinstance(roe, (int, float)) else 0
+            # Handle if stored as decimal (0.15) vs percentage (15)
+            if 0 < roe_val < 1:
+                roe_val = roe_val * 100
+            roe_data.append(round(roe_val, 1))
+            
+            # Equity Ratio
+            eq_ratio = norm.get("自己資本比率", 0)
+            eq_ratio_val = eq_ratio if isinstance(eq_ratio, (int, float)) else 0
+            if 0 < eq_ratio_val < 1:
+                eq_ratio_val = eq_ratio_val * 100
+            equity_ratio_data.append(round(eq_ratio_val, 1))
+            
+            # EPS (円)
+            eps = norm.get("EPS", 0)
+            eps_val = eps if isinstance(eps, (int, float)) else 0
+            eps_data.append(round(eps_val, 1))
+            
+            formatted = format_financial_data(norm)
+            table_rows += f"""
+            <tr class="hover:bg-gray-700/30 transition-colors">
+                <td class="p-2 text-gray-300 border-b border-gray-700/50">{period}</td>
+                <td class="p-2 text-right text-purple-300 border-b border-gray-700/50">{formatted.get('ROE', '-')}</td>
+                <td class="p-2 text-right text-cyan-300 border-b border-gray-700/50">{formatted.get('自己資本比率', '-')}</td>
+                <td class="p-2 text-right text-orange-300 border-b border-gray-700/50">{formatted.get('EPS', '-')}</td>
+            </tr>
+            """
+
+        chart_id = f"ratiosChart_{code}_{int(time.time())}"
+        
+        return HTMLResponse(content=f"""
+            <div class="mt-6 bg-gray-900/50 rounded-xl p-4 border border-purple-700/50">
+                <h4 class="text-lg font-bold text-gray-200 mb-4">財務指標推移 (5年)</h4>
+                
+                <div class="h-64 mb-6">
+                    <canvas id="{chart_id}"></canvas>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left">
+                        <thead>
+                            <tr>
+                                <th class="p-2 text-gray-500">決算期</th>
+                                <th class="p-2 text-right text-purple-400">ROE</th>
+                                <th class="p-2 text-right text-cyan-400">自己資本比率</th>
+                                <th class="p-2 text-right text-orange-400">EPS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {table_rows}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <script>
+                    (function() {{
+                        const ctx = document.getElementById('{chart_id}').getContext('2d');
+                        new Chart(ctx, {{
+                            type: 'line',
+                            data: {{
+                                labels: {years_label},
+                                datasets: [
+                                    {{
+                                        label: 'ROE (%)',
+                                        data: {roe_data},
+                                        borderColor: 'rgba(168, 85, 247, 1)',
+                                        backgroundColor: 'rgba(168, 85, 247, 0.2)',
+                                        borderWidth: 2,
+                                        fill: false,
+                                        yAxisID: 'y',
+                                    }},
+                                    {{
+                                        label: '自己資本比率 (%)',
+                                        data: {equity_ratio_data},
+                                        borderColor: 'rgba(34, 211, 238, 1)',
+                                        backgroundColor: 'rgba(34, 211, 238, 0.2)',
+                                        borderWidth: 2,
+                                        fill: false,
+                                        yAxisID: 'y',
+                                    }},
+                                    {{
+                                        label: 'EPS (円)',
+                                        data: {eps_data},
+                                        borderColor: 'rgba(251, 146, 60, 1)',
+                                        backgroundColor: 'rgba(251, 146, 60, 0.2)',
+                                        borderWidth: 2,
+                                        fill: false,
+                                        yAxisID: 'y1',
+                                    }}
+                                ]
+                            }},
+                            options: {{
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                interaction: {{
+                                    mode: 'index',
+                                    intersect: false,
+                                }},
+                                plugins: {{
+                                    legend: {{
+                                        labels: {{ color: 'rgba(255, 255, 255, 0.7)' }}
+                                    }}
+                                }},
+                                scales: {{
+                                    x: {{
+                                        ticks: {{ color: 'rgba(255, 255, 255, 0.5)' }},
+                                        grid: {{ color: 'rgba(255, 255, 255, 0.05)' }}
+                                    }},
+                                    y: {{
+                                        type: 'linear',
+                                        display: true,
+                                        position: 'left',
+                                        title: {{ display: true, text: '%', color: 'rgba(255, 255, 255, 0.5)' }},
+                                        ticks: {{ color: 'rgba(255, 255, 255, 0.5)' }},
+                                        grid: {{ color: 'rgba(255, 255, 255, 0.05)' }}
+                                    }},
+                                    y1: {{
+                                        type: 'linear',
+                                        display: true,
+                                        position: 'right',
+                                        title: {{ display: true, text: '円', color: 'rgba(255, 255, 255, 0.5)' }},
+                                        ticks: {{ color: 'rgba(255, 255, 255, 0.5)' }},
+                                        grid: {{ drawOnChartArea: false }}
+                                    }}
+                                }}
+                            }}
+                        }});
+                    }})();
+                </script>
             </div>
         """)
         
