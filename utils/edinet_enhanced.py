@@ -565,16 +565,41 @@ def clean_text_block(html_content: str) -> str:
     try:
         # Use simple regex/replace first for speed, or BeautifulSoup if needed
         soup = BeautifulSoup(html_content, "html.parser")
+        
+        # Get text with separator, but handle dense text blocks
+        # First, try to preserve some structure
+        for br in soup.find_all("br"):
+            br.replace_with("\n")
+            
         text = soup.get_text(separator="\n")
         
-        # Normalize whitespace
+        # Improved formatting for readability
         lines = []
         for line in text.splitlines():
             stripped = line.strip()
-            if stripped:
-                lines.append(stripped)
+            if not stripped:
+                continue
+            
+            # If line is very long and has periods but no line breaks, try to split
+            if len(stripped) > 100:
+                # Add line breaks after periods (。) for better readability
+                stripped = stripped.replace("。", "。\n\n")
+                
+                # Add line breaks before common list markers if they don't have one
+                markers = ["(1)", "(2)", "(3)", "(4)", "(5)", "①", "②", "③", "④", "⑤", "（１）", "（２）"]
+                for marker in markers:
+                    stripped = stripped.replace(marker, f"\n\n{marker}")
+            
+            lines.append(stripped)
         
-        return "\n\n".join(lines)
+        # Re-join with proper spacing
+        formatted_text = "\n\n".join(lines)
+        
+        # Reduce excessive newlines
+        while "\n\n\n" in formatted_text:
+            formatted_text = formatted_text.replace("\n\n\n", "\n\n")
+            
+        return formatted_text
     except Exception as e:
         logger.warning(f"Failed to clean text block: {e}")
         return str(html_content)[:500] + "..."

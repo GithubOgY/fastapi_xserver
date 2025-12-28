@@ -677,7 +677,7 @@ async def search_edinet_company(
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
-                    <div x-show="open" class="p-4 text-sm text-gray-300 leading-relaxed whitespace-pre-wrap border-t border-gray-700/50 bg-gray-900/50 animate-fade-in">
+                    <div x-show="open" class="p-6 text-base text-gray-200 leading-loose whitespace-pre-wrap border-t border-gray-700/50 bg-gray-900/50 animate-fade-in font-sans">
                         {content}
                     </div>
                 </div>
