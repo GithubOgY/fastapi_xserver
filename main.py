@@ -958,7 +958,7 @@ async def lookup_yahoo_finance(
         """)
         
     except Exception as e:
-        logger.error(f"Yahoo Finance lookup error for {code}: {e}")
+        logger.error(f"Yahoo Finance lookup error for {code_input}: {e}")
         return HTMLResponse(content=f"""
             <div style="color: #fb7185; padding: 1rem; text-align: center; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
                 ❌ データの取得に失敗しました: {str(e)}
