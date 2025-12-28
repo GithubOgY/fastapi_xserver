@@ -112,8 +112,17 @@ def analyze_stock_with_ai(ticker_code: str, financial_context: Dict[str, Any], c
                     edinet_text += f"\n### {title}\n{content[:2000]}\n"
             
             logger.info(f"AI Prompt: Included {len(text_blocks)} EDINET text blocks: {list(text_blocks.keys())}")
+        else:
+            logger.warning(f"AI Prompt: edinet_data structure issue. edinet_data keys: {list(edinet_data.keys()) if edinet_data else 'None'}")
     except Exception as e:
         logger.error(f"Failed to fetch EDINET text for AI: {e}")
+
+    # DEBUG: Log edinet_text length and preview
+    logger.info(f"AI Prompt: edinet_text length = {len(edinet_text)} chars")
+    if edinet_text:
+        logger.info(f"AI Prompt: edinet_text preview (first 200 chars): {edinet_text[:200]}")
+    else:
+        logger.warning("AI Prompt: edinet_text is EMPTY - AI will receive fallback message!")
 
     # 2. プロンプト構築
     prompt = f"""
