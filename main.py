@@ -1139,20 +1139,17 @@ async def lookup_yahoo_finance(
                     </div>
                 </div>
                 
-                <!-- Share Buttons & Favorite -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; flex-wrap: wrap; gap: 0.5rem;">
-                    {fav_button}
-                    <div style="display: flex; gap: 0.5rem;">
-                        <a href="https://twitter.com/intent/tweet?text={name}%20({symbol})%20%C2%A5{int(price):,}%20%23株式分析&url=https://site.y-project-vps.xyz/&hashtags=XStockAnalyzer" target="_blank" 
-                            style="background: rgba(29, 161, 242, 0.15); border: 1px solid rgba(29, 161, 242, 0.4); color: #1DA1F2; text-decoration: none; padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem;">
-                            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></svg>
-                            Xでシェア
-                        </a>
-                        <button onclick="navigator.clipboard.writeText('https://site.y-project-vps.xyz/').then(() => {{ this.innerHTML = '✅ コピー!'; setTimeout(() => this.innerHTML = '🔗 URLコピー', 2000); }})"
-                            style="background: rgba(148, 163, 184, 0.15); border: 1px solid rgba(148, 163, 184, 0.4); color: #94a3b8; padding: 0.5rem 0.75rem; border-radius: 8px; cursor: pointer; font-size: 0.8rem;">
-                            🔗 URLコピー
-                        </button>
-                    </div>
+                <!-- Share Buttons -->
+                <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 1rem; gap: 0.5rem;">
+                    <a href="https://twitter.com/intent/tweet?text={name}%20({symbol})%20%C2%A5{int(price):,}%20%23株式分析&url=https://site.y-project-vps.xyz/&hashtags=XStockAnalyzer" target="_blank" 
+                        style="background: rgba(29, 161, 242, 0.15); border: 1px solid rgba(29, 161, 242, 0.4); color: #1DA1F2; text-decoration: none; padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem;">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></svg>
+                        Xでシェア
+                    </a>
+                    <button onclick="navigator.clipboard.writeText('https://site.y-project-vps.xyz/').then(() => {{ this.innerHTML = '✅ コピー!'; setTimeout(() => this.innerHTML = '🔗 URLコピー', 2000); }})"
+                        style="background: rgba(148, 163, 184, 0.15); border: 1px solid rgba(148, 163, 184, 0.4); color: #94a3b8; padding: 0.5rem 0.75rem; border-radius: 8px; cursor: pointer; font-size: 0.8rem;">
+                        🔗 URLコピー
+                    </button>
                 </div>
 
 
