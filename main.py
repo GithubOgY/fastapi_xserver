@@ -16,6 +16,7 @@ import json
 import yfinance as yf
 import pandas as pd
 import requests
+import urllib.parse
 from utils.edinet_enhanced import get_financial_history, format_financial_data, search_company_reports, process_document
 from utils.growth_analysis import analyze_growth_quality
 from utils.ai_analysis import analyze_stock_with_ai
@@ -1324,7 +1325,7 @@ async def lookup_yahoo_finance(
 
             <!-- News Section (OOB Swap) -->
             <div id="news-section" class="section" hx-swap-oob="true" style="margin-top: 2rem;">
-                <div hx-get="/api/news/{code_only}" hx-trigger="load delay:500ms" hx-swap="innerHTML">
+                <div hx-get="/api/news/{code_only}?name={urllib.parse.quote(name)}" hx-trigger="load delay:500ms" hx-swap="innerHTML">
                     <div class="flex items-center justify-center p-8 space-x-3 text-gray-400">
                         <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-green-400"></div>
                         <span class="text-sm font-medium">最新ニュースを取得中...</span>
@@ -1471,41 +1472,43 @@ async def ai_analyze_stock(ticker_code: Annotated[str, Form()]):
         return HTMLResponse(content=f"<p style='color: #fb7185;'>AI分析中にエラーが発生しました: {str(e)}</p>")
 
 @app.get("/api/news/{ticker_code}")
-async def get_stock_news(ticker_code: str):
+async def get_stock_news(ticker_code: str, name: Optional[str] = Query(None)):
     try:
-        # Retrieve company name
-        ticker = yf.Ticker(f"{ticker_code}.T")
-        info = ticker.info
-        name = info.get("longName") or info.get("shortName") or ticker_code
+        # Use provided name or fetch if missing
+        if not name:
+            ticker = yf.Ticker(f"{ticker_code}.T")
+            info = ticker.info
+            name = info.get("longName") or info.get("shortName") or ticker_code
         
         # Fetch news
         from utils.news import fetch_company_news
         news_items = fetch_company_news(name)
         
         if not news_items:
-            return HTMLResponse(content="<div class='text-gray-500 text-center py-4'>関連ニュースは見つかりませんでした</div>")
+            return HTMLResponse(content="<div style='color: var(--text-dim); text-align: center; padding: 2rem;'>関連ニュースは見つかりませんでした</div>")
             
         # Render News Cards
         html = f"""
-        <div class="space-y-4">
-            <h3 class="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-emerald-300 mb-3 flex items-center gap-2">
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.1rem; color: var(--accent); display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
                 <span>📰</span>
                 <span>最新ニュース</span>
-                <span class="text-xs text-gray-500 font-normal ml-auto">Google News</span>
+                <span style="font-size: 0.7rem; color: var(--text-dim); font-weight: normal; margin-left: auto;">Google News</span>
             </h3>
-            <div class="flex flex-col gap-3">
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
         """
         
         for item in news_items:
             html += f"""
-            <a href="{item['link']}" target="_blank" class="block group" style="text-decoration: none;">
-                <!-- Updated Card Style: Lighter background, clearer text -->
-                <div class="bg-slate-800 hover:bg-slate-700 border border-slate-600 hover:border-green-400 rounded-lg p-3 transition-all duration-200 shadow-md">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-[0.7rem] font-bold text-green-300 bg-green-900/40 rounded px-1.5 py-0.5 truncate max-w-[120px]">{item['source']}</span>
-                        <span class="text-[0.75rem] text-gray-300 font-mono">{item['published']}</span>
+            <a href="{item['link']}" target="_blank" style="text-decoration: none; display: block;">
+                <div style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1rem; transition: all 0.2s;" 
+                     onmouseover="this.style.borderColor='var(--accent)'; this.style.transform='translateY(-2px)';" 
+                     onmouseout="this.style.borderColor='var(--glass-border)'; this.style.transform='none';">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <span style="font-size: 0.7rem; font-weight: 600; color: var(--success); background: rgba(16, 185, 129, 0.1); padding: 0.2rem 0.5rem; border-radius: 4px;">{item['source']}</span>
+                        <span style="font-size: 0.7rem; color: var(--text-dim);">{item['published']}</span>
                     </div>
-                    <h4 class="text-sm font-bold text-white leading-normal line-clamp-3" style="color: #ffffff !important; letter-spacing: 0.02em;">
+                    <h4 style="font-size: 0.9rem; font-weight: 600; color: var(--text-main); line-height: 1.4; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
                         {item['title']}
                     </h4>
                 </div>
@@ -1514,10 +1517,9 @@ async def get_stock_news(ticker_code: str):
             
         html += "</div></div>"
         return HTMLResponse(content=html)
-
     except Exception as e:
         logger.error(f"News API error: {e}")
-        return HTMLResponse(content="<div class='text-gray-500 text-sm'>ニュースの取得中にエラーが発生しました</div>")
+        return HTMLResponse(content="<div style='color: var(--text-dim); font-size: 0.8rem; text-align: center;'>ニュースの取得中に一時的なエラーが発生しました</div>")
 
 @app.post("/api/edinet/search")
 async def search_edinet_company(
