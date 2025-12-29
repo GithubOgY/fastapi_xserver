@@ -1198,20 +1198,24 @@ async def lookup_yahoo_finance(
                     📊 財務パフォーマンス
                 </h2>
                 
-                <!-- Two Column Charts -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <!-- Two Column Charts (responsive) -->
+                <style>
+                    .chart-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }}
+                    @media (max-width: 768px) {{ .chart-grid {{ grid-template-columns: 1fr; }} }}
+                </style>
+                <div class="chart-grid">
                     <!-- Revenue/Profit Chart -->
-                    <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem;">
+                    <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem; max-width: 100%; overflow: hidden;">
                         <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 0.75rem 0; text-align: center;">売上 / 営業利益</h4>
-                        <div style="height: 220px; position: relative;">
+                        <div style="height: 220px; position: relative; width: 100%;">
                             <canvas id="{chart_id1}"></canvas>
                         </div>
                     </div>
                     
                     <!-- Cash Flow Chart -->
-                    <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem;">
+                    <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem; max-width: 100%; overflow: hidden;">
                         <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 0.75rem 0; text-align: center;">キャッシュフロー</h4>
-                        <div style="height: 220px; position: relative;">
+                        <div style="height: 220px; position: relative; width: 100%;">
                             <canvas id="{chart_id2}"></canvas>
                         </div>
                     </div>
