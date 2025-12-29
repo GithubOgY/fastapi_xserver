@@ -1139,6 +1139,21 @@ async def lookup_yahoo_finance(
                     </div>
                 </div>
                 
+                <!-- Share Buttons & Favorite -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                    {fav_button}
+                    <div style="display: flex; gap: 0.5rem;">
+                        <a href="https://twitter.com/intent/tweet?text={name}%20({symbol})%20%C2%A5{int(price):,}%20%23株式分析&url=https://site.y-project-vps.xyz/&hashtags=XStockAnalyzer" target="_blank" 
+                            style="background: rgba(29, 161, 242, 0.15); border: 1px solid rgba(29, 161, 242, 0.4); color: #1DA1F2; text-decoration: none; padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem;">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></svg>
+                            Xでシェア
+                        </a>
+                        <button onclick="navigator.clipboard.writeText('https://site.y-project-vps.xyz/').then(() => {{ this.innerHTML = '✅ コピー!'; setTimeout(() => this.innerHTML = '🔗 URLコピー', 2000); }})"
+                            style="background: rgba(148, 163, 184, 0.15); border: 1px solid rgba(148, 163, 184, 0.4); color: #94a3b8; padding: 0.5rem 0.75rem; border-radius: 8px; cursor: pointer; font-size: 0.8rem;">
+                            🔗 URLコピー
+                        </button>
+                    </div>
+                </div>
 
 
             </div>
@@ -1516,408 +1531,168 @@ async def get_stock_news(ticker_code: str):
         return HTMLResponse(content="<div class='text-gray-500 text-sm'>ニュースの取得中にエラーが発生しました</div>")
 
 @app.post("/api/edinet/search")
-async def api_edinet_search(
-    request: Request,
-    company_name: Annotated[str, Form()] = "",
+async def search_edinet_company(
+    company_name: str = Form(...),
     current_user: User = Depends(get_current_user)
 ):
+    """Search company financial data from EDINET (Latest)"""
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
     try:
-        from utils.edinet_enhanced import get_financial_history, search_company_reports, format_financial_data
-        import pandas as pd
-        import time
-        import yfinance as yf
-        import re
-        from urllib.parse import quote
+        from utils.edinet_enhanced import search_company_reports, process_document, format_financial_data
         
-        input_str = company_name.strip()
-        if not input_str:
-             return HTMLResponse("<div class='text-gray-400 p-4 text-center'>検索ワードを入力してください</div>")
-
-        # 1. Determine Code
-        ticker_code = None
-        # Check if input is 4 digits
-        code_match = re.search(r"(\d{4})", input_str)
-        if code_match:
-             ticker_code = f"{code_match.group(1)}.T"
-        else:
-             # Search using DB first for speed
-             db = SessionLocal()
-             found = db.query(Company).filter(Company.name.ilike(f"%{input_str}%")).first()
-             db.close()
-             if found:
-                 ticker_code = found.ticker
-             else:
-                 # Fallback to EDINET search
-                 reports = search_company_reports(company_name=input_str, doc_type="120", days_back=365)
-                 if reports:
-                      # Try to extract code from the search result
-                      # The search result items usually have 'secCode'
-                      for report in reports:
-                          if report.get('secCode'):
-                              ticker_code = f"{report['secCode']}.T"
-                              break
+        # Search for documents
+        docs = search_company_reports(company_name=company_name, doc_type="120", days_back=365)
         
-        if not ticker_code:
-             return HTMLResponse(f"<div class='text-red-400 p-4 text-center'>「{input_str}」に関連する企業が見つかりませんでした</div>")
+        if not docs:
+            # Try quarterly report
+            docs = search_company_reports(company_name=company_name, doc_type="140", days_back=180)
         
-        clean_code = ticker_code.replace(".T", "")
-        
-        # 2. Fetch Yahoo Data for Info Header
-        yf_ticker = yf.Ticker(ticker_code)
-        info = yf_ticker.info
-        
-        name = info.get("longName") or info.get("shortName") or input_str
-        price = info.get("currentPrice") or info.get("regularMarketPrice") or 0
-        prev_close = info.get("regularMarketPreviousClose") or price
-        change = price - prev_close
-        change_pct = (change / prev_close) * 100 if prev_close else 0
-        
-        change_sign = "+" if change > 0 else ""
-        change_color = "#10b981" if change > 0 else "#f43f5e" if change < 0 else "#94a3b8"
-        
-        market_cap = info.get("marketCap", 0)
-        market_cap_str = f"{market_cap/100000000:,.0f}億円" if market_cap else "-"
-        
-        per = info.get("trailingPE", "-")
-        pbr = info.get("priceToBook", "-")
-        
-        div_rate = info.get("dividendRate", 0)
-        div_yield_val = (div_rate / price * 100) if price and div_rate else (info.get("dividendYield", 0) * 100)
-        dividend_str = f"{div_yield_val:.2f}%" if div_yield_val else "-"
-        
-        roe = info.get("returnOnEquity", 0)
-        roe_str = f"{roe*100:.1f}%" if roe else "-"
-        
-        symbol = clean_code
-        website = info.get("website", "")
-        
-        # Favorite Button Logic
-        db = SessionLocal()
-        user_id = current_user.id if current_user else None
-        is_fav = False
-        if user_id:
-            fav = db.query(UserFavorite).filter(UserFavorite.user_id == user_id, UserFavorite.ticker == ticker_code).first()
-            if fav: is_fav = True
-        db.close()
-        
-        fav_icon = "★" if is_fav else "☆"
-        fav_text = "登録済" if is_fav else "お気に入り"
-        fav_class = "bg-yellow-500 text-white" if is_fav else "bg-gray-700 text-gray-300 hover:bg-gray-600"
-        
-        fav_button = f"""
-        <button hx-post="/api/favorites/toggle" hx-vals='{{"ticker_code": "{ticker_code}"}}' hx-target="this" hx-swap="outerHTML"
-            style="background: {'var(--accent)' if is_fav else 'rgba(255,255,255,0.1)'}; border: 1px solid var(--accent); color: white; padding: 0.4rem 0.8rem; border-radius: 8px; cursor: pointer; font-size: 0.8rem;">
-            {fav_icon} {fav_text}
-        </button>
-        """
-
-        # --- Share Buttons HTML ---
-        base_url = str(request.base_url).rstrip("/")
-        share_url = f"{base_url}/edinet?code={clean_code}"
-        encoded_url = quote(share_url)
-        encoded_text = quote(f"{name} ({clean_code}) の財務分析レポート")
-        
-        share_buttons = f"""
-        <div style="display: flex; gap: 1rem; margin-top: 1rem; justify-content: flex-end;">
-            <a href="https://twitter.com/intent/tweet?text={encoded_text}&url={encoded_url}&hashtags=XStockAnalyzer" target="_blank" 
-            style="background: rgba(29, 161, 242, 0.1); border: 1px solid rgba(29, 161, 242, 0.3); color: #1DA1F2; text-decoration: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; transition: all 0.2s;">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></svg>
-            Xでシェア
-            </a>
-            <button onclick="navigator.clipboard.writeText('{share_url}').then(() => {{ this.innerHTML = '✅ コピーしました'; setTimeout(() => this.innerHTML = '🔗 リンクをコピー', 2000); }})"
-                style="background: rgba(148, 163, 184, 0.1); border: 1px solid rgba(148, 163, 184, 0.3); color: #94a3b8; padding: 0.4rem 0.8rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; transition: all 0.2s;">
-                🔗 リンクをコピー
-            </button>
-        </div>
-        """
-
-        # 3. Fetch EDINET History
-        history = get_financial_history(company_code=clean_code, years=5)
-        
-        chart_html = ""
-        financial_table_rows = ""
-        
-        if not history:
-            chart_html = """
-                <div style="height: 250px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px dashed rgba(255,255,255,0.1);">
-                    <div style="text-align: center; color: #64748b;">
-                        <p style="font-size: 2rem; margin-bottom: 0.5rem;">📉</p>
-                        <p>EDINETに財務データが見つかりませんでした</p>
-                    </div>
+        if not docs:
+            return HTMLResponse(content=f"""
+                <div class="alert alert-error">
+                    ❌ 「{company_name}」の書類が見つかりませんでした。
                 </div>
-            """
-            financial_table_rows = """<tr><td colspan="5" style="text-align: center; padding: 2rem; color: #64748b;">データなし</td></tr>"""
-        else:
-             # Prepare Chart Data
-             years_label = []
-             revenue_data = []
-             op_income_data = []
-             op_margin_data = []
-             eps_data = []
-             
-             for data in history:
-                meta = data.get("metadata", {})
-                norm = data.get("normalized_data", {})
-                period = meta.get("period_end", "")[:4]
-                source = meta.get("source", "Unknown")
-                
-                years_label.append(period)
-                
-                to_oku = lambda x: round(x/100000000, 1) if isinstance(x, (int, float)) and x != 0 else 0
-                
-                revenue = norm.get("売上高", 0)
-                op_income = norm.get("営業利益", 0)
-                
-                revenue_data.append(to_oku(revenue))
-                op_income_data.append(to_oku(op_income))
-                
-                if isinstance(revenue, (int, float)) and revenue > 0 and isinstance(op_income, (int, float)):
-                    margin = round((op_income / revenue) * 100, 1)
-                else:
-                    margin = 0
-                op_margin_data.append(margin)
-                
-                eps_val = norm.get("EPS", 0)
-                if isinstance(eps_val, (int, float)):
-                    eps_data.append(round(eps_val, 1))
-                else:
-                    eps_data.append(0)
-                
-                # Table Rows
-                formatted = format_financial_data(norm)
-                financial_table_rows += f"""
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                    <td style="padding: 0.75rem;">{period} <span style="font-size: 0.6rem; padding: 2px 4px; background: rgba(59, 130, 246, 0.2); color: #93c5fd; border-radius: 4px;">{source}</span></td>
-                    <td style="padding: 0.75rem; text-align: right;">{formatted.get('売上高', '-')}</td>
-                    <td style="padding: 0.75rem; text-align: right; color: #34d399;">{formatted.get('営業利益', '-')}</td>
-                    <td style="padding: 0.75rem; text-align: right; color: #fb7185;">{formatted.get('当期純利益', '-')}</td>
-                    <td style="padding: 0.75rem; text-align: right;">{formatted.get('EPS', '-')}</td>
-                </tr>
+            """)
+        
+        doc = docs[0]
+        sec_code = doc.get("secCode", "")
+        
+        # Process document
+        result = process_document(doc)
+        
+        if not result:
+             return HTMLResponse(content="""
+                <div class="alert alert-error">
+                    ❌ データの取得・解析に失敗しました。
+                </div>
+            """)
+            
+        metadata = result.get("metadata", {})
+        normalized = result.get("normalized_data", {})
+        text_data = result.get("text_data", {})
+        website_url = result.get("website_url")
+        formatted_normalized = format_financial_data(normalized)
+        
+        # Qualitative Information Sections
+        sections_html = ""
+        text_keys = ["経営者による分析", "対処すべき課題", "事業等のリスク", "研究開発活動"]
+        
+        for key in text_keys:
+            content = text_data.get(key)
+            if content:
+                # HTML for expandable section
+                sections_html += f"""
+                <details class="mb-3 bg-gray-900/30 rounded-lg border border-gray-700/50 overflow-hidden">
+                    <summary class="cursor-pointer p-4 bg-gray-800/50 hover:bg-gray-700/50 transition-colors font-medium text-gray-200 list-none flex items-center justify-between">
+                        <span>{key}</span>
+                        <span class="text-gray-500 text-sm">クリックして展開</span>
+                    </summary>
+                    <div class="p-6 text-base text-gray-200 leading-loose border-t border-gray-700/50 bg-gray-900/50" style="white-space: pre-wrap; line-height: 2;">
+                        {content}
+                    </div>
+                </details>
                 """
-             
-             # Chart Script
-             chart_id = f"edinet_chart_{clean_code}_{int(time.time())}"
-             chart_html = f"""
-                <div style="height: 300px; position: relative; width: 100%;">
-                    <canvas id="{chart_id}"></canvas>
-                </div>
-                <script>
-                    (function() {{
-                        const ctx = document.getElementById('{chart_id}').getContext('2d');
-                        new Chart(ctx, {{
-                            type: 'bar',
-                            data: {{
-                                labels: {years_label},
-                                datasets: [
-                                    {{
-                                        label: '売上高 (億円)',
-                                        data: {revenue_data},
-                                        backgroundColor: 'rgba(99, 102, 241, 0.6)',
-                                        borderColor: '#6366f1',
-                                        borderWidth: 1,
-                                        yAxisID: 'y'
-                                    }},
-                                    {{
-                                        label: '営業利益 (億円)',
-                                        data: {op_income_data},
-                                        backgroundColor: 'rgba(16, 185, 129, 0.6)',
-                                        borderColor: '#10b981',
-                                        borderWidth: 1,
-                                        yAxisID: 'y'
-                                    }},
-                                    {{
-                                        label: '利益率 (%)',
-                                        data: {op_margin_data},
-                                        type: 'line',
-                                        borderColor: '#f59e0b',
-                                        borderWidth: 2,
-                                        tension: 0.3,
-                                        pointRadius: 3,
-                                        yAxisID: 'y1'
-                                    }}
-                                ]
-                            }},
-                            options: {{
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                scales: {{
-                                    y: {{
-                                        type: 'linear',
-                                        position: 'left',
-                                        grid: {{ color: 'rgba(255, 255, 255, 0.05)' }},
-                                        ticks: {{ color: '#94a3b8' }},
-                                        title: {{ display: true, text: '億円', color: '#64748b' }}
-                                    }},
-                                    y1: {{
-                                        type: 'linear',
-                                        position: 'right',
-                                        grid: {{ display: false }},
-                                        ticks: {{ color: '#f59e0b' }},
-                                        min: 0
-                                    }},
-                                    x: {{
-                                        grid: {{ display: false }},
-                                        ticks: {{ color: '#94a3b8' }}
-                                    }}
-                                }},
-                                plugins: {{
-                                    legend: {{ labels: {{ color: '#e2e8f0' }} }}
-                                }}
-                            }}
-                        }});
-                    }})();
-                </script>
-             """
 
-        # AI Analysis Section HTML
-        ai_section = f"""
-        <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1)); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 1.5rem; margin-top: 1.5rem; text-align: center;">
-            <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; margin-bottom: 1rem; color: #a855f7;">
-                🤖 AI 財務分析レポート (Premium)
-            </h3>
-            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 1.5rem;">
-                有価証券報告書の記述情報と財務数値をGemini AIが詳細に分析します。<br>
-                経営方針、事業リスク、将来の展望など定性的な情報も考慮されます。
-            </p>
-            <form hx-post="/api/ai/analyze" hx-target="#ai-analysis-content" hx-indicator="#ai-spinner">
-                <input type="hidden" name="ticker_code" value="{clean_code}">
-                <button type="submit" 
-                    style="background: linear-gradient(135deg, #8b5cf6, #d946ef); color: white; padding: 0.8rem 2rem; border: none; border-radius: 50px; font-weight: bold; font-size: 1rem; cursor: pointer; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4); transition: transform 0.2s; display: inline-flex; align-items: center; gap: 0.5rem;">
-                    <span>✨</span> AIで詳細分析を実行する
-                </button>
-                <div id="ai-spinner" class="htmx-indicator" style="margin-top: 1rem;">
-                    <div style="display: inline-block; width: 24px; height: 24px; border: 3px solid rgba(139, 92, 246, 0.3); border-top-color: #8b5cf6; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-                    <p style="color: #a855f7; font-size: 0.8rem; margin-top: 0.5rem;">分析中... (15-30秒ほどかかります)</p>
-                </div>
-            </form>
-            <div id="ai-analysis-content" style="margin-top: 1.5rem; text-align: left;"></div>
-        </div>
-        """
-
-        # Construct Final Response
-        html_content = f"""
-            <div style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 1.5rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
-                    <div>
-                        <div style="font-size: 1.2rem; font-weight: bold; color: #f8fafc;">{name}</div>
-                        <div style="font-size: 0.85rem; color: #94a3b8;">{symbol}</div>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 1rem;">
-                        <div style="text-align: right;">
-                            <div style="font-size: 1.5rem; font-weight: bold; color: #f8fafc;">¥{price:,.0f}</div>
-                            <div style="color: {change_color}; font-size: 0.9rem;">{change_sign}{change:,.0f} ({change_sign}{change_pct:.2f}%)</div>
-                        </div>
-                        {fav_button}
-                    </div>
-                </div>
-                
-                {share_buttons}
-                
-                {ai_section}
-                
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.75rem; font-size: 0.85rem; margin-top: 1.5rem;">
-                    <div style="background: rgba(99, 102, 241, 0.1); padding: 0.75rem; border-radius: 8px; text-align: center;">
-                        <div style="color: #94a3b8; font-size: 0.75rem;">時価総額</div>
-                        <div style="color: #f8fafc; font-weight: 600;">{market_cap_str}</div>
-                    </div>
-                    <div style="background: rgba(99, 102, 241, 0.1); padding: 0.75rem; border-radius: 8px; text-align: center;">
-                        <div style="color: #94a3b8; font-size: 0.75rem;">PER</div>
-                        <div style="color: #f8fafc; font-weight: 600;">{per if isinstance(per, str) else f'{per:.1f}'}</div>
-                    </div>
-                    <div style="background: rgba(99, 102, 241, 0.1); padding: 0.75rem; border-radius: 8px; text-align: center;">
-                        <div style="color: #94a3b8; font-size: 0.75rem;">PBR</div>
-                        <div style="color: #f8fafc; font-weight: 600;">{pbr if isinstance(pbr, str) else f'{pbr:.2f}'}</div>
-                    </div>
-                    <div style="background: rgba(99, 102, 241, 0.1); padding: 0.75rem; border-radius: 8px; text-align: center;">
-                        <div style="color: #94a3b8; font-size: 0.75rem;">配当利回り</div>
-                        <div style="color: #f8fafc; font-weight: 600;">{dividend_str}</div>
-                    </div>
-                    <div style="background: rgba(99, 102, 241, 0.1); padding: 0.75rem; border-radius: 8px; text-align: center;">
-                        <div style="color: #94a3b8; font-size: 0.75rem;">ROE</div>
-                        <div style="color: #f8fafc; font-weight: 600;">{roe_str}</div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Charts Section -->
-             <div id="chart-section" class="section" hx-swap-oob="true">
-                <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
-                    📊 業績推移グラフ (EDINET)
-                </h2>
-                {chart_html}
-            </div>
-            
-            <div id="table-section" class="section" hx-swap-oob="true">
-                <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
-                    📋 財務データ一覧
-                </h2>
-                <div style="overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse; font-family: 'Inter', sans-serif; font-size: 0.9rem;">
-                        <thead>
-                            <tr style="border-bottom: 2px solid rgba(255,255,255,0.1); text-align: right; color: #94a3b8;">
-                                <th style="padding: 1rem; text-align: left;">決算期</th>
-                                <th style="padding: 1rem;">売上収益 (億円)</th>
-                                <th style="padding: 1rem;">営業利益 (億円)</th>
-                                <th style="padding: 1rem;">純利益 (億円)</th>
-                                <th style="padding: 1rem;">EPS (円)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {financial_table_rows}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Clear Cash Flow Section if any -->
-            <div id="cashflow-section" class="section" hx-swap-oob="true">
-                 <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
-                    💰 キャッシュフロー分析
-                </h2>
-                <div style="text-align: center; margin-top: 1rem;">
-                    <button 
-                        hx-get="/api/edinet/cashflow/{clean_code}"
-                        hx-target="#cashflow-container"
-                        hx-swap="innerHTML"
-                        hx-indicator="#cf-spinner"
-                        style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 0.6rem 1.5rem; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s;">
-                        詳細なCF分析を表示
-                        <span id="cf-spinner" class="htmx-indicator" style="margin-left: 0.5rem;">⏳</span>
-                    </button>
-                    <div id="cashflow-container" style="margin-top: 1rem;"></div>
-                </div>
-            </div>
-
-            <!-- News Section (OOB Swap) -->
-            <div id="news-section" class="section" hx-swap-oob="true">
-                 <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #10b981; text-align: center;">
-                    📰 関連ニュース (Google News)
-                </h2>
-                <div hx-get="/api/news/{clean_code}" hx-trigger="load delay:500ms" hx-swap="innerHTML">
-                    <div style="text-align: center; color: #64748b; padding: 2rem;">
-                         <div style="display: inline-block; width: 20px; height: 20px; border: 2px solid #10b981; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 0.5rem;"></div>
-                         <p>ニュースを取得中...</p>
-                    </div>
-                </div>
-            </div>
-        """
+        history_btn = ""
+        if sec_code:
+            code_only = sec_code[:4]
+            history_btn = f"""
+            <style>
+                .btn-loading {{ display: none; }}
+                .htmx-request .btn-default {{ display: none; }}
+                .htmx-request .btn-loading {{ display: inline; }}
+            </style>
+            <button hx-get="/api/edinet/history/{code_only}" 
+                    hx-target="#edinet-history-container" 
+                    hx-swap="innerHTML"
+                    class="mt-10 w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-all">
+                <span class="btn-default">直近の財務推移グラフを表示</span>
+                <span class="btn-loading">⏳ データ取得中... (数十秒かかる場合があります)</span>
+            </button>
+            <div id="edinet-history-container" class="mt-4"></div>
+            """
         
-        response = HTMLResponse(content=html_content)
-        # Push the URL to browser history so it matches the OGP shareable link
-        response.headers["HX-Push-Url"] = f"/edinet?code={clean_code}"
-        # Set cookie (URL-encode to avoid encoding issues with Japanese characters)
-        response.set_cookie(key="last_edinet_query", value=quote(company_name), max_age=86400*30)
-        return response
+        # Website link HTML
+        website_html = ""
+        if website_url:
+            website_html = f'<a href="{website_url}" target="_blank" rel="noopener" class="text-blue-400 hover:text-blue-300 underline text-sm">企業サイト</a>'
 
+        # AI Analysis Button
+        ai_btn = ""
+        if sec_code:
+            code_only = sec_code[:4]
+            ai_btn = f"""
+            <div style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1.5rem;">
+                <h4 style="font-size: 1.2rem; font-weight: bold; text-align: center; margin-bottom: 1rem; background: linear-gradient(to right, #c084fc, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-block; width: 100%;">
+                    🤖 AIアナリスト・レポート
+                </h4>
+                <div id="ai-analysis-container">
+                    <button id="ai-gen-btn-{code_only}" 
+                        style="width: 100%; padding: 1rem; background: linear-gradient(135deg, #9333ea, #db2777); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s;"
+                        hx-post="/api/ai/analyze"
+                        hx-target="#ai-analysis-content"
+                        hx-vals='{{"ticker_code": "{code_only}"}}'>
+                        <span>AIによる詳細分析を生成 (Gemini 2.0 Flash)</span>
+                    </button>
+                    <style>@keyframes spin {{ to {{ transform: rotate(360deg); }} }}</style>
+                    <div id="ai-analysis-content" style="margin-top: 1rem; color: #e2e8f0; line-height: 1.7; font-size: 0.95rem;"></div>
+                </div>
+            </div>
+            """
+        
+        return HTMLResponse(content=f"""
+            <div class="bg-gray-800/80 backdrop-blur-md border border-gray-700 rounded-xl p-6 shadow-2xl animate-fade-in-up">
+                <div class="flex items-start justify-between mb-6 pb-4 border-b border-gray-700">
+                    <div>
+                        <div class="flex items-center gap-3">
+                            <h3 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
+                                {metadata.get('company_name')}
+                            </h3>
+                            <span class="px-2 py-1 bg-gray-700 text-gray-300 text-xs font-mono rounded-md border border-gray-600">{sec_code}</span>
+                            {website_html}
+                        </div>
+                        <div class="flex items-center gap-2 mt-2 text-sm text-gray-400">
+                            <span class="bg-gray-900/50 px-2 py-1 rounded">{metadata.get('document_type')}</span>
+                            <span class="text-xs text-gray-500">提出: {metadata.get('submit_date')}</span>
+                            {'<span class="text-xs text-green-400 bg-green-900/30 px-2 py-1 rounded">⚡ キャッシュ</span>' if metadata.get('from_cache') else ''}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Key Financials Summary -->
+                <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-700/50 mb-6 font-mono text-sm">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="text-gray-300">売上高　<span class="text-gray-100">{formatted_normalized.get("売上高", "-")}</span></div>
+                        <div class="text-gray-300">営業利益　<span class="text-emerald-400">{formatted_normalized.get("営業利益", "-")}</span></div>
+                        <div class="text-gray-300">当期純利益　<span class="text-blue-400">{formatted_normalized.get("当期純利益", "-")}</span></div>
+                        <div class="text-gray-300">ROE　<span class="text-purple-400">{formatted_normalized.get("ROE", "-")}</span></div>
+                        <div class="text-gray-300">ROA　<span class="text-purple-400">{formatted_normalized.get("ROA", "-")}</span></div>
+                        <div class="text-gray-300">自己資本比率　<span class="text-yellow-400">{formatted_normalized.get("自己資本比率", "-")}</span></div>
+                    </div>
+                </div>
+                
+                <h4 class="text-lg font-bold text-gray-200 mb-4 border-l-4 border-indigo-500 pl-3">
+                    定性情報レポート
+                </h4>
+                
+                {sections_html if sections_html else "<div class='text-gray-500 p-4 text-center bg-gray-900/30 rounded-lg'>詳細なテキスト情報はこのドキュメントに含まれていません。</div>"}
+                
+                {history_btn}
+                {ai_btn}
+            </div>
+        """)
+        
     except Exception as e:
-        logger.error(f"EDINET Search error for {company_name}: {e}")
         import traceback
         traceback.print_exc()
         return HTMLResponse(content=f"""
-            <div style="color: #fb7185; padding: 1rem; text-align: center; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
-                ❌検索中にエラーが発生しました: {str(e)}
+            <div class="alert alert-error">
+                ❌ エラー: {str(e)}
             </div>
-        """)
+        """, status_code=500)
+
 
 
 @app.get("/api/edinet/cashflow/{code}")
