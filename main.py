@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Form, Depends, HTTPException, status, Response, Query
+from fastapi import FastAPI, Request, Form, Depends, HTTPException, status, Response, Query, BackgroundTasks
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
 from typing import Annotated, Optional
@@ -71,6 +71,20 @@ def get_db():
         yield db
     finally:
         db.close()
+
+def fetch_edinet_background(ticker_code: str):
+    """
+    Background task to fetch and cache EDINET data.
+    """
+    try:
+        clean_code = ticker_code.replace(".T", "")
+        # Check if it's a valid 4-digit code
+        if len(clean_code) == 4 and clean_code.isdigit():
+            logger.info(f"Background fetch started for EDINET: {clean_code}")
+            get_financial_history(company_code=clean_code, years=5)
+            logger.info(f"Background fetch completed for EDINET: {clean_code}")
+    except Exception as e:
+        logger.error(f"Background fetch failed for {ticker_code}: {e}")
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -994,6 +1008,7 @@ async def search_edinet_company(
 
 @app.post("/api/yahoo-finance/lookup")
 async def lookup_yahoo_finance(
+    background_tasks: BackgroundTasks,
     ticker_code: str = Form(...),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -1010,6 +1025,8 @@ async def lookup_yahoo_finance(
     # For Japanese stocks, append .T for Tokyo Stock Exchange
     if code_input.isdigit() and len(code_input) == 4:
         symbol = f"{code_input}.T"
+        # Trigger background EDINET fetch for Japanese stocks
+        background_tasks.add_task(fetch_edinet_background, code_input)
     else:
         symbol = code_input
         
