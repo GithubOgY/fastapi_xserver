@@ -106,7 +106,7 @@
         }
 
         .bio {
-            color: #cbps11;
+            color: #cbd5e1;
             line-height: 1.6;
             margin-bottom: 2rem;
             background: rgba(0, 0, 0, 0.2);
@@ -227,7 +227,9 @@
                 {% if profile.investment_style %}
                 <span class="tag tag-style">📈 {{ profile.investment_style }}</span>
                 {% endif %}
-                <span class="tag tag-join">📅 {{ profile.created_at.strftime('%Y年%m月') }}から利用</span>
+                {% if profile.updated_at %}
+                <span class="tag tag-join">📅 {{ profile.updated_at.strftime('%Y年%m月') }}更新</span>
+                {% endif %}
             </div>
 
             {% if profile.bio %}
