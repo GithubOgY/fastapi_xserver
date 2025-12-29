@@ -31,10 +31,15 @@ class CompanyFundamental(Base):
 
 class Company(Base):
     __tablename__ = "companies"
-    ticker = Column(String, primary_key=True, index=True)
-    name = Column(String)
-    last_sync_at = Column(String, nullable=True)
+    ticker = Column(String, primary_key=True, index=True) # 5-digit code (e.g. 72030)
+    code_4digit = Column(String, index=True)              # 4-digit code (e.g. 7203)
+    name = Column(String, index=True)
+    sector_17 = Column(String, nullable=True)
+    sector_33 = Column(String, nullable=True)
+    market = Column(String, nullable=True)
+    last_sync_at = Column(DateTime, nullable=True)
     last_sync_error = Column(String, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow)
 
 class User(Base):
     __tablename__ = "users"

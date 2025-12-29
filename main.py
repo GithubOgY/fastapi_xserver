@@ -4,7 +4,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from typing import Annotated, Optional
 from sqlalchemy.orm import Session
 from database import SessionLocal, CompanyFundamental, User, Company, UserFavorite, StockComment, UserProfile, UserFollow
-from utils.email import send_email
+from utils.mail_sender import send_email
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
@@ -1097,6 +1097,29 @@ async def lookup_yahoo_finance(
         chart_id2 = f"cf_{code_input}_{int(time.time())}"
         chart_id3 = f"growth_{code_input}_{int(time.time())}"
         
+        # J-Quants Data Lookup
+        code_str = symbol.replace(".T", "")
+        # Check DB for accurate Japanese name & sector
+        company_data = db.query(Company).filter(Company.code_4digit == code_str).first()
+        
+        sector_html = ""
+        edinet_name = name # Default to what we have
+        
+        if company_data:
+            name = company_data.name # Override with official Japanese name
+            edinet_name = company_data.name
+            if company_data.sector_17:
+                sector_html = f"""
+                <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <span style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; font-size: 0.75rem; padding: 0.1rem 0.5rem; border-radius: 999px;">
+                        {company_data.sector_17}
+                    </span>
+                    <span style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; font-size: 0.75rem; padding: 0.1rem 0.5rem; border-radius: 999px;">
+                        {company_data.sector_33}
+                    </span>
+                </div>
+                """
+
         # Build clean HTML response with cookie to remember last ticker
         html_content = f"""
             <!-- Stock Info Card -->
@@ -1105,6 +1128,7 @@ async def lookup_yahoo_finance(
                     <div>
                         <h3 style="font-size: 1.4rem; font-weight: 700; color: #f8fafc; margin: 0;">{name}</h3>
                         <p style="color: #94a3b8; font-size: 0.9rem; margin: 0.25rem 0 0 0;">{symbol}</p>
+                        {sector_html}
                     </div>
                     <div style="text-align: right;">
                         <div style="font-size: 2rem; font-weight: 700; color: #f8fafc;">¥{price:,.0f}</div>
@@ -1139,8 +1163,14 @@ async def lookup_yahoo_finance(
                     </div>
                 </div>
                 
-                <!-- Share Buttons -->
-                <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 1rem; gap: 0.5rem;">
+                <!-- Actions -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; gap: 0.5rem; flex-wrap: wrap;">
+                    <a href="/edinet?company_name={edinet_name}" 
+                       style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; text-decoration: none; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 0.4rem; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);">
+                       <span>📄</span> EDINETで分析
+                    </a>
+                    
+                    <div style="display: flex; gap: 0.5rem;">
                     <a href="https://twitter.com/intent/tweet?text={name}%20({symbol})%20%C2%A5{int(price):,}%20%23株式分析&url=https://site.y-project-vps.xyz/&hashtags=XStockAnalyzer" target="_blank" 
                         style="background: rgba(29, 161, 242, 0.15); border: 1px solid rgba(29, 161, 242, 0.4); color: #1DA1F2; text-decoration: none; padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem;">
                         <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></svg>
@@ -1150,6 +1180,7 @@ async def lookup_yahoo_finance(
                         style="background: rgba(148, 163, 184, 0.15); border: 1px solid rgba(148, 163, 184, 0.4); color: #94a3b8; padding: 0.5rem 0.75rem; border-radius: 8px; cursor: pointer; font-size: 0.8rem;">
                         🔗 URLコピー
                     </button>
+                </div>
                 </div>
 
 

@@ -1,0 +1,1 @@
+{'targetMeanPrice': 3515.2942, 'recommendationKey': 'buy', 'numberOfAnalystOpinions': 17}
