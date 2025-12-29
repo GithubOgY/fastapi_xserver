@@ -3,7 +3,7 @@ import os
 import time
 from sqlalchemy.orm import Session
 from database import Company, SessionLocal
-from datetime import datetime
+from datetime import datetime, date
 import logging
 from dotenv import load_dotenv
 
@@ -37,21 +37,13 @@ def fetch_all_listed_companies():
             res.raise_for_status()
             
             d = res.json()
-            # v2 response structure might be different? Debug output showed just "data" list directly or similar?
-            # Step 2446 output: it printed a list of dicts directly after "Response:".
-            # Let's re-verify Step 2446 output format.
-            # Output: {'id': '...', 'pagination_key': '...', 'data': [...]} is standard.
-            # Wait, Step 2446 output shows:
-            # {'id': '...', 'pagination_key': '...', 'data': [{'Date': ...}, ...]}
-            # So it is standard.
-            
             data_chunk = d.get("data", [])
             all_data.extend(data_chunk)
             
             pagination_key = d.get("pagination_key")
             if pagination_key:
                 params["pagination_key"] = pagination_key
-                time.sleep(1) # Prevent rate limiting
+                time.sleep(1)
                 logger.info(f"[J-Quants] Fetching next page... (Total so far: {len(all_data)})")
             else:
                 break
@@ -75,7 +67,6 @@ def sync_companies_to_db():
         updated_count = 0
         
         for item in companies_data:
-             # v2 Fields: Code, CoName, S17Nm, S33Nm, MktNm
              ticker = item.get("Code")
              name = item.get("CoName")
              sector_17 = item.get("S17Nm")
@@ -85,7 +76,6 @@ def sync_companies_to_db():
              if not ticker:
                  continue
                  
-             # Derive 4-digit code (e.g. "72030" -> "7203")
              code_4digit = ticker[:-1] if len(ticker) == 5 and ticker.endswith("0") else ticker
              
              existing = db.query(Company).filter(Company.ticker == ticker).first()
@@ -123,18 +113,6 @@ def sync_companies_to_db():
     finally:
         db.close()
 
-if __name__ == "__main__":
-    import sys
-    # Ensure env loaded for direct execution too
-    load_dotenv()
-    # Re-read in case it wasn't set when module loaded (though load_dotenv is at top now)
-    API_KEY = os.getenv("JQUANTS_API_KEY")
-    
-    if len(sys.argv) > 1 and sys.argv[1] == "--sync-earnings":
-        sync_earnings_to_db()
-    else:
-        sync_companies_to_db()
-
 def fetch_earnings_calendar():
     """
     Fetch earnings announcement dates from J-Quants API v2 (/equities/earnings-calendar).
@@ -150,7 +128,7 @@ def fetch_earnings_calendar():
     all_data = []
     
     try:
-        logger.info("[J-Quants] Fetching earnings calendar...")
+        print("[J-Quants] Fetching earnings calendar...")
         while True:
             res = requests.get(url, params=params, headers=headers)
             res.raise_for_status()
@@ -163,22 +141,21 @@ def fetch_earnings_calendar():
             if pagination_key:
                 params["pagination_key"] = pagination_key
                 time.sleep(1)
-                logger.info(f"[J-Quants] Fetching next page... (Total so far: {len(all_data)})")
+                print(f"[J-Quants] Fetching next page... (Total so far: {len(all_data)})")
             else:
                 break
                 
-        logger.info(f"[J-Quants] Total earnings records fetched: {len(all_data)}")
+        print(f"[J-Quants] Total earnings records fetched: {len(all_data)}")
         return all_data
         
     except Exception as e:
-        logger.error(f"[J-Quants] Earnings Calendar API Error: {e}")
+        print(f"[J-Quants] Earnings Calendar API Error: {e}")
         raise
 
 def sync_earnings_to_db():
     """
     Fetch earnings calendar and update Company table with next_earnings_date.
     """
-    from datetime import date
     db: Session = SessionLocal()
     try:
         earnings_data = fetch_earnings_calendar()
@@ -187,9 +164,8 @@ def sync_earnings_to_db():
         now = datetime.utcnow()
         
         for item in earnings_data:
-            # Expected fields: Code, Date (announcement date)
             code = item.get("Code")
-            announcement_date_str = item.get("Date")  # YYYY-MM-DD format
+            announcement_date_str = item.get("Date")
             
             if not code or not announcement_date_str:
                 continue
@@ -199,7 +175,6 @@ def sync_earnings_to_db():
             except ValueError:
                 continue
             
-            # Update Company record
             company = db.query(Company).filter(Company.ticker == code).first()
             if company:
                 company.next_earnings_date = announcement_date
@@ -207,13 +182,22 @@ def sync_earnings_to_db():
                 updated_count += 1
         
         db.commit()
-        logger.info(f"[J-Quants] Earnings Sync Complete. Updated: {updated_count} companies")
+        print(f"[J-Quants] Earnings Sync Complete. Updated: {updated_count} companies")
         return {"updated": updated_count}
         
     except Exception as e:
         db.rollback()
-        logger.error(f"[J-Quants] Earnings Sync Failed: {e}")
+        print(f"[J-Quants] Earnings Sync Failed: {e}")
         raise
     finally:
         db.close()
 
+if __name__ == "__main__":
+    import sys
+    load_dotenv()
+    API_KEY = os.getenv("JQUANTS_API_KEY")
+    
+    if len(sys.argv) > 1 and sys.argv[1] == "--sync-earnings":
+        sync_earnings_to_db()
+    else:
+        sync_companies_to_db()
