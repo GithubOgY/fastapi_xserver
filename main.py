@@ -764,7 +764,7 @@ async def list_comments(
             html += f"""
                 <div class="comment-card" style="background: rgba(255,110,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 1rem; position: relative;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                        <span style="color: #94a3b8; font-size: 0.8rem; font-weight: 600;">@{comment.user.username}</span>
+                        <a href="/u/{comment.user.username}" style="color: #94a3b8; font-size: 0.8rem; font-weight: 600; text-decoration: none;" onmouseover="this.style.color='#818cf8'" onmouseout="this.style.color='#94a3b8'">@{comment.user.username}</a>
                         <span style="color: #475569; font-size: 0.75rem;">{comment.created_at.strftime('%Y-%m-%d %H:%M')}</span>
                     </div>
                     <div style="color: #f8fafc; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap;">{comment.content}</div>
@@ -806,7 +806,7 @@ async def post_comment(
     html = f"""
         <div class="comment-card" style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 1rem; position: relative; animation: fadeIn 0.5s ease-out;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                <span style="color: #10b981; font-size: 0.8rem; font-weight: 600;">@{current_user.username}</span>
+                <a href="/u/{current_user.username}" style="color: #10b981; font-size: 0.8rem; font-weight: 600; text-decoration: none;" onmouseover="this.style.color='#34d399'" onmouseout="this.style.color='#10b981'">@{current_user.username}</a>
                 <span style="color: #475569; font-size: 0.75rem;">Now</span>
             </div>
             <div style="color: #f8fafc; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap;">{comment.content}</div>
