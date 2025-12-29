@@ -937,6 +937,12 @@ async def lookup_yahoo_finance(
         change_color = "#10b981" if change >= 0 else "#f43f5e"
         change_sign = "+" if change >= 0 else ""
         
+        # Extract Analyst Target Price
+        target_mean_price = info.get("targetMeanPrice")
+        target_price_html = ""
+        if target_mean_price:
+            target_price_html = f"<div style='font-size: 0.85rem; color: #94a3b8; font-weight: normal; margin-top: 0.35rem;'>目標株価平均 {target_mean_price:,.0f}円</div>"
+        
         # Check if favorite (Check both with and without .T to be safe)
         possible_tickers = [symbol]
         if symbol.endswith(".T"):
@@ -1105,6 +1111,7 @@ async def lookup_yahoo_finance(
                         <div style="color: {change_color}; font-size: 1rem; font-weight: 600;">
                             {change_sign}{change:,.0f} ({change_sign}{change_pct:.2f}%)
                         </div>
+                        {target_price_html}
                     </div>
                 </div>
                 
