@@ -77,14 +77,19 @@ def fetch_edinet_background(ticker_code: str):
     Background task to fetch and cache EDINET data.
     """
     try:
+        logger.info(f"[BG-TASK] Starting background fetch for: {ticker_code}")
         clean_code = ticker_code.replace(".T", "")
         # Check if it's a valid 4-digit code
         if len(clean_code) == 4 and clean_code.isdigit():
-            logger.info(f"Background fetch started for EDINET: {clean_code}")
-            get_financial_history(company_code=clean_code, years=5)
-            logger.info(f"Background fetch completed for EDINET: {clean_code}")
+            logger.info(f"[BG-TASK] Valid 4-digit code: {clean_code}. Calling get_financial_history...")
+            # Using a new database session if needed handled inside, or relying on auto-session
+            # Note: get_financial_history uses SessionLocal internally for caching
+            result = get_financial_history(company_code=clean_code, years=3)
+            logger.info(f"[BG-TASK] fetch completed for {clean_code}. Result count: {len(result)}")
+        else:
+            logger.warning(f"[BG-TASK] Invalid code format: {ticker_code} -> {clean_code}")
     except Exception as e:
-        logger.error(f"Background fetch failed for {ticker_code}: {e}")
+        logger.error(f"[BG-TASK] Background fetch failed for {ticker_code}: {e}", exc_info=True)
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)

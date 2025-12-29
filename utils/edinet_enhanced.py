@@ -980,7 +980,12 @@ def get_financial_history(company_code: str, years: int = 5) -> List[Dict[str, A
     
     # Search for annual reports
     logger.info(f"Searching for {years} years of history for {company_code}...")
-    docs = search_company_reports(company_code=company_code, doc_type="120", days_back=days_back)
+    try:
+        docs = search_company_reports(company_code=company_code, doc_type="120", days_back=days_back)
+        logger.info(f"search_company_reports returned {len(docs)} documents for {company_code}")
+    except Exception as e:
+        logger.error(f"Error in search_company_reports for {company_code}: {e}", exc_info=True)
+        return []
     
     history = []
     processed_periods = set()
