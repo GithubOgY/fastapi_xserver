@@ -2336,3 +2336,47 @@ async def public_profile_page(username: str, request: Request, db: Session = Dep
         "is_following": is_following,
         "current_user": current_user
     })
+
+@app.get("/u/{username}/following", response_class=HTMLResponse)
+async def list_following(username: str, request: Request, db: Session = Depends(get_db)):
+    target_user = db.query(User).filter(User.username == username).first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    profile = db.query(UserProfile).filter(UserProfile.user_id == target_user.id).first()
+    if not profile or profile.is_public == 0:
+        # If private, only allow if same user (but usually follow lists are public if profile is)
+        # For simplicity, if profile is private, hide lists.
+        raise HTTPException(status_code=403, detail="このユーザーの一覧は非公開です")
+
+    following_relations = db.query(UserFollow).filter(UserFollow.follower_id == target_user.id).all()
+    users = [rel.following for rel in following_relations]
+    
+    return templates.TemplateResponse("follow_list.html", {
+        "request": request,
+        "users": users,
+        "title": f"@{username} がフォロー中",
+        "target_username": username,
+        "active_tab": "following"
+    })
+
+@app.get("/u/{username}/followers", response_class=HTMLResponse)
+async def list_followers(username: str, request: Request, db: Session = Depends(get_db)):
+    target_user = db.query(User).filter(User.username == username).first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    profile = db.query(UserProfile).filter(UserProfile.user_id == target_user.id).first()
+    if not profile or profile.is_public == 0:
+        raise HTTPException(status_code=403, detail="このユーザーの一覧は非公開です")
+
+    follower_relations = db.query(UserFollow).filter(UserFollow.following_id == target_user.id).all()
+    users = [rel.follower for rel in follower_relations]
+    
+    return templates.TemplateResponse("follow_list.html", {
+        "request": request,
+        "users": users,
+        "title": f"@{username} のフォロワー",
+        "target_username": username,
+        "active_tab": "followers"
+    })

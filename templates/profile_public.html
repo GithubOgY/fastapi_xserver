@@ -223,10 +223,17 @@
             <h1 class="name">{{ profile.display_name }}</h1>
             <div class="username">@{{ user.username }}</div>
 
-            <div
-                style="display: flex; justify-content: center; gap: 1.5rem; margin-bottom: 1.5rem; font-size: 0.9rem; color: #94a3b8;">
-                <div><strong style="color: #f8fafc;">{{ following_count }}</strong> フォロー中</div>
-                <div><strong style="color: #f8fafc;">{{ follower_count }}</strong> フォロワー</div>
+            <div style="display: flex; justify-content: center; gap: 1.5rem; margin-bottom: 1.5rem; font-size: 0.9rem;">
+                <a href="/u/{{ user.username }}/following"
+                    style="color: #94a3b8; text-decoration: none; transition: color 0.1s;"
+                    onmouseover="this.style.color='#f8fafc'" onmouseout="this.style.color='#94a3b8'">
+                    <strong style="color: #f8fafc;">{{ following_count }}</strong> フォロー中
+                </a>
+                <a href="/u/{{ user.username }}/followers"
+                    style="color: #94a3b8; text-decoration: none; transition: color 0.1s;"
+                    onmouseover="this.style.color='#f8fafc'" onmouseout="this.style.color='#94a3b8'">
+                    <strong style="color: #f8fafc;">{{ follower_count }}</strong> フォロワー
+                </a>
             </div>
 
             {% if current_user and current_user.id != user.id %}
