@@ -167,8 +167,10 @@
             <form hx-post="/api/edinet/search" hx-target="#edinet-result" hx-swap="innerHTML"
                 hx-indicator="#edinet-spinner"
                 style="display: flex; gap: 0.5rem; margin-bottom: 1rem; max-width: 600px; margin-left: auto; margin-right: auto;">
-                <input type="text" name="company_name" placeholder="企業名を入力（例: トヨタ自動車）" value="" autocomplete="off"
-                    style="flex: 1; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.8rem 1rem; color: white; outline: none;">
+                <input type="text" name="company_name" id="edinet-company-input" placeholder="企業名を入力（例: トヨタ自動車）"
+                    value="" autocomplete="new-password" data-lpignore="true" data-form-type="other"
+                    style="flex: 1; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.8rem 1rem; color: white; outline: none;"
+                    onfocus="this.removeAttribute('readonly');" readonly>
                 <button type="submit"
                     style="background: linear-gradient(135deg, #6366f1, #8b5cf6); white-space: nowrap;">
                     <span>検索</span>
