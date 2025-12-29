@@ -223,6 +223,28 @@
             <h1 class="name">{{ profile.display_name }}</h1>
             <div class="username">@{{ user.username }}</div>
 
+            <div
+                style="display: flex; justify-content: center; gap: 1.5rem; margin-bottom: 1.5rem; font-size: 0.9rem; color: #94a3b8;">
+                <div><strong style="color: #f8fafc;">{{ following_count }}</strong> フォロー中</div>
+                <div><strong style="color: #f8fafc;">{{ follower_count }}</strong> フォロワー</div>
+            </div>
+
+            {% if current_user and current_user.id != user.id %}
+            <div style="margin-bottom: 2rem;">
+                {% if is_following %}
+                <button hx-delete="/api/follow/{{ user.username }}" hx-target="this" hx-swap="outerHTML"
+                    style="background: rgba(244, 63, 94, 0.1); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.2); padding: 0.6rem 2rem; border-radius: 9999px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif;">
+                    フォロー解除
+                </button>
+                {% else %}
+                <button hx-post="/api/follow/{{ user.username }}" hx-target="this" hx-swap="outerHTML"
+                    style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; padding: 0.6rem 2rem; border-radius: 9999px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif;">
+                    フォローする
+                </button>
+                {% endif %}
+            </div>
+            {% endif %}
+
             <div class="tags">
                 {% if profile.investment_style %}
                 <span class="tag tag-style">📈 {{ profile.investment_style }}</span>

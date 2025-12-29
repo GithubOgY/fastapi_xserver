@@ -3,7 +3,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
 from typing import Annotated, Optional
 from sqlalchemy.orm import Session
-from database import SessionLocal, CompanyFundamental, User, Company, UserFavorite, StockComment, UserProfile
+from database import SessionLocal, CompanyFundamental, User, Company, UserFavorite, StockComment, UserProfile, UserFollow
 from utils.email import send_email
 from passlib.context import CryptContext
 from jose import JWTError, jwt
@@ -2224,6 +2224,70 @@ async def update_profile(
         "message": "プロフィールを更新しました！"
     })
 
+# --- Follow API Endpoints ---
+
+@app.post("/api/follow/{username}", response_class=HTMLResponse)
+async def follow_user(
+    username: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user:
+        return HTMLResponse(content="<p style='color:#f43f5e;'>ログインが必要です</p>", status_code=401)
+    
+    target_user = db.query(User).filter(User.username == username).first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
+        
+    if target_user.id == current_user.id:
+        return HTMLResponse(content="<p style='color:#f43f5e;'>自分自身はフォローできません</p>", status_code=400)
+        
+    existing_follow = db.query(UserFollow).filter(
+        UserFollow.follower_id == current_user.id,
+        UserFollow.following_id == target_user.id
+    ).first()
+    
+    if not existing_follow:
+        new_follow = UserFollow(follower_id=current_user.id, following_id=target_user.id)
+        db.add(new_follow)
+        db.commit()
+    
+    return f"""
+        <button hx-delete="/api/follow/{username}" hx-target="this" hx-swap="outerHTML"
+            style="background: rgba(244, 63, 94, 0.1); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.2); padding: 0.6rem 2rem; border-radius: 9999px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif;">
+            フォロー解除
+        </button>
+    """
+
+@app.delete("/api/follow/{username}", response_class=HTMLResponse)
+async def unfollow_user(
+    username: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user:
+        return HTMLResponse(content="<p style='color:#f43f5e;'>ログインが必要です</p>", status_code=401)
+        
+    target_user = db.query(User).filter(User.username == username).first()
+    if not target_user:
+        raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
+        
+    follow = db.query(UserFollow).filter(
+        UserFollow.follower_id == current_user.id,
+        UserFollow.following_id == target_user.id
+    ).first()
+    
+    if follow:
+        db.delete(follow)
+        db.commit()
+        
+    return f"""
+        <button hx-post="/api/follow/{username}" hx-target="this" hx-swap="outerHTML"
+            style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; padding: 0.6rem 2rem; border-radius: 9999px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif;">
+            フォローする
+        </button>
+    """
+
 @app.get("/u/{username}", response_class=HTMLResponse)
 async def public_profile_page(username: str, request: Request, db: Session = Depends(get_db)):
     target_user = db.query(User).filter(User.username == username).first()
@@ -2246,11 +2310,29 @@ async def public_profile_page(username: str, request: Request, db: Session = Dep
     favorites = []
     if not is_private:
         favorites = db.query(UserFavorite).filter(UserFavorite.user_id == target_user.id).all()
+    
+    # Follow stats
+    follower_count = db.query(UserFollow).filter(UserFollow.following_id == target_user.id).count()
+    following_count = db.query(UserFollow).filter(UserFollow.follower_id == target_user.id).count()
+    
+    # Current user's follow status
+    current_user = await get_current_user(request, db)
+    is_following = False
+    if current_user and current_user.id != target_user.id:
+        existing = db.query(UserFollow).filter(
+            UserFollow.follower_id == current_user.id,
+            UserFollow.following_id == target_user.id
+        ).first()
+        is_following = existing is not None
         
     return templates.TemplateResponse("profile_public.html", {
         "request": request, 
         "user": target_user, 
         "profile": profile, 
         "favorites": favorites,
-        "is_private": is_private
+        "is_private": is_private,
+        "follower_count": follower_count,
+        "following_count": following_count,
+        "is_following": is_following,
+        "current_user": current_user
     })

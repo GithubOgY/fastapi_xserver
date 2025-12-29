@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float, Text, DateTime, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, Float, Text, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 import os
@@ -88,6 +88,18 @@ class EdinetCache(Base):
     period_end = Column(String, index=True)  # Period end date (e.g., "2024-03-31")
     data_json = Column(Text)  # JSON string of the parsed financial data
     cached_at = Column(DateTime, default=datetime.utcnow)
+
+class UserFollow(Base):
+    __tablename__ = "user_follows"
+    id = Column(Integer, primary_key=True, index=True)
+    follower_id = Column(Integer, ForeignKey("users.id"), index=True)
+    following_id = Column(Integer, ForeignKey("users.id"), index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    __table_args__ = (UniqueConstraint('follower_id', 'following_id', name='_follower_following_uc'),)
+    
+    follower = relationship("User", foreign_keys=[follower_id])
+    following = relationship("User", foreign_keys=[following_id])
 
 # DB initialization
 Base.metadata.create_all(bind=engine)
