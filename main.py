@@ -2068,6 +2068,19 @@ async def api_edinet_search(
                     <div id="cashflow-container" style="margin-top: 1rem;"></div>
                 </div>
             </div>
+
+            <!-- News Section (OOB Swap) -->
+            <div id="news-section" class="section" hx-swap-oob="true">
+                 <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #10b981; text-align: center;">
+                    📰 関連ニュース (Google News)
+                </h2>
+                <div hx-get="/api/news/{clean_code}" hx-trigger="load delay:500ms" hx-swap="innerHTML">
+                    <div style="text-align: center; color: #64748b; padding: 2rem;">
+                         <div style="display: inline-block; width: 20px; height: 20px; border: 2px solid #10b981; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 0.5rem;"></div>
+                         <p>ニュースを取得中...</p>
+                    </div>
+                </div>
+            </div>
         """
         
         response = HTMLResponse(content=html_content)
