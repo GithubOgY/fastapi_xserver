@@ -16,7 +16,7 @@ import json
 import yfinance as yf
 import pandas as pd
 import requests
-from utils.edinet_enhanced import get_financial_history, format_financial_data
+from utils.edinet_enhanced import get_financial_history, format_financial_data, search_company_reports, process_document
 from utils.growth_analysis import analyze_growth_quality
 from utils.ai_analysis import analyze_stock_with_ai
 
@@ -598,12 +598,6 @@ async def delete_own_account(db: Session = Depends(get_db), current_user: User =
     response = RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
     response.delete_cookie("access_token")
     return response
-
-@app.post("/echo")
-async def echo(message: Annotated[str, Form()]):
-    if not message:
-        return '<p class="echo-result">Please enter something!</p>'
-    return f'<p class="echo-result">Server response: <strong>{message}</strong></p>'
 
 @app.post("/api/test-email")
 async def send_test_email(email: str = Form(...), current_user: User = Depends(get_current_user)):
@@ -1535,7 +1529,7 @@ async def search_edinet_company(
         raise HTTPException(status_code=401, detail="Not authenticated")
     
     try:
-        from utils.edinet_enhanced import search_company_reports, process_document, format_financial_data
+
         
         # Search for documents
         docs = search_company_reports(company_name=company_name, doc_type="120", days_back=365)
@@ -1688,140 +1682,39 @@ async def search_edinet_company(
             </div>
         """, status_code=500)
 
-
-
-@app.get("/api/edinet/cashflow/{code}")
-async def get_edinet_cashflow(code: str, current_user: User = Depends(get_current_user)):
-    """Get Cash Flow chart from EDINET data"""
+@app.post("/api/ai/analyze", response_class=HTMLResponse)
+def api_ai_analyze(
+    ticker_code: str = Form(...),
+    current_user: User = Depends(get_current_user)
+):
+    """AI Analysis Endpoint using Gemini 2.0 Flash"""
     if not current_user:
-        return HTMLResponse(content="<div class='text-red-400'>Login required</div>")
-    
+        return "<div class='text-red-400'>エラー: ログインが必要です</div>"
+
     try:
-        from utils.edinet_enhanced import get_financial_history
+        clean_code = ticker_code.replace(".T", "")
         
-        # Clean code (remove .T if present)
-        clean_code = code.replace(".T", "")
+        # Context data preparation
+        financial_context = {}
+        company_name = f"Code: {clean_code}"
         
-        # Fetch history from EDINET (3 years for speed)
-        history = get_financial_history(company_code=clean_code, years=3)
-        
-        if not history:
-            return HTMLResponse(content="""
-                <div style="text-align: center; padding: 2rem; color: #94a3b8;">
-                    <p style="font-size: 1.5rem; margin-bottom: 0.5rem;">📉</p>
-                    <p>EDINETにキャッシュフローデータが見つかりませんでした</p>
-                </div>
-            """)
-        
-        # Prepare CF data
-        years_label = []
-        op_cf_data = []
-        inv_cf_data = []
-        fin_cf_data = []
-        net_cf_data = []
-        
-        for data in history:
+        # Fetch latest financial data for context
+        history = get_financial_history(company_code=clean_code, years=1)
+        if history and len(history) > 0:
+            data = history[0]
+            financial_context = data.get("normalized_data", {})
             meta = data.get("metadata", {})
-            norm = data.get("normalized_data", {})
-            period = meta.get("period_end", "")[:4]
-            years_label.append(period)
-            
-            to_oku = lambda x: round(x/100000000, 1) if isinstance(x, (int, float)) and x != 0 else 0
-            
-            op_cf = norm.get("営業CF", 0)
-            inv_cf = norm.get("投資CF", 0)
-            fin_cf = norm.get("財務CF", 0)
-            
-            op_cf_data.append(to_oku(op_cf))
-            inv_cf_data.append(to_oku(inv_cf))
-            fin_cf_data.append(to_oku(fin_cf))
-            
-            net = op_cf + inv_cf + fin_cf if all(isinstance(x, (int, float)) for x in [op_cf, inv_cf, fin_cf]) else 0
-            net_cf_data.append(to_oku(net))
+            company_name = meta.get("company_name", company_name)
         
-        chart_id = f"cfChart_{clean_code}_{int(time.time())}"
-        
-        return HTMLResponse(content=f"""
-            <div class="relative h-[300px] w-full">
-                <canvas id="{chart_id}"></canvas>
-            </div>
-            <script>
-                (function() {{
-                    const ctx = document.getElementById('{chart_id}').getContext('2d');
-                    new Chart(ctx, {{
-                        type: 'bar',
-                        data: {{
-                            labels: {years_label},
-                            datasets: [
-                                {{
-                                    label: '営業CF (億円)',
-                                    data: {op_cf_data},
-                                    backgroundColor: 'rgba(16, 185, 129, 0.7)',
-                                    borderColor: '#10b981',
-                                    borderWidth: 1
-                                }},
-                                {{
-                                    label: '投資CF (億円)',
-                                    data: {inv_cf_data},
-                                    backgroundColor: 'rgba(244, 63, 94, 0.7)',
-                                    borderColor: '#f43f5e',
-                                    borderWidth: 1
-                                }},
-                                {{
-                                    label: '財務CF (億円)',
-                                    data: {fin_cf_data},
-                                    backgroundColor: 'rgba(59, 130, 246, 0.7)',
-                                    borderColor: '#3b82f6',
-                                    borderWidth: 1
-                                }},
-                                {{
-                                    label: 'ネットCF',
-                                    data: {net_cf_data},
-                                    type: 'line',
-                                    borderColor: '#f59e0b',
-                                    borderWidth: 2,
-                                    tension: 0.3,
-                                    pointBackgroundColor: '#f59e0b'
-                                }}
-                            ]
-                        }},
-                        options: {{
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {{
-                                y: {{
-                                    grid: {{ color: 'rgba(255, 255, 255, 0.1)' }},
-                                    ticks: {{ color: '#94a3b8' }},
-                                    title: {{ display: true, text: '金額 (億円)', color: '#64748b' }}
-                                }},
-                                x: {{
-                                    grid: {{ display: false }},
-                                    ticks: {{ color: '#94a3b8' }}
-                                }}
-                            }},
-                            plugins: {{
-                                legend: {{ labels: {{ color: '#e2e8f0' }} }},
-                                tooltip: {{ mode: 'index', intersect: false }}
-                            }},
-                            interaction: {{ mode: 'nearest', axis: 'x', intersect: false }}
-                        }}
-                    }});
-                }})();
-            </script>
-            <div style="margin-top: 1rem; padding: 1rem; background: rgba(0,0,0,0.2); border-radius: 8px;">
-                <p style="color: #94a3b8; font-size: 0.85rem; text-align: center;">
-                    ✅ EDINETから取得したキャッシュフローデータ (過去{len(history)}年分)
-                </p>
-            </div>
-        """)
+        # Execute Analysis (returns HTML)
+        return analyze_stock_with_ai(clean_code, financial_context, company_name)
         
     except Exception as e:
-        logger.error(f"EDINET cashflow error for {code}: {e}")
-        return HTMLResponse(content=f"""
-            <div style="color: #fb7185; padding: 1rem; text-align: center; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
-                ❌ キャッシュフローデータの取得に失敗しました: {str(e)}
-            </div>
-        """)
+        logger.error(f"AI Analysis error: {e}")
+        import traceback
+        traceback.print_exc()
+        return f"<div class='text-red-400'>AI分析中にエラーが発生しました: {str(e)}</div>"
+
 
 
 @app.get("/api/edinet/history/{code}")
@@ -1831,7 +1724,7 @@ async def get_edinet_history(code: str, current_user: User = Depends(get_current
          return HTMLResponse(content="<div class='text-red-400'>Login required</div>")
     
     try:
-        from utils.edinet_enhanced import get_financial_history, format_financial_data
+
         
         # Fetch history (heavy operation)
         history = get_financial_history(company_code=code, years=5)
