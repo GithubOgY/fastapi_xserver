@@ -1278,6 +1278,12 @@ async def lookup_yahoo_finance(
                 <div style="margin-top: 1rem; text-align: center;">
                     {fav_button}
                 </div>
+                <!-- Link to EDINET Page -->
+                <div style="margin-top: 1rem; text-align: center;">
+                    <a href="/edinet?code={code_input}" style="display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; padding: 0.8rem 1.5rem; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 0.95rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                         <span>📊</span> 詳細な財務分析を見る（EDINETページへ）
+                    </a>
+                </div>
             </div>
 
             <!-- Charts Section (OOB Swap) -->
@@ -1580,12 +1586,16 @@ async def ai_analyze_stock(ticker_code: Annotated[str, Form()]):
             logger.error(f"EDINET fetch failed for AI analysis: {ee}")
 
         # 3. AI分析実行
+        # EDINETから日本語の企業名を優先的に使用
+        japanese_name = edinet_ctx.get("metadata", {}).get("company_name")
+        company_name_for_ai = japanese_name if japanese_name else name
+        
         financial_context = {
             "summary_text": summary_text,
             "edinet_data": edinet_ctx
         }
         
-        report_html = analyze_stock_with_ai(ticker_code, financial_context, company_name=name)
+        report_html = analyze_stock_with_ai(ticker_code, financial_context, company_name=company_name_for_ai)
         
         # 中身だけ返す (hx-target="#ai-analysis-content")
         return HTMLResponse(content=report_html)
@@ -1643,37 +1653,129 @@ async def get_stock_news(ticker_code: str):
         logger.error(f"News API error: {e}")
         return HTMLResponse(content="<div class='text-gray-500 text-sm'>ニュースの取得中にエラーが発生しました</div>")
 
+@app.post("/api/edinet/search")
+async def api_edinet_search(company_name: Annotated[str, Form()] = "", current_user: User = Depends(get_current_user)):
+    try:
+        from utils.edinet_enhanced import get_financial_history, search_company_reports, format_financial_data
+        import pandas as pd
+        import time
+        import yfinance as yf
+        import re
+        
+        input_str = company_name.strip()
+        if not input_str:
+             return HTMLResponse("<div class='text-gray-400 p-4 text-center'>検索ワードを入力してください</div>")
 
+        # 1. Determine Code
+        ticker_code = None
+        # Check if input is 4 digits
+        code_match = re.search(r"(\d{4})", input_str)
+        if code_match:
+             ticker_code = f"{code_match.group(1)}.T"
+        else:
+             # Search using DB first for speed
+             db = SessionLocal()
+             found = db.query(Company).filter(Company.name.ilike(f"%{input_str}%")).first()
+             db.close()
+             if found:
+                 ticker_code = found.ticker
+             else:
+                 # Fallback to EDINET search
+                 reports = search_company_reports(company_name=input_str, doc_type="120", days_back=365)
+                 if reports:
+                      # Try to extract code from the search result
+                      # The search result items usually have 'secCode'
+                      for report in reports:
+                          if report.get('secCode'):
+                              ticker_code = f"{report['secCode']}.T"
+                              break
+        
+        if not ticker_code:
+             return HTMLResponse(f"<div class='text-red-400 p-4 text-center'>「{input_str}」に関連する企業が見つかりませんでした</div>")
+        
+        clean_code = ticker_code.replace(".T", "")
+        
+        # 2. Fetch Yahoo Data for Info Header
+        yf_ticker = yf.Ticker(ticker_code)
+        info = yf_ticker.info
+        
+        name = info.get("longName") or info.get("shortName") or input_str
+        price = info.get("currentPrice") or info.get("regularMarketPrice") or 0
+        prev_close = info.get("regularMarketPreviousClose") or price
+        change = price - prev_close
+        change_pct = (change / prev_close) * 100 if prev_close else 0
+        
+        change_sign = "+" if change > 0 else ""
+        change_color = "#10b981" if change > 0 else "#f43f5e" if change < 0 else "#94a3b8"
+        
+        market_cap = info.get("marketCap", 0)
+        market_cap_str = f"{market_cap/100000000:,.0f}億円" if market_cap else "-"
+        
+        per = info.get("trailingPE", "-")
+        pbr = info.get("priceToBook", "-")
+        
+        div_rate = info.get("dividendRate", 0)
+        div_yield_val = (div_rate / price * 100) if price and div_rate else (info.get("dividendYield", 0) * 100)
+        dividend_str = f"{div_yield_val:.2f}%" if div_yield_val else "-"
+        
+        roe = info.get("returnOnEquity", 0)
+        roe_str = f"{roe*100:.1f}%" if roe else "-"
+        
+        symbol = clean_code
+        website = info.get("website", "")
+        
+        # Favorite Button Logic
+        db = SessionLocal()
+        user_id = current_user.id if current_user else None
+        is_fav = False
+        if user_id:
+            fav = db.query(Favorite).filter(Favorite.user_id == user_id, Favorite.ticker_code == ticker_code).first()
+            if fav: is_fav = True
+        db.close()
+        
+        fav_icon = "★" if is_fav else "☆"
+        fav_text = "登録済" if is_fav else "お気に入り"
+        fav_class = "bg-yellow-500 text-white" if is_fav else "bg-gray-700 text-gray-300 hover:bg-gray-600"
+        
+        fav_button = f"""
+        <button hx-post="/api/favorites/toggle" hx-vals='{{"ticker_code": "{ticker_code}"}}' hx-target="this" hx-swap="outerHTML"
+            style="background: {'var(--accent)' if is_fav else 'rgba(255,255,255,0.1)'}; border: 1px solid var(--accent); color: white; padding: 0.4rem 0.8rem; border-radius: 8px; cursor: pointer; font-size: 0.8rem;">
+            {fav_icon} {fav_text}
+        </button>
+        """
 
+        # 3. Fetch EDINET History
+        history = get_financial_history(company_code=clean_code, years=5)
+        
+        chart_html = ""
+        financial_table_rows = ""
         
         if not history:
             chart_html = """
-                <div class="h-64 flex items-center justify-center bg-gray-900/30 rounded-xl border border-dashed border-gray-600">
-                    <div class="text-center text-gray-500">
-                        <p class="text-3xl mb-2">📉</p>
-                        <p>財務データが見つかりませんでした</p>
-                        <p class="text-xs mt-1">Yahoo Finance / EDINET 共にデータなし</p>
+                <div style="height: 250px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px dashed rgba(255,255,255,0.1);">
+                    <div style="text-align: center; color: #64748b;">
+                        <p style="font-size: 2rem; margin-bottom: 0.5rem;">📉</p>
+                        <p>EDINETに財務データが見つかりませんでした</p>
                     </div>
                 </div>
             """
-            financial_table_rows = """<tr><td colspan="5" class="p-4 text-center text-gray-500">データなし</td></tr>"""
+            financial_table_rows = """<tr><td colspan="5" style="text-align: center; padding: 2rem; color: #64748b;">データなし</td></tr>"""
         else:
-            # Prepare data for Revenue/Operating Income/Margin/EPS chart
-            years_label = []
-            revenue_data = []      # 売上高 (億円)
-            op_income_data = []    # 営業利益 (億円)
-            op_margin_data = []    # 営業利益率 (%)
-            eps_data = []          # EPS (円)
-            
-            for data in history:
+             # Prepare Chart Data
+             years_label = []
+             revenue_data = []
+             op_income_data = []
+             op_margin_data = []
+             eps_data = []
+             
+             for data in history:
                 meta = data.get("metadata", {})
                 norm = data.get("normalized_data", {})
-                period = meta.get("period_end", "")[:4] # Just Year for chart
+                period = meta.get("period_end", "")[:4]
                 source = meta.get("source", "Unknown")
                 
                 years_label.append(period)
                 
-                # Chart values
                 to_oku = lambda x: round(x/100000000, 1) if isinstance(x, (int, float)) and x != 0 else 0
                 
                 revenue = norm.get("売上高", 0)
@@ -1682,14 +1784,12 @@ async def get_stock_news(ticker_code: str):
                 revenue_data.append(to_oku(revenue))
                 op_income_data.append(to_oku(op_income))
                 
-                # Calculate Operating Margin %
                 if isinstance(revenue, (int, float)) and revenue > 0 and isinstance(op_income, (int, float)):
                     margin = round((op_income / revenue) * 100, 1)
                 else:
                     margin = 0
                 op_margin_data.append(margin)
                 
-                # EPS
                 eps_val = norm.get("EPS", 0)
                 if isinstance(eps_val, (int, float)):
                     eps_data.append(round(eps_val, 1))
@@ -1697,29 +1797,21 @@ async def get_stock_news(ticker_code: str):
                     eps_data.append(0)
                 
                 # Table Rows
-                p_full = meta.get("period_end", "")[:7]
-                
-                # Format money helper
-                fmt = lambda x: f"{x/100000000:,.1f}" if isinstance(x, (int, float)) and x != 0 else "-"
-                
-                badge_color = "bg-blue-900 text-blue-300" if source == "EDINET" else "bg-gray-700 text-gray-400"
-                
+                formatted = format_financial_data(norm)
                 financial_table_rows += f"""
-                <tr class="hover:bg-gray-700/30 transition-colors">
-                    <td class="p-3 text-gray-300 border-b border-gray-700/50">
-                        {p_full} <span class="text-[0.6rem] px-1 rounded {badge_color}">{source}</span>
-                    </td>
-                    <td class="p-3 text-right text-gray-300 border-b border-gray-700/50">{fmt(norm.get('売上高'))}</td>
-                    <td class="p-3 text-right text-emerald-400 border-b border-gray-700/50">{fmt(norm.get('営業利益'))}</td>
-                    <td class="p-3 text-right text-rose-400 border-b border-gray-700/50">{fmt(norm.get('当期純利益'))}</td>
-                    <td class="p-3 text-right text-gray-300 border-b border-gray-700/50">{norm.get('EPS', '-')}</td>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <td style="padding: 0.75rem;">{period} <span style="font-size: 0.6rem; padding: 2px 4px; background: rgba(59, 130, 246, 0.2); color: #93c5fd; border-radius: 4px;">{source}</span></td>
+                    <td style="padding: 0.75rem; text-align: right;">{formatted.get('売上高', '-')}</td>
+                    <td style="padding: 0.75rem; text-align: right; color: #34d399;">{formatted.get('営業利益', '-')}</td>
+                    <td style="padding: 0.75rem; text-align: right; color: #fb7185;">{formatted.get('当期純利益', '-')}</td>
+                    <td style="padding: 0.75rem; text-align: right;">{formatted.get('EPS', '-')}</td>
                 </tr>
                 """
-
-            # Build Chart Script - Revenue/Operating Income/Margin/EPS
-            chart_id = f"fundChart_{code_input}_{int(time.time())}"
-            chart_html = f"""
-                <div class="relative h-[300px] w-full">
+             
+             # Chart Script
+             chart_id = f"edinet_chart_{clean_code}_{int(time.time())}"
+             chart_html = f"""
+                <div style="height: 300px; position: relative; width: 100%;">
                     <canvas id="{chart_id}"></canvas>
                 </div>
                 <script>
@@ -1733,7 +1825,7 @@ async def get_stock_news(ticker_code: str):
                                     {{
                                         label: '売上高 (億円)',
                                         data: {revenue_data},
-                                        backgroundColor: 'rgba(99, 102, 241, 0.7)',
+                                        backgroundColor: 'rgba(99, 102, 241, 0.6)',
                                         borderColor: '#6366f1',
                                         borderWidth: 1,
                                         yAxisID: 'y'
@@ -1741,32 +1833,20 @@ async def get_stock_news(ticker_code: str):
                                     {{
                                         label: '営業利益 (億円)',
                                         data: {op_income_data},
-                                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                                        backgroundColor: 'rgba(16, 185, 129, 0.6)',
                                         borderColor: '#10b981',
                                         borderWidth: 1,
                                         yAxisID: 'y'
                                     }},
                                     {{
-                                        label: '営業利益率 (%)',
+                                        label: '利益率 (%)',
                                         data: {op_margin_data},
                                         type: 'line',
                                         borderColor: '#f59e0b',
-                                        backgroundColor: 'rgba(245, 158, 11, 0.2)',
                                         borderWidth: 2,
                                         tension: 0.3,
-                                        pointBackgroundColor: '#f59e0b',
-                                        yAxisID: 'y1',
-                                        fill: true
-                                    }},
-                                    {{
-                                        label: 'EPS (円)',
-                                        data: {eps_data},
-                                        type: 'line',
-                                        borderColor: '#ec4899',
-                                        borderWidth: 2,
-                                        tension: 0.3,
-                                        pointBackgroundColor: '#ec4899',
-                                        yAxisID: 'y2'
+                                        pointRadius: 3,
+                                        yAxisID: 'y1'
                                     }}
                                 ]
                             }},
@@ -1777,24 +1857,16 @@ async def get_stock_news(ticker_code: str):
                                     y: {{
                                         type: 'linear',
                                         position: 'left',
-                                        grid: {{ color: 'rgba(255, 255, 255, 0.1)' }},
+                                        grid: {{ color: 'rgba(255, 255, 255, 0.05)' }},
                                         ticks: {{ color: '#94a3b8' }},
-                                        title: {{ display: true, text: '金額 (億円)', color: '#64748b' }}
+                                        title: {{ display: true, text: '億円', color: '#64748b' }}
                                     }},
                                     y1: {{
                                         type: 'linear',
                                         position: 'right',
-                                        grid: {{ drawOnChartArea: false }},
+                                        grid: {{ display: false }},
                                         ticks: {{ color: '#f59e0b' }},
-                                        title: {{ display: true, text: '営業利益率 (%)', color: '#f59e0b' }},
                                         min: 0
-                                    }},
-                                    y2: {{
-                                        type: 'linear',
-                                        position: 'right',
-                                        grid: {{ drawOnChartArea: false }},
-                                        ticks: {{ color: '#ec4899', display: false }},
-                                        display: false
                                     }},
                                     x: {{
                                         grid: {{ display: false }},
@@ -1802,17 +1874,40 @@ async def get_stock_news(ticker_code: str):
                                     }}
                                 }},
                                 plugins: {{
-                                    legend: {{ labels: {{ color: '#e2e8f0' }} }},
-                                    tooltip: {{ mode: 'index', intersect: false }}
-                                }},
-                                interaction: {{ mode: 'nearest', axis: 'x', intersect: false }}
+                                    legend: {{ labels: {{ color: '#e2e8f0' }} }}
+                                }}
                             }}
                         }});
                     }})();
                 </script>
-            """
+             """
 
-        # Return the Combined Response
+        # AI Analysis Section HTML
+        ai_section = f"""
+        <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1)); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 1.5rem; margin-top: 1.5rem; text-align: center;">
+            <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; margin-bottom: 1rem; color: #a855f7;">
+                🤖 AI 財務分析レポート (Premium)
+            </h3>
+            <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 1.5rem;">
+                有価証券報告書の記述情報と財務数値をGemini AIが詳細に分析します。<br>
+                経営方針、事業リスク、将来の展望など定性的な情報も考慮されます。
+            </p>
+            <form hx-post="/api/ai/analyze" hx-target="#ai-analysis-content" hx-indicator="#ai-spinner">
+                <input type="hidden" name="ticker_code" value="{clean_code}">
+                <button type="submit" 
+                    style="background: linear-gradient(135deg, #8b5cf6, #d946ef); color: white; padding: 0.8rem 2rem; border: none; border-radius: 50px; font-weight: bold; font-size: 1rem; cursor: pointer; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4); transition: transform 0.2s; display: inline-flex; align-items: center; gap: 0.5rem;">
+                    <span>✨</span> AIで詳細分析を実行する
+                </button>
+                <div id="ai-spinner" class="htmx-indicator" style="margin-top: 1rem;">
+                    <div style="display: inline-block; width: 24px; height: 24px; border: 3px solid rgba(139, 92, 246, 0.3); border-top-color: #8b5cf6; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                    <p style="color: #a855f7; font-size: 0.8rem; margin-top: 0.5rem;">分析中... (15-30秒ほどかかります)</p>
+                </div>
+            </form>
+            <div id="ai-analysis-content" style="margin-top: 1.5rem; text-align: left;"></div>
+        </div>
+        """
+
+        # Construct Final Response
         return HTMLResponse(content=f"""
             <div style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 1.5rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
@@ -1828,7 +1923,10 @@ async def get_stock_news(ticker_code: str):
                         {fav_button}
                     </div>
                 </div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.75rem; font-size: 0.85rem;">
+                
+                {ai_section}
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.75rem; font-size: 0.85rem; margin-top: 1.5rem;">
                     <div style="background: rgba(99, 102, 241, 0.1); padding: 0.75rem; border-radius: 8px; text-align: center;">
                         <div style="color: #94a3b8; font-size: 0.75rem;">時価総額</div>
                         <div style="color: #f8fafc; font-weight: 600;">{market_cap_str}</div>
@@ -1852,40 +1950,26 @@ async def get_stock_news(ticker_code: str):
                 </div>
             </div>
             
-            <!-- EDINET Cash Flow Button -->
-            <div style="text-align: center; margin-top: 1rem;">
-                <button 
-                    hx-get="/api/edinet/cashflow/{symbol}"
-                    hx-target="#cashflow-container"
-                    hx-swap="innerHTML"
-                    hx-indicator="#cf-spinner"
-                    style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 0.6rem 1.5rem; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s;">
-                    💰 キャッシュフロー分析 (EDINET)
-                    <span id="cf-spinner" class="htmx-indicator" style="margin-left: 0.5rem;">⏳</span>
-                </button>
-                <p style="color: #64748b; font-size: 0.75rem; margin-top: 0.5rem;">※ EDINETから詳細なCFデータを取得します</p>
-            </div>
-
-            <!-- OOB Swap: Render Chart immediately -->
-            <div id="chart-section" class="section" hx-swap-oob="true">
+            <!-- Charts Section -->
+             <div id="chart-section" class="section" hx-swap-oob="true">
                 <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
-                    📊 業績推移グラフ
+                    📊 業績推移グラフ (EDINET)
                 </h2>
-                <div id="chart-container" style="height: 300px; min-height: 300px; position: relative; width: 100%;">
+                <div id="chart-container" style="min-height: 300px; position: relative; width: 100%;">
                     {chart_html}
                 </div>
             </div>
 
-            <!-- OOB Swap: Render Financial Data Table immediately -->
+            <!-- Financial Data Table -->
             <div id="financial-data-section" class="section" hx-swap-oob="true">
                 <h1 style="font-family: 'Outfit', sans-serif; font-size: 2rem; margin: 0; background: linear-gradient(to right, #fff, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
                     {name}
                 </h1>
-                {f'<a href="{website}" target="_blank" style="display: inline-block; margin-top: 0.25rem; font-size: 0.8rem; color: #60a5fa; text-decoration: none; border-bottom: 1px dotted #60a5fa;">🌐 企業公式サイト</a>' if website else ''}
+                 {f'<a href="{website}" target="_blank" style="display: inline-block; margin-top: 0.25rem; font-size: 0.8rem; color: #60a5fa; text-decoration: none; border-bottom: 1px dotted #60a5fa;">🌐 企業公式サイト</a>' if website else ''}
                 <div style="color: #94a3b8; font-family: monospace; font-size: 1rem; margin-top: 0.25rem;">
                     {symbol}
                 </div>
-                <div style="overflow-x: auto;">
+                <div style="overflow-x: auto; margin-top: 1rem;">
                     <table>
                         <thead>
                             <tr>
@@ -1903,22 +1987,33 @@ async def get_stock_news(ticker_code: str):
                 </div>
             </div>
             
-            <!-- Cash Flow Container (populated by EDINET button) -->
+            <!-- Clear Cash Flow Section if any -->
             <div id="cashflow-section" class="section" hx-swap-oob="true">
-                <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
+                 <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
                     💰 キャッシュフロー分析
                 </h2>
-                <div id="cashflow-container" style="min-height: 100px; background: rgba(0,0,0,0.2); border-radius: 12px; padding: 2rem; text-align: center; color: #64748b;">
-                    「キャッシュフロー分析」ボタンを押すとEDINETからCFデータを取得して表示します
+                <div style="text-align: center; margin-top: 1rem;">
+                    <button 
+                        hx-get="/api/edinet/cashflow/{clean_code}"
+                        hx-target="#cashflow-container"
+                        hx-swap="innerHTML"
+                        hx-indicator="#cf-spinner"
+                        style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 0.6rem 1.5rem; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s;">
+                        詳細なCF分析を表示
+                        <span id="cf-spinner" class="htmx-indicator" style="margin-left: 0.5rem;">⏳</span>
+                    </button>
+                    <div id="cashflow-container" style="margin-top: 1rem;"></div>
                 </div>
             </div>
         """)
-        
+
     except Exception as e:
-        logger.error(f"Yahoo Finance lookup error for {code_input}: {e}")
+        logger.error(f"EDINET Search error for {company_name}: {e}")
+        import traceback
+        traceback.print_exc()
         return HTMLResponse(content=f"""
             <div style="color: #fb7185; padding: 1rem; text-align: center; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
-                ❌ データの取得に失敗しました: {str(e)}
+                ❌検索中にエラーが発生しました: {str(e)}
             </div>
         """)
 

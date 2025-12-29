@@ -192,15 +192,25 @@
         }
         applyTheme(localStorage.getItem('theme') || 'dark');
 
-        // Auto-search last query on page load
+        // Auto-search from URL parameter or last query
         document.addEventListener('DOMContentLoaded', function () {
-            var lastQuery = '{{ last_query }}';
-            if (lastQuery && lastQuery.trim() !== '') {
-                var input = document.querySelector('input[name="company_name"]');
+            // Check URL parameters first
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const name = urlParams.get('company_name');
+
+            // Priority: URL code > URL name > Server-side last_query
+            let query = code || name || '{{ last_query }}';
+
+            if (query && query.trim() !== '') {
+                const input = document.querySelector('input[name="company_name"]');
                 if (input) {
-                    input.value = lastQuery;
+                    input.value = query;
                     // Trigger HTMX request
-                    htmx.trigger(input.form, 'submit');
+                    // Use timeout to ensure HTMX is fully initialized
+                    setTimeout(() => {
+                        htmx.trigger(input.form, 'submit');
+                    }, 100);
                 }
             }
         });

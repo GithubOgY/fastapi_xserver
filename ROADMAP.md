@@ -99,13 +99,15 @@
 ### Phase 5: データ分析機能の強化
 - [x] **EDINET API統合**: 公式財務データ（有価証券報告書）の自動取得・解析機能を実装
   - 詳細: `EDINET_API_GUIDE.md` 参照
-  - 実装ファイル: `utils/edinet_api.py`
-  - APIエンドポイント: `/api/edinet/search`
+  - 実装ファイル: `utils/edinet_api.py`, `utils/edinet_enhanced.py`
+  - APIエンドポイント: `/api/edinet/search`, `/api/edinet/history/{code}`
   - ダッシュボードUIに統合済み
 - [x] **投資指標の計算**: PER, PBR, ROE, 配当利回りなどの自動計算・表示
 - [x] **年度比較グラフ**: 前年比成長率の可視化
 - [ ] **セクター別分析**: 業種ごとの平均との比較
-- [x] **AIによる業績分析**: Gemini 2.0 Flashによる定性・定量分析レポート（完了）
+- [x] **AIによる業績分析 (v2)**: Gemini 2.0 FlashをEDINETページに完全統合
+    - ダッシュボードから「詳細財務分析」への導線を確立
+    - 自動検索機能 (`api_edinet_search`) の不具合修正と機能強化
 - [ ] **ニュース連携**: Google News RSSを活用したニュース自動取得 👈 Next
 
 ### Phase 6: ソーシャル機能
