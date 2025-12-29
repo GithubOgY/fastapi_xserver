@@ -1274,10 +1274,7 @@ async def lookup_yahoo_finance(
                     </div>
                 </div>
                 
-                <!-- Favorite Button -->
-                <div style="margin-top: 1rem; text-align: center;">
-                    {fav_button}
-                </div>
+
 
             </div>
 
@@ -1503,6 +1500,11 @@ async def lookup_yahoo_finance(
                         掲示板を読み込み中...
                     </p>
                 </div>
+            </div>
+
+            <!-- OOB Swap: Update Register Button in Search Form -->
+            <div id="fav-button-container" hx-swap-oob="true" style="display: flex; align-items: center; margin-left: 0.5rem;">
+                {fav_button}
             </div>
         """
         
