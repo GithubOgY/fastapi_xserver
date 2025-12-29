@@ -910,32 +910,24 @@ async def lookup_yahoo_finance(
         # Extract corporate website URL
         website = info.get("website")
         
-        # 配当利回りの取得と計算（表示倍率の補正を含む）
+        # 配当利回りの取得と計算
         dividend_yield = None
         
-        # 1. まず yfinance の提供値を確認
+        # yfinance の dividendYield は小数形式 (0.0217 = 2.17%)
         yf_yield = info.get("dividendYield") or info.get("trailingAnnualDividendYield")
         
-        # 2. 次に自前計算（配当額 / 株価）を試みる
-        calc_yield = None
-        if price and price > 0:
-            div_rate = info.get("dividendRate") or info.get("trailingAnnualDividendRate")
-            if div_rate:
-                calc_yield = div_rate / price
-        
-        # データの採用と正規化 (0.0227 = 2.27%)
-        # yfinance の値がある場合はそれを優先するが、単位（小数か実数か）を判定する
-        val_to_use = yf_yield if yf_yield is not None else calc_yield
-        
-        if val_to_use is not None:
-            # もし 1.0 を超えている場合（例: 2.27）は、パーセント表記とみなして小数に変換
-            # ※ 利回りが 100%(=1.0) を超えることは通常ありえないためこの閾値を使用
-            if val_to_use > 1.0:
-                dividend_yield = val_to_use / 100.0
-            else:
-                dividend_yield = val_to_use
+        if yf_yield is not None and yf_yield > 0:
+            # yfinance returns decimal format (0.0217 = 2.17%)
+            # Display as percentage by multiplying by 100
+            dividend_yield = yf_yield * 100
+        else:
+            # Fallback: 自前計算（年間配当額 / 株価）
+            if price and price > 0:
+                div_rate = info.get("dividendRate") or info.get("trailingAnnualDividendRate")
+                if div_rate and div_rate > 0:
+                    dividend_yield = (div_rate / price) * 100
 
-        dividend_str = f"{dividend_yield * 100:.3f}%" if dividend_yield is not None else "-"
+        dividend_str = f"{dividend_yield:.2f}%" if dividend_yield is not None else "-"
         
         roe = info.get("returnOnEquity")
         roe_str = f"{roe * 100:.1f}%" if roe else "-"
