@@ -1634,24 +1634,7 @@ async def search_edinet_company(
                 </details>
                 """
 
-        history_btn = ""
-        if sec_code:
-            code_only = sec_code[:4]
-            history_btn = f"""
-            <style>
-                .btn-loading {{ display: none; }}
-                .htmx-request .btn-default {{ display: none; }}
-                .htmx-request .btn-loading {{ display: inline; }}
-            </style>
-            <button hx-get="/api/edinet/history/{code_only}" 
-                    hx-target="#edinet-history-container" 
-                    hx-swap="innerHTML"
-                    class="mt-10 w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-all">
-                <span class="btn-default">直近の財務推移グラフを表示</span>
-                <span class="btn-loading">⏳ データ取得中... (数十秒かかる場合があります)</span>
-            </button>
-            <div id="edinet-history-container" class="mt-4"></div>
-            """
+        history_btn = ""  # Disabled - removed the financial chart button
         
         # Website link HTML
         website_html = ""
