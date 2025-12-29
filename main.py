@@ -51,6 +51,10 @@ logging.getLogger("uvicorn.access").addHandler(logging.FileHandler(f"{LOG_DIR}/a
 
 app = FastAPI()
 
+# Mount static files for PWA support
+from fastapi.staticfiles import StaticFiles
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 # --- Middleware for Request Logging ---
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
@@ -269,6 +273,11 @@ async def home(request: Request, current_user: User = Depends(get_current_user))
         return RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
     # 未ログインならランディングページを表示
     return templates.TemplateResponse("landing.html", {"request": request})
+
+@app.get("/offline", response_class=HTMLResponse)
+async def offline_page(request: Request):
+    """Offline fallback page for PWA"""
+    return templates.TemplateResponse("offline.html", {"request": request})
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request, 
