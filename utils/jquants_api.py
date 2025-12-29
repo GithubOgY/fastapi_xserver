@@ -124,8 +124,96 @@ def sync_companies_to_db():
         db.close()
 
 if __name__ == "__main__":
+    import sys
     # Ensure env loaded for direct execution too
     load_dotenv()
     # Re-read in case it wasn't set when module loaded (though load_dotenv is at top now)
     API_KEY = os.getenv("JQUANTS_API_KEY")
-    sync_companies_to_db()
+    
+    if len(sys.argv) > 1 and sys.argv[1] == "--sync-earnings":
+        sync_earnings_to_db()
+    else:
+        sync_companies_to_db()
+
+def fetch_earnings_calendar():
+    """
+    Fetch earnings announcement dates from J-Quants API v2 (/equities/earnings-calendar).
+    """
+    if not API_KEY:
+        logger.error("JQUANTS_API_KEY is not set.")
+        raise ValueError("JQUANTS_API_KEY is missing")
+
+    url = "https://api.jquants.com/v2/equities/earnings-calendar"
+    headers = {"x-api-key": API_KEY}
+    params = {}
+    
+    all_data = []
+    
+    try:
+        logger.info("[J-Quants] Fetching earnings calendar...")
+        while True:
+            res = requests.get(url, params=params, headers=headers)
+            res.raise_for_status()
+            
+            d = res.json()
+            data_chunk = d.get("data", [])
+            all_data.extend(data_chunk)
+            
+            pagination_key = d.get("pagination_key")
+            if pagination_key:
+                params["pagination_key"] = pagination_key
+                time.sleep(1)
+                logger.info(f"[J-Quants] Fetching next page... (Total so far: {len(all_data)})")
+            else:
+                break
+                
+        logger.info(f"[J-Quants] Total earnings records fetched: {len(all_data)}")
+        return all_data
+        
+    except Exception as e:
+        logger.error(f"[J-Quants] Earnings Calendar API Error: {e}")
+        raise
+
+def sync_earnings_to_db():
+    """
+    Fetch earnings calendar and update Company table with next_earnings_date.
+    """
+    from datetime import date
+    db: Session = SessionLocal()
+    try:
+        earnings_data = fetch_earnings_calendar()
+        
+        updated_count = 0
+        now = datetime.utcnow()
+        
+        for item in earnings_data:
+            # Expected fields: Code, Date (announcement date)
+            code = item.get("Code")
+            announcement_date_str = item.get("Date")  # YYYY-MM-DD format
+            
+            if not code or not announcement_date_str:
+                continue
+            
+            try:
+                announcement_date = date.fromisoformat(announcement_date_str)
+            except ValueError:
+                continue
+            
+            # Update Company record
+            company = db.query(Company).filter(Company.ticker == code).first()
+            if company:
+                company.next_earnings_date = announcement_date
+                company.earnings_updated_at = now
+                updated_count += 1
+        
+        db.commit()
+        logger.info(f"[J-Quants] Earnings Sync Complete. Updated: {updated_count} companies")
+        return {"updated": updated_count}
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"[J-Quants] Earnings Sync Failed: {e}")
+        raise
+    finally:
+        db.close()
+

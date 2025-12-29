@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float, Text, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import create_engine, Column, Integer, String, Float, Text, DateTime, Date, ForeignKey, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 import os
@@ -37,6 +37,8 @@ class Company(Base):
     sector_17 = Column(String, nullable=True)
     sector_33 = Column(String, nullable=True)
     market = Column(String, nullable=True)
+    next_earnings_date = Column(Date, nullable=True)      # 次回決算発表予定日
+    earnings_updated_at = Column(DateTime, nullable=True) # 決算日更新日時
     last_sync_at = Column(DateTime, nullable=True)
     last_sync_error = Column(String, nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow)
