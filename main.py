@@ -1624,10 +1624,15 @@ async def search_edinet_company(
                         style="width: 100%; padding: 1rem; background: linear-gradient(135deg, #9333ea, #db2777); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s;"
                         hx-post="/api/ai/analyze"
                         hx-target="#ai-analysis-content"
-                        hx-vals='{{"ticker_code": "{code_only}"}}'>
+                        hx-vals='{{"ticker_code": "{code_only}"}}'
+                        hx-on:htmx:before-request="this.querySelector('span').innerText = '🤖 AI分析を生成中... (30~60秒)'; this.disabled = true; this.style.opacity = '0.8';"
+                        hx-on:htmx:after-request="this.querySelector('span').innerText = 'AIによる詳細分析を生成 (Gemini 2.0 Flash)'; this.disabled = false; this.style.opacity = '1';">
                         <span>AIによる詳細分析を生成 (Gemini 2.0 Flash)</span>
                     </button>
-                    <style>@keyframes spin {{ to {{ transform: rotate(360deg); }} }}</style>
+                    <style>
+                        @keyframes spin {{ to {{ transform: rotate(360deg); }} }}
+                        #ai-gen-btn-{code_only}:disabled {{ cursor: wait; }}
+                    </style>
                     <div id="ai-analysis-content" style="margin-top: 1rem; color: #e2e8f0; line-height: 1.7; font-size: 0.95rem;"></div>
                 </div>
             </div>
