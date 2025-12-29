@@ -1596,7 +1596,7 @@ async def api_edinet_search(
         user_id = current_user.id if current_user else None
         is_fav = False
         if user_id:
-            fav = db.query(Favorite).filter(Favorite.user_id == user_id, Favorite.ticker_code == ticker_code).first()
+            fav = db.query(UserFavorite).filter(UserFavorite.user_id == user_id, UserFavorite.ticker == ticker_code).first()
             if fav: is_fav = True
         db.close()
         
