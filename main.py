@@ -1129,6 +1129,60 @@ async def lookup_yahoo_finance(
                 </div>
                 """
 
+        # Earnings Info Section Logic
+        earnings_html = ""
+        if company_data and company_data.next_earnings_date:
+             earnings_date = company_data.next_earnings_date
+             earnings_date_str = earnings_date.strftime("%Y年%m月%d日")
+             
+             # Calculate days until
+             today = datetime.now().date()
+             delta = (earnings_date - today).days
+             
+             badge_color = "#64748b" # gray
+             days_until_str = "発表済み"
+             
+             if delta < 0:
+                 days_until_str = "発表済み"
+                 badge_color = "#64748b" # gray
+             elif delta == 0:
+                 days_until_str = "今日発表！"
+                 badge_color = "#f43f5e" # red
+             elif delta <= 7:
+                 days_until_str = f"あと{delta}日"
+                 badge_color = "#f43f5e" # red
+             elif delta <= 30:
+                 days_until_str = f"あと{delta}日"
+                 badge_color = "#f59e0b" # amber
+             else:
+                 days_until_str = f"あと{delta}日"
+                 badge_color = "#10b981" # green
+                 
+             earnings_html = f"""
+             <div id="earnings-section" class="section" hx-swap-oob="true" style="margin-top: 1rem; margin-bottom: 1rem;">
+                <div style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.25rem;">
+                    <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.1rem; color: var(--accent); display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                        <span>📅</span>
+                        <span>決算スケジュール</span>
+                    </h3>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: var(--text-dim); font-size: 0.9rem;">次回発表予定</span>
+                            <span style="color: var(--text-main); font-weight: 600;">{earnings_date_str}</span>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 0.75rem; text-align: center; margin-top: 0.5rem;">
+                             <div style="color: {badge_color}; font-size: 1.2rem; font-weight: 700;">
+                                {days_until_str}
+                             </div>
+                             <div style="font-size: 0.7rem; color: var(--text-dim); margin-top: 0.2rem;">
+                                J-Quants Earnings Calendar
+                             </div>
+                        </div>
+                    </div>
+                </div>
+             </div>
+             """
+
         # Build clean HTML response with cookie to remember last ticker
         html_content = f"""
             <!-- Stock Info Card -->
@@ -1410,6 +1464,9 @@ async def lookup_yahoo_finance(
 
             <!-- Clear cashflow section since we now show it inline -->
             <div id="cashflow-section" class="section" hx-swap-oob="true" style="display: none;"></div>
+
+            <!-- Earnings Info Section (OOB Swap) -->
+            {earnings_html}
 
             <!-- Discussion Board (OOB Swap) -->
             <div id="discussion-section" hx-swap-oob="true" style="display: block; margin-top: 1rem;">
