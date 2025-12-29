@@ -1905,8 +1905,8 @@ async def api_edinet_search(
         response = HTMLResponse(content=html_content)
         # Push the URL to browser history so it matches the OGP shareable link
         response.headers["HX-Push-Url"] = f"/edinet?code={clean_code}"
-        # Set cookie
-        response.set_cookie(key="last_edinet_query", value=company_name, max_age=86400*30)
+        # Set cookie (URL-encode to avoid encoding issues with Japanese characters)
+        response.set_cookie(key="last_edinet_query", value=quote(company_name), max_age=86400*30)
         return response
 
     except Exception as e:
