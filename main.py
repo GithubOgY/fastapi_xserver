@@ -917,15 +917,21 @@ async def lookup_yahoo_finance(
         yf_yield = info.get("dividendYield") or info.get("trailingAnnualDividendYield")
         
         if yf_yield is not None and yf_yield > 0:
-            # yfinance returns decimal format (0.0217 = 2.17%)
-            # Display as percentage by multiplying by 100
+            # yfinance usually returns decimal (0.0217 = 2.17%) -> *100 = 2.17
             dividend_yield = yf_yield * 100
         else:
-            # Fallback: 自前計算（年間配当額 / 株価）
+            # Fallback: Calculate manually
             if price and price > 0:
                 div_rate = info.get("dividendRate") or info.get("trailingAnnualDividendRate")
                 if div_rate and div_rate > 0:
                     dividend_yield = (div_rate / price) * 100
+        
+        # [HEURISTIC FIX]
+        # Calculate yield is abnormally high (e.g. > 20%), it's likely a scaling issue.
+        # User reported 0.62% showing as 62.000%, implying input was 0.62.
+        # If yield > 20%, we assume it should be divided by 100.
+        if dividend_yield is not None and dividend_yield > 20.0:
+            dividend_yield /= 100.0
 
         dividend_str = f"{dividend_yield:.2f}%" if dividend_yield is not None else "-"
         
