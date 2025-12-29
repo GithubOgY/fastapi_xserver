@@ -515,11 +515,18 @@ def extract_financial_data(xbrl_dir: str) -> Dict[str, Any]:
         text_data = {}
         
         # Text block mapping (Canonical Name -> Possible Tag Fragments)
+        # Comprehensive list of qualitative information from EDINET
         text_targets = {
+            "事業の内容": ["DescriptionOfBusinessTextBlock", "OverviewOfBusinessTextBlock"],
+            "経営方針・経営戦略": ["ManagementPolicyBusinessPolicyAndManagementStrategyTextBlock", "ManagementPolicyTextBlock"],
+            "経営者による分析": ["ManagementAnalysisOfFinancialPosition", "ManagementAnalysisOfFinancialPositionOperatingResultsAndCashFlowsTextBlock", "OverviewOfBusinessResultsTextBlock"],
             "対処すべき課題": ["IssuesToBeAddressedTextBlock"],
             "事業等のリスク": ["BusinessRisksTextBlock", "RiskManagementTextBlock", "RisksOfBusinessEtcTextBlock"],
-            "経営者による分析": ["ManagementAnalysisOfFinancialPosition", "ManagementAnalysisOfFinancialPositionOperatingResultsAndCashFlowsTextBlock", "OverviewOfBusinessResultsTextBlock"],
-            "研究開発活動": ["ResearchAndDevelopmentActivitiesTextBlock"]
+            "研究開発活動": ["ResearchAndDevelopmentActivitiesTextBlock"],
+            "設備投資の状況": ["OverviewOfCapitalExpendituresEtcTextBlock", "CapitalExpendituresTextBlock"],
+            "従業員の状況": ["InformationAboutEmployeesTextBlock", "EmployeesTextBlock"],
+            "コーポレートガバナンス": ["CorporateGovernanceTextBlock", "StatusOfCorporateGovernanceTextBlock"],
+            "サステナビリティ": ["SustainabilityInformationTextBlock", "SustainabilityTextBlock", "EnvironmentalConservationActivitiesTextBlock"]
         }
         
         # Try to find text blocks

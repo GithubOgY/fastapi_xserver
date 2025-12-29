@@ -1746,21 +1746,51 @@ async def search_edinet_company(
         website_url = result.get("website_url")
         formatted_normalized = format_financial_data(normalized)
         
-        # Qualitative Information Sections
+        # Qualitative Information Sections with Copy Button
         sections_html = ""
-        text_keys = ["経営者による分析", "対処すべき課題", "事業等のリスク", "研究開発活動"]
+        # Display order: Business overview -> Strategy -> Analysis -> Risks -> Challenges -> Operations
+        text_keys = [
+            "事業の内容",
+            "経営方針・経営戦略", 
+            "経営者による分析",
+            "事業等のリスク",
+            "対処すべき課題",
+            "研究開発活動",
+            "設備投資の状況",
+            "従業員の状況",
+            "コーポレートガバナンス",
+            "サステナビリティ"
+        ]
         
-        for key in text_keys:
+        for idx, key in enumerate(text_keys):
             content = text_data.get(key)
             if content:
-                # HTML for expandable section
+                section_id = f"edinet-text-{idx}"
+                copy_btn_id = f"copy-btn-{idx}"
+                # HTML for expandable section with copy button
+                # Escape content for safe embedding in data attribute
+                import html
+                escaped_content = html.escape(content)
+                
                 sections_html += f"""
                 <details class="mb-3 bg-gray-900/30 rounded-lg border border-gray-700/50 overflow-hidden">
                     <summary class="cursor-pointer p-4 bg-gray-800/50 hover:bg-gray-700/50 transition-colors font-medium text-gray-200 list-none flex items-center justify-between">
                         <span>{key}</span>
-                        <span class="text-gray-500 text-sm">クリックして展開</span>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <button 
+                                id="{copy_btn_id}"
+                                onclick="event.stopPropagation(); event.preventDefault(); copyToClipboard('{section_id}', '{copy_btn_id}');"
+                                class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded-md transition-colors flex items-center gap-1"
+                                title="クリップボードにコピー">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                                <span class="copy-btn-text">コピー</span>
+                            </button>
+                            <span class="text-gray-500 text-sm">クリックして展開</span>
+                        </div>
                     </summary>
-                    <div class="p-6 text-base text-gray-200 leading-loose border-t border-gray-700/50 bg-gray-900/50" style="white-space: pre-wrap; line-height: 2;">
+                    <div id="{section_id}" class="p-6 text-base text-gray-200 leading-loose border-t border-gray-700/50 bg-gray-900/50" style="white-space: pre-wrap; line-height: 2;">
                         {content}
                     </div>
                 </details>
@@ -1840,6 +1870,46 @@ async def search_edinet_company(
                 
                 {history_btn}
                 {ai_btn}
+
+                <!-- Hidden trigger to load history charts automatically -->
+                <div hx-get="/api/edinet/history/{sec_code}" 
+                     hx-trigger="load delay:500ms" 
+                     hx-swap="none">
+                </div>
+                
+                <!-- Copy to Clipboard JavaScript -->
+                <script>
+                    function copyToClipboard(sectionId, btnId) {{
+                        const content = document.getElementById(sectionId);
+                        const button = document.getElementById(btnId);
+                        const buttonText = button.querySelector('.copy-btn-text');
+                        
+                        if (!content) return;
+                        
+                        // Get text content
+                        const text = content.innerText || content.textContent;
+                        
+                        // Copy to clipboard
+                        navigator.clipboard.writeText(text).then(() => {{
+                            // Success feedback
+                            const originalText = buttonText.innerText;
+                            buttonText.innerText = 'コピー完了！';
+                            button.style.backgroundColor = '#10b981'; // green
+                            
+                            // Reset after 2 seconds
+                            setTimeout(() => {{
+                                buttonText.innerText = originalText;
+                                button.style.backgroundColor = '';
+                            }}, 2000);
+                        }}).catch(err => {{
+                            console.error('コピー失敗:', err);
+                            buttonText.innerText = 'エラー';
+                            setTimeout(() => {{
+                                buttonText.innerText = 'コピー';
+                            }}, 2000);
+                        }});
+                    }}
+                </script>
             </div>
         """)
         
