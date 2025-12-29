@@ -646,6 +646,87 @@ async def send_test_email(email: str = Form(...), current_user: User = Depends(g
             </div>
         """, status_code=500)
 
+@app.get("/api/market/upcoming-earnings")
+async def get_upcoming_earnings():
+    """
+    Get list of companies with upcoming earnings announcements (from DB).
+    """
+    db = SessionLocal()
+    try:
+        today = datetime.now().date()
+        # Get earnings from today onwards, limit 10
+        upcoming = db.query(Company).filter(
+            Company.next_earnings_date >= today
+        ).order_by(Company.next_earnings_date.asc()).limit(15).all()
+        
+        if not upcoming:
+            return HTMLResponse(content="""
+                <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1.5rem; text-align: center; color: var(--text-dim);">
+                    <p style="margin: 0;">直近の決算予定データはありません</p>
+                    <p style="font-size: 0.7rem; margin-top: 0.5rem;">※毎日19:00頃に翌営業日分が更新されます</p>
+                </div>
+            """)
+            
+        html = f"""
+        <div style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1rem;">
+            <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.1rem; color: var(--accent); display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                <span>📢</span>
+                <span>直近の決算発表</span>
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+        """
+        
+        for company in upcoming:
+            delta = (company.next_earnings_date - today).days
+            date_str = company.next_earnings_date.strftime("%m/%d")
+            
+            # Badge color
+            if delta == 0:
+                badge_bg = "rgba(244, 63, 94, 0.2)"
+                badge_color = "#f43f5e"
+                delta_text = "今日"
+            elif delta == 1:
+                badge_bg = "rgba(245, 158, 11, 0.2)"
+                badge_color = "#f59e0b"
+                delta_text = "明日"
+            else:
+                badge_bg = "rgba(16, 185, 129, 0.1)"
+                badge_color = "#10b981"
+                delta_text = f"あと{delta}日"
+                
+            html += f"""
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <div style="display: flex; flex-direction: column;">
+                    <span style="font-weight: 600; font-size: 0.9rem; color: #f8fafc;">{company.name}</span>
+                    <span style="font-size: 0.75rem; color: var(--text-dim);">
+                        {company.code_4digit} | {date_str}
+                    </span>
+                </div>
+                <span style="background: {badge_bg}; color: {badge_color}; font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 999px; font-weight: 600; white-space: nowrap;">
+                    {delta_text}
+                </span>
+            </div>
+            """
+            
+        html += """
+            </div>
+            <div style="text-align: right; margin-top: 1rem;">
+                <span style="font-size: 0.7rem; color: var(--text-dim);">J-Quants Calendar</span>
+            </div>
+        </div>
+        """
+        
+        return HTMLResponse(content=html)
+        
+    except Exception as e:
+        # Assuming logger is defined elsewhere, otherwise this would be an error
+        # import logging
+        # logger = logging.getLogger(__name__)
+        # logger.error(f"Upcoming earnings error: {e}")
+        return HTMLResponse(content=f"<div class='alert alert-error'>Error: {str(e)}</div>", status_code=500)
+    finally:
+        db.close()
+
 
 # --- Favorites API Endpoints ---
 @app.post("/api/favorites/add")
@@ -1159,28 +1240,20 @@ async def lookup_yahoo_finance(
                  badge_color = "#10b981" # green
                  
              earnings_html = f"""
-             <div id="earnings-section" class="section" hx-swap-oob="true" style="margin-top: 1rem; margin-bottom: 1rem;">
-                <div style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.25rem;">
-                    <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.1rem; color: var(--accent); display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
-                        <span>📅</span>
-                        <span>決算スケジュール</span>
-                    </h3>
-                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="color: var(--text-dim); font-size: 0.9rem;">次回発表予定</span>
-                            <span style="color: var(--text-main); font-weight: 600;">{earnings_date_str}</span>
-                        </div>
-                        <div style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 0.75rem; text-align: center; margin-top: 0.5rem;">
-                             <div style="color: {badge_color}; font-size: 1.2rem; font-weight: 700;">
-                                {days_until_str}
-                             </div>
-                             <div style="font-size: 0.7rem; color: var(--text-dim); margin-top: 0.2rem;">
-                                J-Quants Earnings Calendar
-                             </div>
+                <div style="margin-top: 1rem; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 0.75rem; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1.2rem;">📅</span>
+                        <div>
+                            <div style="font-size: 0.8rem; color: var(--text-dim);">次回決算発表</div>
+                            <div style="font-weight: 600; color: #f8fafc;">{earnings_date_str}</div>
                         </div>
                     </div>
+                    <div style="text-align: right;">
+                        <span style="background: {badge_color}; color: white; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600;">
+                            {days_until_str}
+                        </span>
+                    </div>
                 </div>
-             </div>
              """
 
         # Build clean HTML response with cookie to remember last ticker
@@ -1205,6 +1278,8 @@ async def lookup_yahoo_finance(
                         </a>
                     </div>
                 </div>
+                
+                {earnings_html}
                 
                 <!-- Key Metrics Grid -->
                 <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; margin-top: 1.25rem;">
