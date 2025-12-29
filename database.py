@@ -45,6 +45,22 @@ class User(Base):
     
     # Relationships
     comments = relationship("StockComment", back_populates="user")
+    profile = relationship("UserProfile", back_populates="user", uselist=False)
+
+class UserProfile(Base):
+    __tablename__ = "user_profiles"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True, index=True)
+    display_name = Column(String(50), nullable=True)
+    bio = Column(Text, nullable=True)
+    investment_style = Column(String(50), nullable=True) # e.g. "Value", "Growth", "DayTrader"
+    icon_emoji = Column(String(10), default="👤")
+    twitter_url = Column(String(200), nullable=True)
+    is_public = Column(Integer, default=0) # 0=Private, 1=Public
+    
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    user = relationship("User", back_populates="profile")
 
 class UserFavorite(Base):
     __tablename__ = "user_favorites"

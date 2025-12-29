@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% if profile %}
+    <title>{{ profile.display_name }} (@{{ user.username }}) - Stock Analyzer</title>
+    <meta property="og:title" content="{{ profile.display_name }}の投資プロフィール">
+    <meta property="og:description" content="{{ profile.bio or 'Stock Analyzerでの投資プロフィールです。' }}">
+    <meta name="twitter:card" content="summary">
+    {% else %}
+    <title>ユーザープロフィール - Stock Analyzer</title>
+    {% endif %}
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f172a;
+            min-height: 100vh;
+            color: #e2e8f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            background-image: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 50%);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .profile-card {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(16px);
+            border-radius: 24px;
+            padding: 3rem 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        .avatar {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            width: 120px;
+            height: 120px;
+            line-height: 120px;
+            border-radius: 50%;
+            margin: 0 auto 1.5rem auto;
+            border: 2px solid rgba(129, 140, 248, 0.3);
+        }
+
+        .name {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #f8fafc;
+            margin-bottom: 0.25rem;
+        }
+
+        .username {
+            color: #94a3b8;
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .tags {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            padding: 0.35rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .tag-style {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .tag-join {
+            background: rgba(148, 163, 184, 0.1);
+            color: #94a3b8;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .bio {
+            color: #cbps11;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: left;
+            white-space: pre-wrap;
+        }
+
+        .social-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #1DA1F2;
+            text-decoration: none;
+            background: rgba(29, 161, 242, 0.1);
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: 1px solid rgba(29, 161, 242, 0.2);
+        }
+
+        .social-link:hover {
+            background: rgba(29, 161, 242, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .favorites-section {
+            margin-top: 3rem;
+            text-align: left;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            color: #818cf8;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .favorites-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 1rem;
+        }
+
+        .favorite-card {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: block;
+        }
+
+        .favorite-card:hover {
+            background: rgba(129, 140, 248, 0.1);
+            border-color: rgba(129, 140, 248, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .ticker-code {
+            color: #f8fafc;
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .ticker-note {
+            color: #64748b;
+            font-size: 0.75rem;
+        }
+
+        .private-notice {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #94a3b8;
+        }
+
+        .home-link {
+            display: block;
+            margin-top: 2rem;
+            color: #64748b;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
+        .home-link:hover {
+            color: #e2e8f0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        {% if is_private %}
+        <div class="profile-card">
+            <div class="private-notice">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🔒</div>
+                <h2>非公開プロフィール</h2>
+                <p style="margin-top: 0.5rem;">このユーザーのプロフィールは公開されていません。</p>
+                <a href="/" class="home-link">トップページに戻る</a>
+            </div>
+        </div>
+        {% else %}
+        <div class="profile-card">
+            <div class="avatar">{{ profile.icon_emoji }}</div>
+            <h1 class="name">{{ profile.display_name }}</h1>
+            <div class="username">@{{ user.username }}</div>
+
+            <div class="tags">
+                {% if profile.investment_style %}
+                <span class="tag tag-style">📈 {{ profile.investment_style }}</span>
+                {% endif %}
+                <span class="tag tag-join">📅 {{ profile.created_at.strftime('%Y年%m月') }}から利用</span>
+            </div>
+
+            {% if profile.bio %}
+            <div class="bio">{{ profile.bio }}</div>
+            {% endif %}
+
+            {% if profile.twitter_url %}
+            <a href="{{ profile.twitter_url }}" target="_blank" class="social-link">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                    <path
+                        d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z">
+                    </path>
+                </svg>
+                X (Twitter)
+            </a>
+            {% endif %}
+
+            {% if favorites %}
+            <div class="favorites-section">
+                <div class="section-title">
+                    <span>⭐ お気に入り銘柄</span>
+                    <span style="font-size: 0.8rem; color: #64748b; font-weight: 400;">({{ favorites|length }}件)</span>
+                </div>
+                <div class="favorites-grid">
+                    {% for fav in favorites %}
+                    <!-- リンク先はダッシュボードへパラメータ付きで遷移（※ダッシュボード側の対応が必要） -->
+                    <!-- 今回はまだ未対応のため、Yahooファイナンスへ飛ばすか、単にダッシュボードへ飛ばす -->
+                    <a href="https://finance.yahoo.co.jp/quote/{{ fav.ticker }}" target="_blank" class="favorite-card">
+                        <div class="ticker-code">{{ fav.ticker }}</div>
+                        <div class="ticker-note">Yahoo!ファイナンス</div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <a href="/" class="home-link">Stock Analyzer トップへ</a>
+        </div>
+        {% endif %}
+    </div>
+</body>
+
+</html>

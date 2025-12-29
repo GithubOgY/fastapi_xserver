@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDINET 企業財務検索 | X-Stock Analyzer</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@500;700&display=swap"
+        rel="stylesheet">
+
+    <!-- OGP Tags for Social Sharing -->
+    <meta property="og:title" content="{{ og_title }}">
+    <meta property="og:description" content="{{ og_description }}">
+    <meta property="og:url" content="{{ og_url }}">
+    <meta property="og:type" content="article">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@XStockAnalyzer">
+    <!-- image is optional for now, sticking to summary card -->
+    <style>
+        :root,
+        [data-theme="dark"] {
+            --bg-gradient: radial-gradient(circle at top right, #1e1b4b, #0f172a);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --section-bg: rgba(255, 255, 255, 0.02);
+            --accent: #818cf8;
+            --accent-glow: rgba(129, 140, 248, 0.2);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --success: #10b981;
+            --danger: #f43f5e;
+        }
+
+        [data-theme="light"] {
+            --bg-gradient: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+            --glass-bg: rgba(255, 255, 255, 0.8);
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --section-bg: rgba(255, 255, 255, 0.9);
+            --accent: #6366f1;
+            --accent-glow: rgba(79, 70, 229, 0.2);
+            --text-main: #1e293b;
+            --text-dim: #64748b;
+            --success: #059669;
+            --danger: #dc2626;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            padding: 2rem;
+            transition: background 0.3s ease;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2rem;
+            background: linear-gradient(135deg, #818cf8, #c084fc);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+        }
+
+        .subtitle {
+            color: var(--text-dim);
+            margin-bottom: 0;
+            font-size: 1rem;
+        }
+
+        .section {
+            background: var(--section-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        button {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .htmx-indicator {
+            display: none;
+        }
+
+        .htmx-request .htmx-indicator {
+            display: inline-block;
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>EDINET 企業財務検索</h1>
+                <p class="subtitle">有価証券報告書から公式財務データを取得</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <a href="/dashboard" style="font-size: 0.9rem; color: var(--accent);">← ダッシュボードに戻る</a>
+                {% if user %}
+                <a href="/account" style="font-size: 0.9rem; color: var(--text-dim);">{{ user.username }}</a>
+                <a href="/logout" style="font-size: 0.9rem; color: var(--danger);">ログアウト</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- EDINET 企業検索セクション -->
+        <div class="section">
+            <h2
+                style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
+                🔍 企業名で検索
+            </h2>
+            <p style="text-align: center; color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1rem;">
+                企業名を入力して、EDINET から公式財務データを取得します
+            </p>
+            <form hx-post="/api/edinet/search" hx-target="#edinet-result" hx-swap="innerHTML"
+                hx-indicator="#edinet-spinner"
+                style="display: flex; gap: 0.5rem; margin-bottom: 1rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+                <input type="text" name="company_name" placeholder="企業名を入力（例: トヨタ自動車）"
+                    style="flex: 1; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.8rem 1rem; color: white; outline: none;">
+                <button type="submit"
+                    style="background: linear-gradient(135deg, #6366f1, #8b5cf6); white-space: nowrap;">
+                    <span>検索</span>
+                    <span id="edinet-spinner" class="htmx-indicator"
+                        style="display: inline-block; width: 14px; height: 14px; border: 2px solid white; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; margin-left: 0.5rem;"></span>
+                </button>
+            </form>
+            <div id="edinet-result" style="min-height: 100px;">
+                <p style="color: #64748b; text-align: center; font-size: 0.85rem;">
+                    企業名を入力して検索ボタンを押してください
+                </p>
+            </div>
+
+            <!-- HTMX OOB Targets -->
+            <div id="chart-section" class="section"></div>
+            <div id="table-section" class="section"></div>
+            <div id="cashflow-section" class="section"></div>
+            <div id="news-section" class="section"></div>
+        </div>
+
+        <!-- 使い方ガイド -->
+        <div class="section">
+            <h3 style="color: var(--accent); font-size: 1.1rem; margin-bottom: 1rem;">📚 EDINETとは？</h3>
+            <p style="color: var(--text-dim); font-size: 0.9rem; line-height: 1.6;">
+                EDINET（Electronic Disclosure for Investors' NETwork）は、金融庁が運営する
+                有価証券報告書等の開示書類に関する電子開示システムです。<br><br>
+                上場企業の正式な財務情報（売上高、営業利益、純利益、キャッシュフロー等）を
+                取得することができます。
+            </p>
+        </div>
+    </div>
+
+    <script>
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+        }
+        applyTheme(localStorage.getItem('theme') || 'dark');
+
+        // Auto-search from URL parameter or last query
+        document.addEventListener('DOMContentLoaded', function () {
+            // Check URL parameters first
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const name = urlParams.get('company_name');
+
+            // Priority: URL code > URL name > Server-side last_query
+            let query = code || name || '{{ last_query }}';
+
+            if (query && query.trim() !== '') {
+                const input = document.querySelector('input[name="company_name"]');
+                if (input) {
+                    input.value = query;
+                    // Trigger HTMX request
+                    // Use timeout to ensure HTMX is fully initialized
+                    setTimeout(() => {
+                        htmx.trigger(input.form, 'submit');
+                    }, 100);
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
