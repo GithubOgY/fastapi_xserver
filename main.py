@@ -1278,12 +1278,7 @@ async def lookup_yahoo_finance(
                 <div style="margin-top: 1rem; text-align: center;">
                     {fav_button}
                 </div>
-                <!-- Link to EDINET Page -->
-                <div style="margin-top: 1rem; text-align: center;">
-                    <a href="/edinet?code={code_input}" style="display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; padding: 0.8rem 1.5rem; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 0.95rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                         <span>📊</span> 詳細な財務分析を見る（EDINETページへ）
-                    </a>
-                </div>
+
             </div>
 
             <!-- Charts Section (OOB Swap) -->
