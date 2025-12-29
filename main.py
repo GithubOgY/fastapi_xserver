@@ -318,6 +318,8 @@ async def dashboard(request: Request,
 
 @app.get("/edinet", response_class=HTMLResponse)
 async def edinet_page(request: Request, 
+                      code: str = Query(None),
+                      db: Session = Depends(get_db),
                       current_user: User = Depends(get_current_user)):
     """EDINET enterprise financial search page"""
     if not current_user:
@@ -325,13 +327,35 @@ async def edinet_page(request: Request,
     
     # Read last EDINET search query from cookie
     last_query = request.cookies.get("last_edinet_query", "")
-    
+
+    # OGP Defaults
+    og_title = "EDINET 企業財務検索 | X-Stock Analyzer"
+    og_description = "有価証券報告書から公式財務データを取得し、詳細な分析を行います。"
+    og_url = str(request.url)
+
+    if code:
+        clean_code = code.replace(".T", "")
+        # Try to find name from DB (assuming 4 digit code match)
+        # We verify if clean_code is digits to avoid SQL errors or odd lookups
+        if clean_code.isdigit():
+             comp_obj = db.query(Company).filter(Company.ticker.like(f"{clean_code}%")).first()
+             if comp_obj:
+                 title_name = comp_obj.name
+             else:
+                 title_name = f"コード {clean_code}"
+             
+             og_title = f"{title_name} - 財務分析レポート | X-Stock Analyzer"
+             og_description = f"{title_name} の有価証券報告書に基づく詳細な財務指標、過去5年の業績推移、およびAIによる分析レポートを確認できます。"
+
     return templates.TemplateResponse(
         "edinet.html", 
         {
             "request": request, 
             "user": current_user,
-            "last_query": last_query
+            "last_query": last_query,
+            "og_title": og_title,
+            "og_description": og_description,
+            "og_url": og_url
         }
     )
 
@@ -1673,13 +1697,18 @@ async def get_stock_news(ticker_code: str):
         return HTMLResponse(content="<div class='text-gray-500 text-sm'>ニュースの取得中にエラーが発生しました</div>")
 
 @app.post("/api/edinet/search")
-async def api_edinet_search(company_name: Annotated[str, Form()] = "", current_user: User = Depends(get_current_user)):
+async def api_edinet_search(
+    request: Request,
+    company_name: Annotated[str, Form()] = "",
+    current_user: User = Depends(get_current_user)
+):
     try:
         from utils.edinet_enhanced import get_financial_history, search_company_reports, format_financial_data
         import pandas as pd
         import time
         import yfinance as yf
         import re
+        from urllib.parse import quote
         
         input_str = company_name.strip()
         if not input_str:
@@ -1761,6 +1790,26 @@ async def api_edinet_search(company_name: Annotated[str, Form()] = "", current_u
             style="background: {'var(--accent)' if is_fav else 'rgba(255,255,255,0.1)'}; border: 1px solid var(--accent); color: white; padding: 0.4rem 0.8rem; border-radius: 8px; cursor: pointer; font-size: 0.8rem;">
             {fav_icon} {fav_text}
         </button>
+        """
+
+        # --- Share Buttons HTML ---
+        base_url = str(request.base_url).rstrip("/")
+        share_url = f"{base_url}/edinet?code={clean_code}"
+        encoded_url = quote(share_url)
+        encoded_text = quote(f"{name} ({clean_code}) の財務分析レポート")
+        
+        share_buttons = f"""
+        <div style="display: flex; gap: 1rem; margin-top: 1rem; justify-content: flex-end;">
+            <a href="https://twitter.com/intent/tweet?text={encoded_text}&url={encoded_url}&hashtags=XStockAnalyzer" target="_blank" 
+            style="background: rgba(29, 161, 242, 0.1); border: 1px solid rgba(29, 161, 242, 0.3); color: #1DA1F2; text-decoration: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; transition: all 0.2s;">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></svg>
+            Xでシェア
+            </a>
+            <button onclick="navigator.clipboard.writeText('{share_url}').then(() => {{ this.innerHTML = '✅ コピーしました'; setTimeout(() => this.innerHTML = '🔗 リンクをコピー', 2000); }})"
+                style="background: rgba(148, 163, 184, 0.1); border: 1px solid rgba(148, 163, 184, 0.3); color: #94a3b8; padding: 0.4rem 0.8rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 0.5rem; transition: all 0.2s;">
+                🔗 リンクをコピー
+            </button>
+        </div>
         """
 
         # 3. Fetch EDINET History
@@ -1927,7 +1976,7 @@ async def api_edinet_search(company_name: Annotated[str, Form()] = "", current_u
         """
 
         # Construct Final Response
-        return HTMLResponse(content=f"""
+        html_content = f"""
             <div style="background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 1.5rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
                     <div>
@@ -1942,6 +1991,8 @@ async def api_edinet_search(company_name: Annotated[str, Form()] = "", current_u
                         {fav_button}
                     </div>
                 </div>
+                
+                {share_buttons}
                 
                 {ai_section}
                 
@@ -1974,29 +2025,22 @@ async def api_edinet_search(company_name: Annotated[str, Form()] = "", current_u
                 <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
                     📊 業績推移グラフ (EDINET)
                 </h2>
-                <div id="chart-container" style="min-height: 300px; position: relative; width: 100%;">
-                    {chart_html}
-                </div>
+                {chart_html}
             </div>
-
-            <!-- Financial Data Table -->
-            <div id="financial-data-section" class="section" hx-swap-oob="true">
-                <h1 style="font-family: 'Outfit', sans-serif; font-size: 2rem; margin: 0; background: linear-gradient(to right, #fff, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                    {name}
-                </h1>
-                 {f'<a href="{website}" target="_blank" style="display: inline-block; margin-top: 0.25rem; font-size: 0.8rem; color: #60a5fa; text-decoration: none; border-bottom: 1px dotted #60a5fa;">🌐 企業公式サイト</a>' if website else ''}
-                <div style="color: #94a3b8; font-family: monospace; font-size: 1rem; margin-top: 0.25rem;">
-                    {symbol}
-                </div>
-                <div style="overflow-x: auto; margin-top: 1rem;">
-                    <table>
+            
+            <div id="table-section" class="section" hx-swap-oob="true">
+                <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
+                    📋 財務データ一覧
+                </h2>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-family: 'Inter', sans-serif; font-size: 0.9rem;">
                         <thead>
-                            <tr>
-                                <th>決算期</th>
-                                <th>売上収益 (億円)</th>
-                                <th>営業利益 (億円)</th>
-                                <th>純利益 (億円)</th>
-                                <th>EPS (円)</th>
+                            <tr style="border-bottom: 2px solid rgba(255,255,255,0.1); text-align: right; color: #94a3b8;">
+                                <th style="padding: 1rem; text-align: left;">決算期</th>
+                                <th style="padding: 1rem;">売上収益 (億円)</th>
+                                <th style="padding: 1rem;">営業利益 (億円)</th>
+                                <th style="padding: 1rem;">純利益 (億円)</th>
+                                <th style="padding: 1rem;">EPS (円)</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -2005,7 +2049,7 @@ async def api_edinet_search(company_name: Annotated[str, Form()] = "", current_u
                     </table>
                 </div>
             </div>
-            
+
             <!-- Clear Cash Flow Section if any -->
             <div id="cashflow-section" class="section" hx-swap-oob="true">
                  <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; margin-bottom: 1.5rem; color: #818cf8; text-align: center;">
@@ -2024,7 +2068,14 @@ async def api_edinet_search(company_name: Annotated[str, Form()] = "", current_u
                     <div id="cashflow-container" style="margin-top: 1rem;"></div>
                 </div>
             </div>
-        """)
+        """
+        
+        response = HTMLResponse(content=html_content)
+        # Push the URL to browser history so it matches the OGP shareable link
+        response.headers["HX-Push-Url"] = f"/edinet?code={clean_code}"
+        # Set cookie
+        response.set_cookie(key="last_edinet_query", value=company_name, max_age=86400*30)
+        return response
 
     except Exception as e:
         logger.error(f"EDINET Search error for {company_name}: {e}")

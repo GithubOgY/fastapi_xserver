@@ -11,6 +11,15 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@500;700&display=swap"
         rel="stylesheet">
+
+    <!-- OGP Tags for Social Sharing -->
+    <meta property="og:title" content="{{ og_title }}">
+    <meta property="og:description" content="{{ og_description }}">
+    <meta property="og:url" content="{{ og_url }}">
+    <meta property="og:type" content="article">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@XStockAnalyzer">
+    <!-- image is optional for now, sticking to summary card -->
     <style>
         :root,
         [data-theme="dark"] {
@@ -172,6 +181,11 @@
                     企業名を入力して検索ボタンを押してください
                 </p>
             </div>
+
+            <!-- HTMX OOB Targets -->
+            <div id="chart-section" class="section"></div>
+            <div id="table-section" class="section"></div>
+            <div id="cashflow-section" class="section"></div>
         </div>
 
         <!-- 使い方ガイド -->
