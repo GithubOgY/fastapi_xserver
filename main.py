@@ -1420,7 +1420,9 @@ async def lookup_yahoo_finance(
             <div style="background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1)); border: 1px solid rgba(99,102,241,0.3); border-radius: 16px; padding: 1.5rem; margin-bottom: 1rem;">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
                     <div>
-                        <h3 style="font-size: 1.4rem; font-weight: 700; color: #f8fafc; margin: 0;">{name}</h3>
+                        <h3 style="font-size: 1.4rem; font-weight: 700; color: #f8fafc; margin: 0;">
+                            {'<a href="' + website + '" target="_blank" style="color: inherit; text-decoration: none; border-bottom: 1px dotted rgba(255,255,255,0.5); transition: all 0.2s;" onmouseover="this.style.color=\'#818cf8\'; this.style.borderColor=\'#818cf8\'" onmouseout="this.style.color=\'inherit\'; this.style.borderColor=\'rgba(255,255,255,0.5)\'">' + name + ' <span style="font-size: 1rem; vertical-align: middle; opacity: 0.7; margin-left: 0.2rem;">🔗</span></a>' if website else name}
+                        </h3>
                         <p style="color: #94a3b8; font-size: 0.9rem; margin: 0.25rem 0 0 0;">{symbol}</p>
                         {sector_html}
                     </div>
