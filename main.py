@@ -1682,8 +1682,21 @@ async def lookup_yahoo_finance(
                             throw new Error('API request failed: ' + response.status);
                         }}
                         
-                        const resultHtml = await response.text();
-                        resultContent.innerHTML = resultHtml;
+                        const rawMarkdown = await response.text();
+                        
+                        // Clean up any escaped newlines in the raw text
+                        let cleanMarkdown = rawMarkdown
+                            .replace(/\\n/g, '\n')
+                            .replace(/\\t/g, '\t')
+                            .replace(/\n{{3,}}/g, '\n\n');
+                        
+                        // Use marked.js to render markdown to HTML
+                        if (typeof marked !== 'undefined') {{
+                            resultContent.innerHTML = marked.parse(cleanMarkdown);
+                        }} else {{
+                            // Fallback: basic text display if marked not loaded
+                            resultContent.innerHTML = '<pre style="white-space: pre-wrap;">' + cleanMarkdown + '</pre>';
+                        }}
                         
                         // Success
                         btn.innerHTML = '✅ 分析完了';

@@ -666,19 +666,12 @@ Strong Buy / Buy / Hold / Sell / Strong Sell から選択し、根拠を3つ
             
             if response.text:
                 logger.info(f"Visual analysis completed for {ticker_code}")
-                import re
-                # Aggressive cleanup of escaped newlines (various forms)
+                # Return raw markdown - let frontend render with marked.js
+                # Just do basic cleanup
                 clean_text = response.text
-                # Handle literal \n sequences (as string)
-                clean_text = clean_text.replace('\\n', '\n')
-                clean_text = clean_text.replace('\\t', '\t')
-                # Handle cases where \n appears as literal backslash+n
-                clean_text = re.sub(r'\\n', '\n', clean_text)
-                # Reduce excessive consecutive newlines
-                clean_text = re.sub(r'\n{3,}', '\n\n', clean_text)
                 # Log first 200 chars for debugging
-                logger.debug(f"Clean text preview: {repr(clean_text[:200])}")
-                return markdown.markdown(clean_text, extensions=['extra', 'nl2br', 'tables'])
+                logger.debug(f"Raw response preview: {repr(clean_text[:200])}")
+                return clean_text  # Return raw markdown, not HTML
             else:
                 raise ValueError("Empty response from Gemini")
                 
@@ -701,14 +694,8 @@ Strong Buy / Buy / Hold / Sell / Strong Sell から選択し、根拠を3つ
             response = model.generate_content([prompt, image])
             
             if response.text:
-                import re
-                # Aggressive cleanup of escaped newlines
-                clean_text = response.text
-                clean_text = clean_text.replace('\\n', '\n')
-                clean_text = clean_text.replace('\\t', '\t')
-                clean_text = re.sub(r'\\n', '\n', clean_text)
-                clean_text = re.sub(r'\n{3,}', '\n\n', clean_text)
-                return markdown.markdown(clean_text, extensions=['extra', 'nl2br', 'tables'])
+                # Return raw markdown - let frontend render with marked.js
+                return response.text
             else:
                 raise ValueError("Empty response from Gemini")
         
