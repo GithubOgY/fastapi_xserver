@@ -708,6 +708,13 @@ def extract_financial_data(xbrl_dir: str) -> Dict[str, Any]:
              if isinstance(net_income, (int, float)) and isinstance(equity, (int, float)) and equity != 0:
                  norm["ROE"] = (net_income / equity) * 100
                  
+        # Calculate ROA
+        if "ROA" not in norm:
+             net_income = norm.get("当期純利益")
+             assets = norm.get("総資産")
+             if isinstance(net_income, (int, float)) and isinstance(assets, (int, float)) and assets != 0:
+                 norm["ROA"] = (net_income / assets) * 100
+                 
         # Format large numbers
         result["formatted_data"] = format_financial_data(result["raw_data"])
         

@@ -2426,14 +2426,26 @@ def _format_summary(normalized: dict) -> str:
         "EPS": "eps",
     }
     
-    for label, key in key_metrics.items():
-        val = normalized.get(key)
+    for label, _ in key_metrics.items():
+        val = normalized.get(label)
         if val is not None:
             if isinstance(val, (int, float)):
                 if abs(val) >= 100000000:  # 1億以上
                     lines.append(f"{label}: {val/100000000:.1f}億円")
-                elif isinstance(val, float) and val < 100:  # 割合っぽい
-                    lines.append(f"{label}: {val:.1f}%")
+                elif isinstance(val, float) and abs(val) < 10:  # 割合っぽい (e.g. 0.318) - changed condition to < 10 to catch single digit ratios
+                    # Note: formatted_data in extract uses < 100 condition.
+                    # Here we want to handle raw values.
+                    # Ratios in normalized_data are usually raw floats (0.15) or percentage strings ("15%")?
+                    # extract_financial_data sets them as raw values from XBRL.
+                    # If XBRL says 0.15, it's 0.15.
+                    if 0 < abs(val) < 1: # Decimal like 0.3
+                         lines.append(f"{label}: {val*100:.1f}%")
+                    elif 1 <= abs(val) < 100: # Percentage like 15.0? Or small number?
+                         # Difficulty: EPS is small number. ROE is small number.
+                         if label in ["ROE", "ROA", "自己資本比率", "配当性向"]:
+                              lines.append(f"{label}: {val:.1f}%")
+                         else:
+                              lines.append(f"{label}: {val}")
                 else:
                     lines.append(f"{label}: {val:,.0f}")
             else:
