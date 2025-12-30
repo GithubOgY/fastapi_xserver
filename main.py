@@ -1780,7 +1780,8 @@ async def search_edinet_company(
                             <button 
                                 id="{copy_btn_id}"
                                 onclick="event.stopPropagation(); event.preventDefault(); copyToClipboard('{section_id}', '{copy_btn_id}');"
-                                class="p-0 text-gray-500 hover:text-indigo-400 transition-colors"
+                                class="text-gray-500 hover:text-indigo-400 transition-colors"
+                                style="background: transparent; border: none; padding: 0; cursor: pointer;"
                                 title="クリップボードにコピー">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -1802,65 +1803,53 @@ async def search_edinet_company(
         if website_url:
             website_html = f'<a href="{website_url}" target="_blank" rel="noopener" class="text-blue-400 hover:text-blue-300 underline text-sm">企業サイト</a>'
 
-        # AI Analysis Buttons (3 specialized analyses)
+        # AI Analysis Buttons - Elegant Glassmorphism Design
         ai_btn = ""
         if sec_code:
             code_only = sec_code[:4]
+            cname = metadata.get('company_name', '').replace('"', '&quot;')
             ai_btn = f"""
-            <div style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1.5rem;">
-                <h4 style="font-size: 1.2rem; font-weight: bold; text-align: center; margin-bottom: 1rem; background: linear-gradient(to right, #c084fc, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-block; width: 100%;">
-                    🤖 AIアナリスト・レポート
-                </h4>
-                <p style="text-align: center; color: #94a3b8; font-size: 0.875rem; margin-bottom: 1rem;">専門特化型AIが3つの視点で分析します</p>
+            <div style="margin-top: 2rem; padding: 1.5rem; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border-radius: 16px; border: 1px solid rgba(99, 102, 241, 0.2);">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <span style="font-size: 1.25rem;">🤖</span>
+                    <h4 style="font-size: 1rem; font-weight: 600; color: #e2e8f0; margin: 0;">AI投資分析</h4>
+                </div>
+                <p style="text-align: center; color: #64748b; font-size: 0.75rem; margin-bottom: 1rem;">3つの専門視点で企業を評価</p>
                 <div id="ai-analysis-container">
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin-bottom: 1rem;">
-                        <button id="ai-financial-btn-{code_only}" 
-                            style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 0.875rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s;"
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center;">
+                        <button id="ai-fin-{code_only}" class="ai-btn ai-btn-blue"
+                            style="padding: 0.5rem 1rem; background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa; border-radius: 6px; font-weight: 500; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;"
                             hx-post="/api/ai/analyze-financial"
-                            hx-target="#ai-analysis-content"
-                            hx-vals='{{\"code\": \"{code_only}\", \"name\": \"{metadata.get('company_name')}\" }}'
-                            hx-on:htmx:before-request="this.querySelector('span').innerText = '⏳ 分析中...'; this.disabled = true; this.style.opacity = '0.6';"
-                            hx-on:htmx:after-request="this.querySelector('span').innerText = '財務健全性'; this.disabled = false; this.style.opacity = '1';">
-                            <span style="font-size: 1.2em;">💰</span>
-                            <span>財務健全性</span>
+                            hx-target="#ai-result"
+                            hx-vals='{{"code": "{code_only}", "name": "{cname}"}}'
+                            onclick="this.innerText='⏳ 分析中...';">
+                            💰 財務健全性
                         </button>
                         
-                        <button id="ai-business-btn-{code_only}" 
-                            style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 0.875rem; cursor: pointer; display: flex; align-items: center; justify-center; gap: 0.5rem; transition: all 0.2s;"
+                        <button id="ai-biz-{code_only}" class="ai-btn ai-btn-green"
+                            style="padding: 0.5rem 1rem; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; border-radius: 6px; font-weight: 500; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;"
                             hx-post="/api/ai/analyze-business"
-                            hx-target="#ai-analysis-content"
-                            hx-vals='{{\"code\": \"{code_only}\", \"name\": \"{metadata.get('company_name')}\" }}'
-                            hx-on:htmx:before-request="this.querySelector('span').innerText = '⏳ 分析中...'; this.disabled = true; this.style.opacity = '0.6';"
-                            hx-on:htmx:after-request="this.querySelector('span').innerText = '事業競争力'; this.disabled = false; this.style.opacity = '1';">
-                            <span style="font-size: 1.2em;">🚀</span>
-                            <span>事業競争力</span>
+                            hx-target="#ai-result"
+                            hx-vals='{{"code": "{code_only}", "name": "{cname}"}}'
+                            onclick="this.innerText='⏳ 分析中...';">
+                            🚀 事業競争力
                         </button>
-                        
-                        <button id="ai-risk-btn-{code_only}" 
-                            style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 0.875rem; cursor: pointer; display: flex; align-items: center; justify-center; gap: 0.5rem; transition: all 0.2s;"
+                        <button id="ai-rsk-{code_only}" class="ai-btn ai-btn-red"
+                            style="padding: 0.5rem 1rem; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; border-radius: 6px; font-weight: 500; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;"
                             hx-post="/api/ai/analyze-risk"
-                            hx-target="#ai-analysis-content"
-                            hx-vals='{{\"code\": \"{code_only}\", \"name\": \"{metadata.get('company_name')}\" }}'
-                            hx-on:htmx:before-request="this.querySelector('span').innerText = '⏳ 分析中...'; this.disabled = true; this.style.opacity = '0.6';"
-                            hx-on:htmx:after-request="this.querySelector('span').innerText = 'リスク・ガバナンス'; this.disabled = false; this.style.opacity = '1';">
-                            <span style="font-size: 1.2em;">⚠️</span>
-                            <span>リスク・ガバナンス</span>
+                            hx-target="#ai-result"
+                            hx-vals='{{"code": "{code_only}", "name": "{cname}"}}'
+                            onclick="this.innerText='⏳ 分析中...';">
+                            ⚠️ リスク分析
                         </button>
                     </div>
-                    
                     <style>
-                        #ai-financial-btn-{code_only}:hover, #ai-business-btn-{code_only}:hover, #ai-risk-btn-{code_only}:hover {{
-                            transform: translateY(-2px);
-                            box-shadow: 0 4px 12px rgb(0 0 0 / 0.3);
-                        }}
-                        #ai-financial-btn-{code_only}:disabled, #ai-business-btn-{code_only}:disabled, #ai-risk-btn-{code_only}:disabled {{ 
-                            cursor: wait; 
-                            transform: none;
-                        }}
+                        #ai-fin-{code_only}:hover {{ background: rgba(59, 130, 246, 0.2); }}
+                        #ai-biz-{code_only}:hover {{ background: rgba(16, 185, 129, 0.2); }}
+                        #ai-rsk-{code_only}:hover {{ background: rgba(239, 68, 68, 0.2); }}
                     </style>
-                    
-                    <div id="ai-analysis-content" style="margin-top: 1rem; padding: 1rem; background: rgba(31, 41, 55, 0.5); border-radius: 8px; color: #e2e8f0; line-height: 1.7; font-size: 0.95rem; min-height: 100px; display: flex; align-items: center; justify-center; color: #9ca3af;">
-                        👆 上のボタンをクリックして分析を開始してください
+                    <div id="ai-result" style="margin-top: 1rem; padding: 1rem; background: rgba(30, 41, 59, 0.4); border-radius: 8px; border: 1px solid rgba(71, 85, 105, 0.3); color: #94a3b8; line-height: 1.6; font-size: 0.875rem; min-height: 60px; text-align: center;">
+                        分析したい視点を選択してください
                     </div>
                 </div>
             </div>
