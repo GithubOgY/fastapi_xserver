@@ -1695,7 +1695,7 @@ async def lookup_yahoo_finance(
                         // Render markdown
                         let markdown = data.markdown || '';
                         // Unescape escaped characters for marked.js
-                        markdown = markdown.replace(/\\n/g, '\n').replace(/\\t/g, '\t');
+                        markdown = markdown.replace(/\\\\n/g, '\\n').replace(/\\\\t/g, '\\t');
                         
                         let html = '';
                         if (data.cached) {{
