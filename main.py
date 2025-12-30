@@ -467,10 +467,8 @@ async def filter_companies(
             scale_badge = f'<span class="text-[10px] px-1.5 py-0.5 rounded bg-{color}-500/10 text-{color}-400 border border-{color}-500/20">{text}</span>'
 
         # Link to EDINET analysis with auto-search params
-        # We need code_4digit for EDINET search API
-        # The edinet.html input takes company name, and existing JS handles 'company_name' query param
-        encoded_name = urllib.parse.quote(c.name)
-        link = f"/edinet?company_name={encoded_name}"
+        # Use code query param which is handled by edinet.html JS and search API
+        link = f"/edinet?code={c.code_4digit}"
         
         html += f"""
         <a href="{link}" class="company-card group">
@@ -1837,12 +1835,23 @@ async def search_edinet_company(
     try:
 
         
-        # Search for documents
-        docs = search_company_reports(company_name=company_name, doc_type="120", days_back=365)
+        # Determine search type: Code or Name
+        clean_query = company_name.strip().replace(".T", "").replace("Ｔ", "") # Handle wide chars too just in case
+        is_code = clean_query.isdigit()
         
-        if not docs:
-            # Try quarterly report
-            docs = search_company_reports(company_name=company_name, doc_type="140", days_back=180)
+        # Search for documents (Annual Report 120 first)
+        if is_code:
+            logger.info(f"Searching EDINET by code: {clean_query}")
+            # Ensure it's executed in threadpool for non-blocking
+            docs = await run_in_threadpool(search_company_reports, company_code=clean_query, doc_type="120", days_back=365)
+            if not docs:
+                docs = await run_in_threadpool(search_company_reports, company_code=clean_query, doc_type="140", days_back=180)
+        else:
+             logger.info(f"Searching EDINET by name: {company_name}")
+             docs = await run_in_threadpool(search_company_reports, company_name=company_name, doc_type="120", days_back=365)
+             if not docs:
+                # Try quarterly report
+                docs = await run_in_threadpool(search_company_reports, company_name=company_name, doc_type="140", days_back=180)
         
         if not docs:
             return HTMLResponse(content=f"""
