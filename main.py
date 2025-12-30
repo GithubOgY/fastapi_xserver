@@ -2014,7 +2014,9 @@ async def search_edinet_company(
                             hx-post="/api/ai/analyze-financial"
                             hx-target="#ai-result"
                             hx-vals='{{"code": "{code_only}", "name": "{cname}"}}'
-                            onclick="this.innerText='⏳ 分析中...';">
+                            data-original="💰 財務健全性"
+                            onclick="this.innerText='⏳ 分析中...';"
+                            hx-on::after-request="this.innerText=this.dataset.original">
                             💰 財務健全性
                         </button>
                         
@@ -2023,7 +2025,9 @@ async def search_edinet_company(
                             hx-post="/api/ai/analyze-business"
                             hx-target="#ai-result"
                             hx-vals='{{"code": "{code_only}", "name": "{cname}"}}'
-                            onclick="this.innerText='⏳ 分析中...';">
+                            data-original="🚀 事業競争力"
+                            onclick="this.innerText='⏳ 分析中...';"
+                            hx-on::after-request="this.innerText=this.dataset.original">
                             🚀 事業競争力
                         </button>
                         <button id="ai-rsk-{code_only}" class="ai-btn ai-btn-red"
@@ -2031,7 +2035,9 @@ async def search_edinet_company(
                             hx-post="/api/ai/analyze-risk"
                             hx-target="#ai-result"
                             hx-vals='{{"code": "{code_only}", "name": "{cname}"}}'
-                            onclick="this.innerText='⏳ 分析中...';">
+                            data-original="⚠️ リスク分析"
+                            onclick="this.innerText='⏳ 分析中...';"
+                            hx-on::after-request="this.innerText=this.dataset.original">
                             ⚠️ リスク分析
                         </button>
                     </div>
