@@ -27,6 +27,7 @@ def generate_with_fallback(prompt: str, api_key: str, preferred_model: str) -> s
     """Try to generate content with preferred model, fallback if not found"""
     models_to_try = [
         preferred_model, 
+        "gemini-2.0-flash-lite-preview-02-05", # 2.0 Flash Lite
         "gemini-1.5-flash", 
         "gemini-1.5-flash-latest", 
         "gemini-2.0-flash", 
@@ -38,37 +39,76 @@ def generate_with_fallback(prompt: str, api_key: str, preferred_model: str) -> s
     models_to_try = list(dict.fromkeys(models_to_try))
     
     last_error = None
-    import google.generativeai as genai
+    import google.generativeai as genai_legacy
 
     for model_name in models_to_try:
         try:
             logger.info(f"Attempting AI analysis with model: {model_name}")
-            model = genai.GenerativeModel(model_name)
+            
+            # Use new Google GenAI SDK for 2.5/Lite models
+            if "2.5" in model_name or "lite" in model_name:
+                try:
+                    from google import genai
+                    from google.genai import types
+                    
+                    client = genai.Client(api_key=api_key)
+                    
+                    # Construct simple prompt content
+                    contents = [
+                        types.Content(
+                            role="user",
+                            parts=[types.Part.from_text(text=prompt)],
+                        ),
+                    ]
+                    
+                    # Generate with config
+                    response = client.models.generate_content(
+                        model=model_name,
+                        contents=contents,
+                        config=types.GenerateContentConfig(
+                            temperature=0.7,
+                            max_output_tokens=4000,
+                        ),
+                    )
+                    
+                    if response.text:
+                        return response.text
+                    else:
+                        logger.warning(f"New SDK returned empty text for {model_name}")
+                        # Fallback to legacy loop or continue
+                        
+                except ImportError:
+                    logger.warning("google-genai not installed, trying legacy SDK")
+                except Exception as e_new:
+                    logger.warning(f"New SDK failed for {model_name}: {e_new}")
+                    # If this was a specific new model request, maybe legacy won't work either, 
+                    # but we can let the loop continue to other models.
+                    last_error = e_new
+                    continue
+
+            # Legacy SDK Fallback (or for standard models)
+            genai_legacy.configure(api_key=api_key)
+            model = genai_legacy.GenerativeModel(model_name)
             response = model.generate_content(
                 prompt,
-                generation_config=genai.types.GenerationConfig(
+                generation_config=genai_legacy.types.GenerationConfig(
                     candidate_count=1,
                     max_output_tokens=4000,
                     temperature=0.7,
                 )
             )
             return response.text
+            
         except Exception as e:
             logger.warning(f"Model {model_name} failed: {e}")
             last_error = e
             if "API key not valid" in str(e):
                 raise e # Don't retry invalid keys
-            
-            # If 404, let's try to list models for debugging once
-            if "not found" in str(e).lower() and model_name == models_to_try[-1]:
-                try:
-                    available_models = [m.name for m in genai.list_models()]
-                    logger.error(f"Available models for this key: {available_models}")
-                except Exception as list_err:
-                    logger.error(f"Failed to list models: {list_err}")
             continue
             
-    raise last_error
+    if last_error:
+        raise last_error
+    raise Exception("All models failed generation")
 
 def analyze_stock_with_ai(ticker_code: str, financial_context: Dict[str, Any], company_name: str = "") -> str:
     """
