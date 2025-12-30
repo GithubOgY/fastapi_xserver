@@ -674,7 +674,10 @@ Strong Buy / Buy / Hold / Sell / Strong Sell から選択し、根拠を3つ
             import google.generativeai as genai_legacy
             
             genai_legacy.configure(api_key=api_key)
-            model = genai_legacy.GenerativeModel(model_name)
+            # Use vision-capable model for image analysis
+            vision_model = "gemini-2.0-flash"  # Force vision-capable model
+            logger.info(f"Using vision model: {vision_model}")
+            model = genai_legacy.GenerativeModel(vision_model)
             
             # Create image object using PIL
             import io
