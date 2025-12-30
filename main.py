@@ -1606,8 +1606,13 @@ async def lookup_yahoo_finance(
                             backgroundColor: '#0f172a',
                             scale: 2,
                             useCORS: true,
-                            allowTaint: false,
-                            logging: false
+                            allowTaint: true,
+                            logging: false,
+                            onclone: (clonedDoc) => {{
+                                const el = clonedDoc.getElementById('charts-only');
+                                el.style.width = chartSection.offsetWidth + 'px';
+                                el.style.display = 'flex';
+                            }}
                         }});
                         
                         canvas.toBlob(async function(blob) {{
@@ -1738,13 +1743,25 @@ async def lookup_yahoo_finance(
                 
                 <!-- Chart Grid (responsive) -->
                 <style>
-                    .chart-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }}
-                    .chart-full-width {{ grid-column: 1 / -1; }}
-                    @media (max-width: 768px) {{ .chart-grid {{ grid-template-columns: 1fr; }} }}
+                    .chart-grid {{ 
+                        display: flex; 
+                        flex-wrap: wrap; 
+                        gap: 1rem; 
+                    }}
+                    .chart-item {{
+                        flex: 1 1 calc(50% - 0.5rem);
+                        min-width: 300px;
+                    }}
+                    .chart-full-width {{ 
+                        flex: 1 1 100%;
+                    }}
+                    @media (max-width: 768px) {{ 
+                        .chart-item {{ flex: 1 1 100%; }} 
+                    }}
                 </style>
                 <div id="charts-only" class="chart-grid">
                     <!-- Revenue/Profit Chart -->
-                    <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem; max-width: 100%; overflow: hidden;">
+                    <div class="chart-item" style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem; overflow: hidden;">
                         <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 0.75rem 0; text-align: center;">売上 / 営業利益</h4>
                         <div style="height: 220px; position: relative; width: 100%;">
                             <canvas id="{chart_id1}"></canvas>
@@ -1752,7 +1769,7 @@ async def lookup_yahoo_finance(
                     </div>
                     
                     <!-- Cash Flow Chart -->
-                    <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem; max-width: 100%; overflow: hidden;">
+                    <div class="chart-item" style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem; overflow: hidden;">
                         <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 0.75rem 0; text-align: center;">キャッシュフロー推移</h4>
                         <div style="height: 220px; position: relative; width: 100%;">
                             <canvas id="{chart_id2}"></canvas>
