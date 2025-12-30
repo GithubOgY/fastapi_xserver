@@ -19,7 +19,7 @@ import requests
 import urllib.parse
 from utils.edinet_enhanced import get_financial_history, format_financial_data, search_company_reports, process_document
 from utils.growth_analysis import analyze_growth_quality
-from utils.ai_analysis import analyze_stock_with_ai
+from utils.ai_analysis import analyze_stock_with_ai, analyze_financial_health, analyze_business_competitiveness, analyze_risk_governance
 
 # Load environment variables
 load_dotenv()
@@ -2271,6 +2271,127 @@ def api_ai_analyze(
         traceback.print_exc()
         return f"<div class='text-red-400'>AI分析中にエラーが発生しました: {str(e)}</div>"
 
+# Helper function for specialized AI analysis with caching
+def _run_specialized_analysis(
+    analysis_func, 
+    analysis_type: str, 
+    code: str, 
+    name: str, 
+    db: Session
+):
+    """Common logic for specialized AI analysis with caching"""
+    cache_days = 7
+    clean_code = code.replace(".T", "")
+    
+    # Check cache
+    cached = db.query(AIAnalysisCache).filter(
+        AIAnalysisCache.ticker_code == clean_code,
+        AIAnalysisCache.analysis_type == analysis_type,
+        AIAnalysisCache.expires_at > datetime.utcnow()
+    ).first()
+    
+    if cached:
+        logger.info(f"[AI Cache HIT] {clean_code}/{analysis_type}")
+        cache_date = cached.created_at.strftime("%Y-%m-%d %H:%M") if cached.created_at else ""
+        return f"""
+        <div style='margin-bottom: 0.5rem;'>
+            <span style='background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem;'>⚡ キャッシュ ({cache_date})</span>
+            <button onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.innerText).then(()=>alert('コピーしました'))" style="margin-left: 0.5rem; background: rgba(99,102,241,0.2); color: #818cf8; border: none; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; cursor: pointer;">📋 コピー</button>
+        </div>
+        <div>{cached.analysis_html}</div>
+        """
+    
+    # Generate new
+    logger.info(f"[AI Cache MISS] {clean_code}/{analysis_type} - generating")
+    
+    # Get financial context
+    financial_context = {}
+    history = get_financial_history(company_code=clean_code, years=1)
+    if history and len(history) > 0:
+        data = history[0]
+        financial_context = data.get("normalized_data", {})
+    
+    # Call the specific analysis function
+    result_html = analysis_func(clean_code, financial_context, name)
+    
+    # Save to cache
+    existing = db.query(AIAnalysisCache).filter(
+        AIAnalysisCache.ticker_code == clean_code,
+        AIAnalysisCache.analysis_type == analysis_type
+    ).first()
+    
+    if existing:
+        existing.analysis_html = result_html
+        existing.created_at = datetime.utcnow()
+        existing.expires_at = datetime.utcnow() + timedelta(days=cache_days)
+    else:
+        new_cache = AIAnalysisCache(
+            ticker_code=clean_code,
+            analysis_type=analysis_type,
+            analysis_html=result_html,
+            created_at=datetime.utcnow(),
+            expires_at=datetime.utcnow() + timedelta(days=cache_days)
+        )
+        db.add(new_cache)
+    db.commit()
+    logger.info(f"[AI Cache SAVED] {clean_code}/{analysis_type}")
+    
+    gen_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+    return f"""
+    <div style='margin-bottom: 0.5rem;'>
+        <span style='background: rgba(99, 102, 241, 0.2); color: #818cf8; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem;'>🆕 新規生成 ({gen_date})</span>
+        <button onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.innerText).then(()=>alert('コピーしました'))" style="margin-left: 0.5rem; background: rgba(99,102,241,0.2); color: #818cf8; border: none; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; cursor: pointer;">📋 コピー</button>
+    </div>
+    <div>{result_html}</div>
+    """
+
+@app.post("/api/ai/analyze-financial", response_class=HTMLResponse)
+def api_ai_analyze_financial(
+    code: str = Form(...),
+    name: str = Form(""),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """💰 Financial health analysis endpoint"""
+    if not current_user:
+        return "<div class='text-red-400'>ログインが必要です</div>"
+    try:
+        return _run_specialized_analysis(analyze_financial_health, "financial", code, name, db)
+    except Exception as e:
+        logger.error(f"Financial analysis error: {e}")
+        return f"<div class='text-red-400'>エラー: {str(e)}</div>"
+
+@app.post("/api/ai/analyze-business", response_class=HTMLResponse)
+def api_ai_analyze_business(
+    code: str = Form(...),
+    name: str = Form(""),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """🚀 Business competitiveness analysis endpoint"""
+    if not current_user:
+        return "<div class='text-red-400'>ログインが必要です</div>"
+    try:
+        return _run_specialized_analysis(analyze_business_competitiveness, "business", code, name, db)
+    except Exception as e:
+        logger.error(f"Business analysis error: {e}")
+        return f"<div class='text-red-400'>エラー: {str(e)}</div>"
+
+@app.post("/api/ai/analyze-risk", response_class=HTMLResponse)
+def api_ai_analyze_risk(
+    code: str = Form(...),
+    name: str = Form(""),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """⚠️ Risk & governance analysis endpoint"""
+    if not current_user:
+        return "<div class='text-red-400'>ログインが必要です</div>"
+    try:
+        return _run_specialized_analysis(analyze_risk_governance, "risk", code, name, db)
+    except Exception as e:
+        logger.error(f"Risk analysis error: {e}")
+        return f"<div class='text-red-400'>エラー: {str(e)}</div>"
 
 
 @app.get("/api/edinet/history/{code}")
