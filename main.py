@@ -1748,6 +1748,8 @@ async def search_edinet_company(
         
         # Qualitative Information Sections with Copy Button
         sections_html = ""
+        # Add instruction at the top
+        sections_html = '<p style="color: #64748b; font-size: 0.8rem; margin-bottom: 0.75rem;">▼ をクリックして展開（📋 でコピー）</p>'
         # Display order: Business overview -> Strategy -> Analysis -> Risks -> Challenges -> Operations
         text_keys = [
             "事業の内容",
@@ -1773,24 +1775,20 @@ async def search_edinet_company(
                 escaped_content = html.escape(content)
                 
                 sections_html += f"""
-                <details class="mb-3 bg-gray-900/30 rounded-lg border border-gray-700/50 overflow-hidden">
-                    <summary class="cursor-pointer p-4 bg-gray-800/50 hover:bg-gray-700/50 transition-colors font-medium text-gray-200 list-none flex items-center justify-between">
-                        <span>{key}</span>
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                            <button 
-                                id="{copy_btn_id}"
-                                onclick="event.stopPropagation(); event.preventDefault(); copyToClipboard('{section_id}', '{copy_btn_id}');"
-                                class="text-gray-500 hover:text-indigo-400 transition-colors"
-                                style="background: transparent; border: none; padding: 0; cursor: pointer;"
-                                title="クリップボードにコピー">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                </svg>
-                            </button>
-                            <span class="text-gray-500 text-sm">クリックして展開</span>
-                        </div>
+                <details class="mb-2 bg-gray-900/30 rounded-lg border border-gray-700/50 overflow-hidden">
+                    <summary class="cursor-pointer px-4 py-3 bg-gray-800/50 hover:bg-gray-700/50 transition-colors font-medium text-gray-200 list-none flex items-center justify-between">
+                        <span style="font-size: 0.9rem;">▶ {key}</span>
+                        <button 
+                            id="{copy_btn_id}"
+                            onclick="event.stopPropagation(); event.preventDefault(); copyToClipboard('{section_id}', '{copy_btn_id}');"
+                            style="background: transparent; border: none; padding: 4px; cursor: pointer; color: #64748b; display: flex; align-items: center;"
+                            title="クリップボードにコピー">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                        </button>
                     </summary>
-                    <div id="{section_id}" class="p-6 text-base text-gray-200 leading-loose border-t border-gray-700/50 bg-gray-900/50" style="white-space: pre-wrap; line-height: 2;">
+                    <div id="{section_id}" class="p-4 text-sm text-gray-200 leading-relaxed border-t border-gray-700/50 bg-gray-900/50" style="white-space: pre-wrap;">
                         {content}
                     </div>
                 </details>
