@@ -1737,7 +1737,8 @@ async def ai_policy(request: Request):
 @app.post("/api/edinet/search")
 async def search_edinet_company(
     company_name: str = Form(...),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
     """Search company financial data from EDINET (Latest)"""
     if not current_user:
@@ -1779,6 +1780,54 @@ async def search_edinet_company(
         text_data = result.get("text_data", {})
         website_url = result.get("website_url")
         formatted_normalized = format_financial_data(normalized)
+
+        # Fetch Sector & Scale Tag Badges
+        sector_badges_html = ""
+        try:
+            if sec_code:
+                # Handle 5-digit code (e.g. 72030 -> 7203)
+                clean_code = sec_code[:-1] if len(sec_code) == 5 and sec_code.endswith("0") else sec_code
+                
+                # Query DB
+                comp = db.query(Company).filter(Company.code_4digit == clean_code).first()
+                if comp:
+                    badges = []
+                    # Sector 33 (e.g. 食料品) - Blue badge
+                    if comp.sector_33:
+                         badges.append(f'<span class="px-2 py-0.5 rounded text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">{comp.sector_33}</span>')
+                    
+                    # Sector 17 (e.g. 食品) - Purple badge
+                    if comp.sector_17 and comp.sector_17 != comp.sector_33: # Avoid dup if same
+                        badges.append(f'<span class="px-2 py-0.5 rounded text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">{comp.sector_17}</span>')
+                    
+                    # Scale Category (e.g. TOPIX Mid400)
+                    if comp.scale_category:
+                         scale = comp.scale_category
+                         # Friendly Name Logic
+                         s_text = scale
+                         s_color = "gray" # Default
+                         
+                         if "Core30" in scale:
+                             s_text = "超大型 (Core30)"
+                             s_color = "red"
+                         elif "Large70" in scale:
+                             s_text = "大型 (Large70)"
+                             s_color = "orange"
+                         elif "Mid400" in scale:
+                             s_text = "中型 (Mid400)"
+                             s_color = "yellow"
+                         elif "Small" in scale:
+                             small_num = scale.replace("TOPIX Small", "").strip() 
+                             s_text = f"小型 ({small_num})"
+                             s_color = "emerald"
+                         
+                         badges.append(f'<span class="px-2 py-0.5 rounded text-xs font-medium bg-{s_color}-500/10 text-{s_color}-400 border border-{s_color}-500/20">{s_text}</span>')
+                    
+                    if badges:
+                        sector_badges_html = f'<div class="flex flex-wrap gap-2 mt-2">{"".join(badges)}</div>'
+
+        except Exception as e:
+            logger.error(f"Error fetching badges: {e}")
         
         # Qualitative Information Sections - Grid Layout
         sections_html = ""
@@ -1909,6 +1958,7 @@ async def search_edinet_company(
                             <span class="px-2 py-1 bg-gray-700 text-gray-300 text-xs font-mono rounded-md border border-gray-600">{sec_code}</span>
                             {website_html}
                         </div>
+                        {sector_badges_html}
                         <div class="flex items-center gap-2 mt-2 text-sm text-gray-400">
                             <span class="bg-gray-900/50 px-2 py-1 rounded">{metadata.get('document_type')}</span>
                             <span class="text-xs text-gray-500">提出: {metadata.get('submit_date')}</span>
