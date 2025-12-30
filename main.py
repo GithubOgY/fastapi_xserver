@@ -1405,25 +1405,25 @@ async def lookup_yahoo_finance(
                 
                 <!-- Key Metrics Grid -->
                 <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; margin-top: 1.25rem;">
-                    <div style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 10px; text-align: center;">
-                        <div style="color: #64748b; font-size: 0.7rem; margin-bottom: 0.25rem;">時価総額</div>
-                        <div style="color: #f8fafc; font-weight: 600; font-size: 0.95rem;">{market_cap_str}</div>
+                    <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px; text-align: center;">
+                        <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.3rem;">時価総額</div>
+                        <div style="color: #f8fafc; font-weight: 600; font-size: 1.2rem;">{market_cap_str}</div>
                     </div>
-                    <div style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 10px; text-align: center;">
-                        <div style="color: #64748b; font-size: 0.7rem; margin-bottom: 0.25rem;">PER</div>
-                        <div style="color: #f8fafc; font-weight: 600; font-size: 0.95rem;">{per if isinstance(per, str) else f'{per:.1f}'}</div>
+                    <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px; text-align: center;">
+                        <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.3rem;">PER</div>
+                        <div style="color: #f8fafc; font-weight: 600; font-size: 1.2rem;">{per if isinstance(per, str) else f'{per:.1f}'}</div>
                     </div>
-                    <div style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 10px; text-align: center;">
-                        <div style="color: #64748b; font-size: 0.7rem; margin-bottom: 0.25rem;">PBR</div>
-                        <div style="color: #f8fafc; font-weight: 600; font-size: 0.95rem;">{pbr if isinstance(pbr, str) else f'{pbr:.2f}'}</div>
+                    <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px; text-align: center;">
+                        <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.3rem;">PBR</div>
+                        <div style="color: #f8fafc; font-weight: 600; font-size: 1.2rem;">{pbr if isinstance(pbr, str) else f'{pbr:.2f}'}</div>
                     </div>
-                    <div style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 10px; text-align: center;">
-                        <div style="color: #64748b; font-size: 0.7rem; margin-bottom: 0.25rem;">配当利回り</div>
-                        <div style="color: #10b981; font-weight: 600; font-size: 0.95rem;">{dividend_str}</div>
+                    <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px; text-align: center;">
+                        <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.3rem;">配当利回り</div>
+                        <div style="color: #10b981; font-weight: 600; font-size: 1.2rem;">{dividend_str}</div>
                     </div>
-                    <div style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 10px; text-align: center;">
-                        <div style="color: #64748b; font-size: 0.7rem; margin-bottom: 0.25rem;">ROE</div>
-                        <div style="color: #818cf8; font-weight: 600; font-size: 0.95rem;">{roe_str}</div>
+                    <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px; text-align: center;">
+                        <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.3rem;">ROE</div>
+                        <div style="color: #818cf8; font-weight: 600; font-size: 1.2rem;">{roe_str}</div>
                     </div>
                 </div>
                 
