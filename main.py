@@ -1746,10 +1746,12 @@ async def search_edinet_company(
         website_url = result.get("website_url")
         formatted_normalized = format_financial_data(normalized)
         
-        # Qualitative Information Sections with Copy Button
+        # Qualitative Information Sections - Grid Layout
         sections_html = ""
         # Add instruction at the top
         sections_html = '<p style="color: #64748b; font-size: 0.8rem; margin-bottom: 0.75rem;">▼ をクリックして展開（📋 でコピー）</p>'
+        # Start Grid Container
+        sections_html += '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">'
         # Display order: Business overview -> Strategy -> Analysis -> Risks -> Challenges -> Operations
         text_keys = [
             "事業の内容",
@@ -1775,7 +1777,7 @@ async def search_edinet_company(
                 escaped_content = html.escape(content)
                 
                 sections_html += f"""
-                <details class="mb-2 bg-gray-900/30 rounded-lg border border-gray-700/50 overflow-hidden">
+                <details class="bg-gray-900/30 rounded-lg border border-gray-700/50 overflow-hidden" style="height: fit-content;">
                     <summary class="cursor-pointer px-4 py-3 bg-gray-800/50 hover:bg-gray-700/50 transition-colors font-medium text-gray-200 list-none flex items-center gap-3">
                         <span style="font-size: 0.9rem;">{key}</span>
                         <button 
@@ -1790,11 +1792,14 @@ async def search_edinet_company(
                             </svg>
                         </button>
                     </summary>
-                    <div id="{section_id}" class="p-4 text-sm text-gray-200 leading-relaxed border-t border-gray-700/50 bg-gray-900/50" style="white-space: pre-wrap;">
+                    <div id="{section_id}" class="p-4 text-sm text-gray-200 leading-relaxed border-t border-gray-700/50 bg-gray-900/50" style="white-space: pre-wrap; max-height: 400px; overflow-y: auto;">
                         {content}
                     </div>
                 </details>
                 """
+        
+        # Close Grid Container
+        sections_html += '</div>'
 
         history_btn = ""  # Disabled - removed the financial chart button
         
