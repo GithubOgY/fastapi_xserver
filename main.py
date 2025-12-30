@@ -1700,6 +1700,10 @@ async def get_stock_news(ticker_code: str, name: Optional[str] = Query(None)):
     except Exception as e:
         logger.error(f"News API error: {e}")
         return HTMLResponse(content="<div style='color: var(--text-dim); font-size: 0.8rem; text-align: center;'>ニュースの取得中に一時的なエラーが発生しました</div>")
+@app.get("/ai-policy")
+async def ai_policy(request: Request):
+    """Serve the AI policy page"""
+    return templates.TemplateResponse("ai_policy.html", {"request": request})
 
 @app.post("/api/edinet/search")
 async def search_edinet_company(
@@ -1857,6 +1861,10 @@ async def search_edinet_company(
                     <div id="ai-result" style="margin-top: 1rem; padding: 1rem; background: rgba(30, 41, 59, 0.4); border-radius: 8px; border: 1px solid rgba(71, 85, 105, 0.3); color: #94a3b8; line-height: 1.6; font-size: 0.875rem; min-height: 60px; text-align: left;">
                         分析したい視点を選択してください
                     </div>
+                    
+                    <a href="/ai-policy" target="_blank" style="display: block; text-align: right; margin-top: 0.5rem; color: #64748b; font-size: 0.7rem; text-decoration: underline; cursor: pointer;" onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#64748b'">
+                        AI生成コンテンツに関する免責事項
+                    </a>
                 </div>
             </div>
             """

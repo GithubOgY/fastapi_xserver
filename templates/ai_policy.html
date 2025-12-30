@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI活用コンテンツについて - XServer App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen bg-slate-900 text-slate-200 py-12 px-4 sm:px-6 lg:px-8">
+
+    <div class="max-w-3xl mx-auto bg-slate-800/50 backdrop-blur border border-slate-700 rounded-xl p-8 shadow-2xl">
+        <h1
+            class="text-2xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300 border-b border-slate-700 pb-4">
+            生成AIを活用したコンテンツについて
+        </h1>
+
+        <div class="space-y-8 text-sm leading-relaxed text-slate-300">
+            <p>
+                当サービスでは、企業の財務・非財務情報の分析および要約において、生成AI技術を活用したコンテンツを提供しています。
+                ご利用にあたっては、以下の点にご留意ください。
+            </p>
+
+            <section>
+                <h2 class="text-lg font-semibold text-slate-100 mb-3 flex items-center gap-2">
+                    <span class="w-1 h-6 bg-blue-500 rounded-full"></span>
+                    1. 利用条件
+                </h2>
+                <ul class="list-disc pl-5 space-y-2 marker:text-slate-500">
+                    <li>本機能は試験的に提供しているものであり、予告なく内容の変更、機能の停止または中止を行う場合があります。</li>
+                    <li>生成AIを利用して作成されたコンテンツ（要約、分析コメント等）には、その旨を表示するか、AI分析機能の一部であることを明示しています。</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2 class="text-lg font-semibold text-slate-100 mb-3 flex items-center gap-2">
+                    <span class="w-1 h-6 bg-emerald-500 rounded-full"></span>
+                    2. 情報の正確性について
+                </h2>
+                <ul class="list-disc pl-5 space-y-2 marker:text-slate-500">
+                    <li>当サービスのAI分析機能は、主に「EDINET上の財務数値や定性情報の要約・分析」を行うものです。</li>
+                    <li>生成AIの性質上、出力結果には事実誤認、計算の誤り、文脈の不正確な解釈（ハルシネーション）が含まれる可能性があります。</li>
+                    <li>元のデータ（有価証券報告書等）に訂正があった場合でも、出力結果に即座に反映されない場合があります。</li>
+                    <li>本システムが表示する情報は、必ず<strong
+                            class="text-white">EDINET（金融商品取引法に基づく有価証券報告書等の開示書類に関する電子開示システム）</strong>等の一次情報と併せてご参照ください。
+                    </li>
+                    <li>一部の銘柄やドキュメント形式によっては、正しく分析できない場合があります。</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2 class="text-lg font-semibold text-slate-100 mb-3 flex items-center gap-2">
+                    <span class="w-1 h-6 bg-yellow-500 rounded-full"></span>
+                    3. 投資に関する留意点
+                </h2>
+                <ul class="list-disc pl-5 space-y-2 marker:text-slate-500">
+                    <li>出力結果は、特定の金融商品等の取得、売却、保有等を勧誘・推奨するものや、投資助言を目的としたものではありません。</li>
+                    <li>投資に関する最終的な判断は、お客様ご自身の責任で行っていただきますようお願いいたします。</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2 class="text-lg font-semibold text-slate-100 mb-3 flex items-center gap-2">
+                    <span class="w-1 h-6 bg-red-500 rounded-full"></span>
+                    4. 免責事項
+                </h2>
+                <ul class="list-disc pl-5 space-y-2 marker:text-slate-500">
+                    <li>提供される内容について、当サービスはその信頼性、正確性、最新性、完全性、有効性、特定目的への適合性について一切保証しません。</li>
+                    <li>本コンテンツの利用に起因してお客様が何らかの損害を被ったとしても、当サービスは当該損害につき一切の責任を負わないものとします。</li>
+                    <li>出力結果を利用する際は、著作権法、金融商品取引法などの法令に違反しないようご注意ください。</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2 class="text-lg font-semibold text-slate-100 mb-3 flex items-center gap-2">
+                    <span class="w-1 h-6 bg-purple-500 rounded-full"></span>
+                    5. 利用している生成AIモデルについて
+                </h2>
+                <p class="mb-2">本コンテンツの生成には、以下の生成AIサービスを利用しています。</p>
+                <div class="bg-slate-900/50 p-4 rounded-lg border border-slate-700">
+                    <h3 class="font-medium text-white mb-2">Google Gemini (Gemini 1.5 Flash)</h3>
+                    <ul class="text-xs text-slate-400 space-y-1">
+                        <li>提供: Google LLC</li>
+                        <li>
+                            <a href="https://policies.google.com/terms/generative-ai" target="_blank"
+                                class="text-blue-400 hover:text-blue-300 hover:underline">
+                                Google Generative AI 追加利用規約
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://ai.google.dev/gemini-api/terms" target="_blank"
+                                class="text-blue-400 hover:text-blue-300 hover:underline">
+                                Gemini API 利用規約
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <p class="mt-2 text-xs text-slate-500">※利用するAIモデルは、性能向上のため予告なく変更される場合があります。</p>
+            </section>
+        </div>
+
+        <div class="mt-10 pt-6 border-t border-slate-700 text-center">
+            <button onclick="window.close()"
+                class="px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors text-sm">
+                閉じる
+            </button>
+        </div>
+    </div>
+
+</body>
+
+</html>
