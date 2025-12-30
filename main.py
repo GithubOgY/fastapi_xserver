@@ -1776,12 +1776,14 @@ async def search_edinet_company(
                 
                 sections_html += f"""
                 <details class="mb-2 bg-gray-900/30 rounded-lg border border-gray-700/50 overflow-hidden">
-                    <summary class="cursor-pointer px-4 py-3 bg-gray-800/50 hover:bg-gray-700/50 transition-colors font-medium text-gray-200 list-none flex items-center justify-between">
-                        <span style="font-size: 0.9rem;">▶ {key}</span>
+                    <summary class="cursor-pointer px-4 py-3 bg-gray-800/50 hover:bg-gray-700/50 transition-colors font-medium text-gray-200 list-none flex items-center gap-3">
+                        <span style="font-size: 0.9rem;">{key}</span>
                         <button 
                             id="{copy_btn_id}"
                             onclick="event.stopPropagation(); event.preventDefault(); copyToClipboard('{section_id}', '{copy_btn_id}');"
-                            style="background: transparent; border: none; padding: 4px; cursor: pointer; color: #64748b; display: flex; align-items: center;"
+                            style="background: transparent; border: none; padding: 2px; cursor: pointer; color: #64748b; display: flex; align-items: center; opacity: 0.7;"
+                            onmouseover="this.style.opacity='1'; this.style.color='#818cf8';"
+                            onmouseout="this.style.opacity='0.7'; this.style.color='#64748b';"
                             title="クリップボードにコピー">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
