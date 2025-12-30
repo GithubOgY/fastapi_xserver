@@ -1649,8 +1649,8 @@ async def lookup_yahoo_finance(
                         }}
                         console.log('html2canvas OK');
                         
-                        // Capture chart
-                        const chartSection = document.getElementById('chart-section');
+                        // Capture charts only (not the header or analysis result)
+                        const chartSection = document.getElementById('charts-only');
                         const canvas = await html2canvas(chartSection, {{
                             backgroundColor: '#0f172a',
                             scale: 1.5,
@@ -1756,6 +1756,57 @@ async def lookup_yahoo_finance(
                             <canvas id="{chart_id4}"></canvas>
                         </div>
                     </div>
+                    
+                    <!-- Growth & Quality Analysis (Moved from OOB) -->
+                    <div class="chart-full-width" style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem; max-width: 100%; overflow: hidden;">
+                        <h4 style="color: #10b981; font-size: 0.95rem; margin: 0 0 1rem 0; text-align: center; font-weight: 600;">🚀 成長性・クオリティ分析 (年率10%目標)</h4>
+                        
+                        <!-- Growth Charts & Scorecards (Copied Content) -->
+                        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+                            <!-- Growth vs Target Line Chart -->
+                            <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem;">
+                                <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 0.75rem 0; text-align: center;">売上高成長 vs 10%目標ライン</h4>
+                                <div style="height: 250px; position: relative;">
+                                    <canvas id="{chart_id3}"></canvas>
+                                </div>
+                                <p style="font-size: 0.7rem; color: #475569; margin-top: 0.5rem; text-align: center;">
+                                    ※点線は5年前(または開始点)からの年率10%成長のシミュレーション
+                                </p>
+                            </div>
+                            
+                            <!-- Growth Scorecards -->
+                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 1rem;">
+                                    <div style="color: #10b981; font-size: 0.75rem; font-weight: 600;">売上高 CAGR (3年)</div>
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: #f8fafc; margin-top: 0.25rem;">
+                                        {f'{growth_analysis["revenue_cagr_3y"]}%' if pd.notna(growth_analysis["revenue_cagr_3y"]) else '-'}
+                                    </div>
+                                    <div style="font-size: 0.7rem; color: {'#10b981' if growth_analysis['is_high_growth'] else '#64748b'}; margin-top: 0.25rem;">
+                                        {('✅ 10%目標達成' if growth_analysis['is_high_growth'] else '⚠️ 基準未達') if pd.notna(growth_analysis["revenue_cagr_3y"]) else 'データ不足'}
+                                    </div>
+                                </div>
+                                
+                                <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 1rem;">
+                                    <div style="color: #818cf8; font-size: 0.75rem; font-weight: 600;">EPS CAGR (3年)</div>
+                                    <div style="font-size: 1.5rem; font-weight: 700; color: #f8fafc; margin-top: 0.25rem;">
+                                        {f'{growth_analysis["eps_cagr_3y"]}%' if pd.notna(growth_analysis["eps_cagr_3y"]) else '-'}
+                                    </div>
+                                    <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 0.25rem;">
+                                        連続増収: {growth_analysis["consecutive_growth_years"]}年
+                                    </div>
+                                </div>
+
+                                <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 1rem;">
+                                    <div style="color: #f59e0b; font-size: 0.75rem; font-weight: 600;">利益率トレンド</div>
+                                    <div style="font-size: 1.1rem; font-weight: 700; color: #f8fafc; margin-top: 0.25rem; text-transform: capitalize;">
+                                        {growth_analysis["margin_trend"]}
+                                    </div>
+                                    <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 0.25rem;">
+                                        最新の収益安定性判定
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                 </div>
                 
                 <!-- Chart.js Scripts -->
@@ -1830,67 +1881,9 @@ async def lookup_yahoo_finance(
                             plugins: {{ legend: {{ labels: {{ color: '#94a3b8', font: {{ size: 10 }} }} }} }}
                         }}
                     }});
-                }})();
-                </script>
-            </div>
 
-            <!-- Growth & Quality Analysis (OOB Swap) -->
-            <div id="growth-analysis-section" class="section" hx-swap-oob="true" style="margin-top: 1rem;">
-                <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; margin-bottom: 1rem; color: #10b981; text-align: center;">
-                    🚀 成長性・クオリティ分析 (年率10%目標)
-                </h2>
-                
-                <!-- Growth Charts & Scorecards -->
-                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
-                    <!-- Growth vs Target Line Chart -->
-                    <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem;">
-                        <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 0.75rem 0; text-align: center;">売上高成長 vs 10%目標ライン</h4>
-                        <div style="height: 250px; position: relative;">
-                            <canvas id="{chart_id3}"></canvas>
-                        </div>
-                        <p style="font-size: 0.7rem; color: #475569; margin-top: 0.5rem; text-align: center;">
-                            ※点線は5年前(または開始点)からの年率10%成長のシミュレーション
-                        </p>
-                    </div>
-                    
-                    <!-- Growth Scorecards -->
-                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                        <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 1rem;">
-                            <div style="color: #10b981; font-size: 0.75rem; font-weight: 600;">売上高 CAGR (3年)</div>
-                            <div style="font-size: 1.5rem; font-weight: 700; color: #f8fafc; margin-top: 0.25rem;">
-                                {f'{growth_analysis["revenue_cagr_3y"]}%' if pd.notna(growth_analysis["revenue_cagr_3y"]) else '-'}
-                            </div>
-                            <div style="font-size: 0.7rem; color: {'#10b981' if growth_analysis['is_high_growth'] else '#64748b'}; margin-top: 0.25rem;">
-                                {('✅ 10%目標達成' if growth_analysis['is_high_growth'] else '⚠️ 基準未達') if pd.notna(growth_analysis["revenue_cagr_3y"]) else 'データ不足'}
-                            </div>
-                        </div>
-                        
-                        <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 1rem;">
-                            <div style="color: #818cf8; font-size: 0.75rem; font-weight: 600;">EPS CAGR (3年)</div>
-                            <div style="font-size: 1.5rem; font-weight: 700; color: #f8fafc; margin-top: 0.25rem;">
-                                {f'{growth_analysis["eps_cagr_3y"]}%' if pd.notna(growth_analysis["eps_cagr_3y"]) else '-'}
-                            </div>
-                            <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 0.25rem;">
-                                連続増収: {growth_analysis["consecutive_growth_years"]}年
-                            </div>
-                        </div>
-
-                        <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 1rem;">
-                            <div style="color: #f59e0b; font-size: 0.75rem; font-weight: 600;">利益率トレンド</div>
-                            <div style="font-size: 1.1rem; font-weight: 700; color: #f8fafc; margin-top: 0.25rem; text-transform: capitalize;">
-                                {growth_analysis["margin_trend"]}
-                            </div>
-                            <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 0.25rem;">
-                                最新の収益安定性判定
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <script>
-                (function() {{
-                    const ctx = document.getElementById('{chart_id3}').getContext('2d');
-                    new Chart(ctx, {{
+                    // Growth Chart (Chart 3)
+                    new Chart(document.getElementById('{chart_id3}').getContext('2d'), {{
                         type: 'bar',
                         data: {{
                             labels: {growth_labels_js},
@@ -1903,7 +1896,7 @@ async def lookup_yahoo_finance(
                                     borderWidth: 1
                                 }},
                                 {{
-                                    label: '10%成長目標ライン',
+                                    label: '10%成長目標',
                                     data: {growth_rev_target_js},
                                     type: 'line',
                                     borderColor: '#fbbf24',
@@ -1911,6 +1904,16 @@ async def lookup_yahoo_finance(
                                     borderWidth: 2,
                                     fill: false,
                                     pointRadius: 0
+                                }},
+                                {{
+                                    label: 'ROE',
+                                    data: {roe_data_js},
+                                    type: 'line',
+                                    borderColor: '#818cf8',
+                                    borderWidth: 2,
+                                    yAxisID: 'y1',
+                                    tension: 0.3,
+                                    pointRadius: 4
                                 }}
                             ]
                         }},
@@ -1923,6 +1926,12 @@ async def lookup_yahoo_finance(
                                     ticks: {{ color: '#64748b' }},
                                     title: {{ display: true, text: '億円', color: '#64748b' }}
                                 }},
+                                y1: {{ 
+                                    position: 'right', 
+                                    grid: {{ display: false }}, 
+                                    ticks: {{ color: '#818cf8' }}, 
+                                    title: {{ display: true, text: '% (ROE)', color: '#818cf8' }} 
+                                }},
                                 x: {{ grid: {{ display: false }}, ticks: {{ color: '#64748b' }} }}
                             }},
                             plugins: {{
@@ -1933,6 +1942,8 @@ async def lookup_yahoo_finance(
                 }})();
                 </script>
             </div>
+
+
 
             <!-- News Section (OOB Swap) -->
             <div id="news-section" class="section" hx-swap-oob="true" style="margin-top: 2rem;">
