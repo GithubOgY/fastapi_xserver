@@ -49,7 +49,22 @@ if not logger.handlers:
 
 logging.getLogger("uvicorn.access").addHandler(logging.FileHandler(f"{LOG_DIR}/app.log"))
 
+from fastapi.staticfiles import StaticFiles
+from starlette.concurrency import run_in_threadpool
+from utils.jquants_api import sync_companies_to_db
+import asyncio
+
 app = FastAPI()
+
+async def background_sync_jquants():
+    """Run J-Quants sync in background"""
+    logger.info("[Startup] Starting J-Quants data sync to populate scale categories...")
+    try:
+        # Run synchronous function in thread pool
+        result = await run_in_threadpool(sync_companies_to_db)
+        logger.info(f"[Startup] J-Quants sync finished. Result: {result}")
+    except Exception as e:
+        logger.error(f"[Startup] J-Quants sync failed: {e}")
 
 @app.on_event("startup")
 async def startup_event():
@@ -79,9 +94,11 @@ async def startup_event():
             
     except Exception as e:
         logger.warning(f"[Migration] Startup migration check failed: {e}")
+    
+    # Trigger background sync to ensure data is populated
+    asyncio.create_task(background_sync_jquants())
 
 # Mount static files for PWA support
-from fastapi.staticfiles import StaticFiles
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # --- Middleware for Request Logging ---
