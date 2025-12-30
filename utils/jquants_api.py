@@ -71,6 +71,7 @@ def sync_companies_to_db():
              name = item.get("CoName")
              sector_17 = item.get("S17Nm")
              sector_33 = item.get("S33Nm")
+             scale_category = item.get("ScaleCat")
              market = item.get("MktNm")
              
              if not ticker:
@@ -85,6 +86,7 @@ def sync_companies_to_db():
                  existing.code_4digit = code_4digit
                  existing.sector_17 = sector_17
                  existing.sector_33 = sector_33
+                 existing.scale_category = scale_category
                  existing.market = market
                  existing.updated_at = datetime.utcnow()
                  updated_count += 1
@@ -95,6 +97,7 @@ def sync_companies_to_db():
                      name=name,
                      sector_17=sector_17,
                      sector_33=sector_33,
+                     scale_category=scale_category,
                      market=market,
                      last_sync_at=datetime.utcnow(),
                      updated_at=datetime.utcnow()

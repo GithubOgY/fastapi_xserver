@@ -36,6 +36,7 @@ class Company(Base):
     name = Column(String, index=True)
     sector_17 = Column(String, nullable=True)
     sector_33 = Column(String, nullable=True)
+    scale_category = Column(String, nullable=True) # J-Quants ScaleCat (Create/Update needed in DB)
     market = Column(String, nullable=True)
     next_earnings_date = Column(Date, nullable=True)      # 次回決算発表予定日
     earnings_updated_at = Column(DateTime, nullable=True) # 決算日更新日時
