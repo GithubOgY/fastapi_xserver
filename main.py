@@ -19,7 +19,7 @@ import requests
 import urllib.parse
 from utils.edinet_enhanced import get_financial_history, format_financial_data, search_company_reports, process_document
 from utils.growth_analysis import analyze_growth_quality
-from utils.ai_analysis import analyze_stock_with_ai, analyze_financial_health, analyze_business_competitiveness, analyze_risk_governance
+from utils.ai_analysis import analyze_stock_with_ai, analyze_financial_health, analyze_business_competitiveness, analyze_risk_governance, analyze_dashboard_image
 
 # Load environment variables
 load_dotenv()
@@ -1536,35 +1536,43 @@ async def lookup_yahoo_finance(
                     <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; margin: 0; color: #818cf8;">
                         📊 財務パフォーマンス
                     </h2>
-                    <button id="capture-dashboard-btn" onclick="captureDashboard()" 
-                        style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 8px; cursor: pointer; font-size: 0.75rem; display: flex; align-items: center; gap: 0.3rem; transition: all 0.2s;">
-                        📋 グラフをコピー
-                    </button>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button id="capture-dashboard-btn" onclick="captureDashboard()" 
+                            style="background: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.4); padding: 0.4rem 0.6rem; border-radius: 8px; cursor: pointer; font-size: 0.7rem; display: flex; align-items: center; gap: 0.3rem; transition: all 0.2s;">
+                            📋 コピー
+                        </button>
+                        <button id="visual-analyze-btn" onclick="visualAnalyzeDashboard()" 
+                            style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 8px; cursor: pointer; font-size: 0.7rem; display: flex; align-items: center; gap: 0.3rem; transition: all 0.2s; font-weight: 500;">
+                            🤖 AI画像診断
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Visual Analysis Result Container -->
+                <div id="visual-analysis-result" style="display: none; margin-bottom: 1rem; padding: 1rem; background: rgba(30, 41, 59, 0.6); border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.3);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <h4 style="margin: 0; color: #a5b4fc; font-size: 0.9rem;">🤖 AI画像診断レポート</h4>
+                        <button onclick="document.getElementById('visual-analysis-result').style.display='none'" 
+                            style="background: none; border: none; color: #64748b; cursor: pointer; font-size: 1rem;">✕</button>
+                    </div>
+                    <div id="visual-analysis-content" style="color: #e2e8f0; font-size: 0.85rem; line-height: 1.6;"></div>
                 </div>
                 
                 <script>
+                // Clipboard copy function
                 async function captureDashboard() {{
                     const btn = document.getElementById('capture-dashboard-btn');
                     const originalText = btn.innerHTML;
                     
                     try {{
-                        // Show loading state
                         btn.disabled = true;
-                        btn.innerHTML = '⏳ 処理中...';
-                        btn.style.opacity = '0.7';
+                        btn.innerHTML = '⏳';
                         
-                        // Check if html2canvas is loaded
                         if (typeof html2canvas === 'undefined') {{
-                            throw new Error('html2canvas ライブラリが読み込まれていません');
+                            throw new Error('html2canvas not loaded');
                         }}
                         
-                        // Get the chart section element
                         const chartSection = document.getElementById('chart-section');
-                        if (!chartSection) {{
-                            throw new Error('チャートセクションが見つかりません');
-                        }}
-                        
-                        // Capture with options
                         const canvas = await html2canvas(chartSection, {{
                             backgroundColor: '#0f172a',
                             scale: 2,
@@ -1575,48 +1583,102 @@ async def lookup_yahoo_finance(
                             windowWidth: 1280
                         }});
                         
-                        // Copy to clipboard using Clipboard API
                         canvas.toBlob(async function(blob) {{
                             try {{
-                                // Use Clipboard API to copy image
                                 const clipboardItem = new ClipboardItem({{ 'image/png': blob }});
                                 await navigator.clipboard.write([clipboardItem]);
-                                
-                                // Success feedback
-                                btn.innerHTML = '✅ クリップボードにコピー!';
-                                btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
-                                setTimeout(() => {{
-                                    btn.innerHTML = originalText;
-                                    btn.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)';
-                                    btn.disabled = false;
-                                    btn.style.opacity = '1';
-                                }}, 2000);
-                            }} catch (clipboardError) {{
-                                // Fallback: If clipboard fails, offer download instead
-                                console.warn('Clipboard failed, falling back to download:', clipboardError);
+                                btn.innerHTML = '✅';
+                                setTimeout(() => {{ btn.innerHTML = originalText; btn.disabled = false; }}, 1500);
+                            }} catch (e) {{
+                                // Fallback to download
                                 const url = URL.createObjectURL(blob);
                                 const a = document.createElement('a');
                                 a.href = url;
-                                a.download = 'dashboard_' + new Date().toISOString().slice(0,10) + '.png';
-                                document.body.appendChild(a);
+                                a.download = 'dashboard.png';
                                 a.click();
-                                document.body.removeChild(a);
                                 URL.revokeObjectURL(url);
-                                
-                                btn.innerHTML = '📥 ダウンロード完了 (コピー非対応)';
-                                btn.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
-                                setTimeout(() => {{
-                                    btn.innerHTML = originalText;
-                                    btn.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)';
-                                    btn.disabled = false;
-                                    btn.style.opacity = '1';
-                                }}, 2500);
+                                btn.innerHTML = '📥';
+                                setTimeout(() => {{ btn.innerHTML = originalText; btn.disabled = false; }}, 1500);
                             }}
                         }}, 'image/png', 1.0);
                         
                     }} catch (error) {{
-                        console.error('Dashboard capture failed:', error);
-                        btn.innerHTML = '❌ エラー: ' + error.message.substring(0, 20);
+                        console.error('Capture failed:', error);
+                        btn.innerHTML = '❌';
+                        setTimeout(() => {{ btn.innerHTML = originalText; btn.disabled = false; }}, 2000);
+                    }}
+                }}
+                
+                // AI Visual Analysis function
+                async function visualAnalyzeDashboard() {{
+                    const btn = document.getElementById('visual-analyze-btn');
+                    const resultContainer = document.getElementById('visual-analysis-result');
+                    const resultContent = document.getElementById('visual-analysis-content');
+                    const originalText = btn.innerHTML;
+                    
+                    try {{
+                        btn.disabled = true;
+                        btn.innerHTML = '⏳ 分析中...';
+                        btn.style.opacity = '0.7';
+                        
+                        // Show loading in result container
+                        resultContainer.style.display = 'block';
+                        resultContent.innerHTML = '<div style="text-align: center; padding: 2rem;"><div style="font-size: 2rem; animation: pulse 1s infinite;">🤖</div><p style="color: #94a3b8; margin-top: 0.5rem;">AIがグラフを分析中...</p></div>';
+                        
+                        if (typeof html2canvas === 'undefined') {{
+                            throw new Error('html2canvas ライブラリが読み込まれていません');
+                        }}
+                        
+                        const chartSection = document.getElementById('chart-section');
+                        const canvas = await html2canvas(chartSection, {{
+                            backgroundColor: '#0f172a',
+                            scale: 1.5,
+                            useCORS: true,
+                            allowTaint: false,
+                            logging: false,
+                            width: Math.min(chartSection.scrollWidth, 1280),
+                            windowWidth: 1280
+                        }});
+                        
+                        // Convert to base64
+                        const imageData = canvas.toDataURL('image/png');
+                        
+                        // Get ticker code from URL or page
+                        const tickerCode = '{code_only}';
+                        const companyName = document.querySelector('h3')?.innerText || '';
+                        
+                        // Send to backend
+                        const formData = new FormData();
+                        formData.append('image_data', imageData);
+                        formData.append('ticker_code', tickerCode);
+                        formData.append('company_name', companyName);
+                        
+                        const response = await fetch('/api/ai/visual-analyze', {{
+                            method: 'POST',
+                            body: formData
+                        }});
+                        
+                        if (!response.ok) {{
+                            throw new Error('API request failed: ' + response.status);
+                        }}
+                        
+                        const resultHtml = await response.text();
+                        resultContent.innerHTML = resultHtml;
+                        
+                        // Success
+                        btn.innerHTML = '✅ 分析完了';
+                        btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                        setTimeout(() => {{
+                            btn.innerHTML = originalText;
+                            btn.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)';
+                            btn.disabled = false;
+                            btn.style.opacity = '1';
+                        }}, 2000);
+                        
+                    }} catch (error) {{
+                        console.error('Visual analysis failed:', error);
+                        resultContent.innerHTML = '<p style="color: #fb7185;">エラー: ' + error.message + '</p>';
+                        btn.innerHTML = '❌ エラー';
                         btn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
                         setTimeout(() => {{
                             btn.innerHTML = originalText;
@@ -2687,6 +2749,37 @@ def api_ai_analyze_risk(
     except Exception as e:
         logger.error(f"Risk analysis error: {e}")
         return f"<div class='text-red-400'>エラー: {str(e)}</div>"
+
+
+@app.post("/api/ai/visual-analyze")
+async def api_ai_visual_analyze(
+    image_data: str = Form(...),
+    ticker_code: str = Form(...),
+    company_name: str = Form(""),
+    current_user: User = Depends(get_current_user)
+):
+    """📊 Visual dashboard analysis using Gemini multimodal"""
+    if not current_user:
+        return "<div class='text-red-400'>ログインが必要です</div>"
+    
+    try:
+        logger.info(f"Visual analysis request for {ticker_code}")
+        
+        # Validate image data exists
+        if not image_data or len(image_data) < 100:
+            return "<div class='text-red-400'>画像データが無効です</div>"
+        
+        # Call the visual analysis function
+        result_html = analyze_dashboard_image(image_data, ticker_code, company_name)
+        
+        return result_html
+        
+    except Exception as e:
+        logger.error(f"Visual analysis error: {e}")
+        import traceback
+        traceback.print_exc()
+        return f"<div class='text-red-400'>画像分析エラー: {str(e)}</div>"
+
 
 
 @app.get("/api/edinet/history/{code}")

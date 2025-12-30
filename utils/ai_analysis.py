@@ -543,3 +543,154 @@ def analyze_risk_governance(ticker_code: str, financial_context: Dict[str, Any],
     except Exception as e:
         logger.error(f"Risk analysis failed: {e}")
         return f"<p class='error' style='color: #fb7185;'>リスク分析エラー: {str(e)}</p>"
+
+
+def analyze_dashboard_image(image_base64: str, ticker_code: str, company_name: str = "") -> str:
+    """
+    Analyze dashboard image using Gemini multimodal API.
+    
+    Args:
+        image_base64: Base64 encoded PNG image of the dashboard
+        ticker_code: Stock ticker code
+        company_name: Company name for context
+        
+    Returns:
+        HTML formatted analysis result
+    """
+    import base64
+    
+    # Clean base64 string (remove data URL prefix if present)
+    if "," in image_base64:
+        image_base64 = image_base64.split(",")[1]
+    
+    # Validate base64 data
+    try:
+        image_bytes = base64.b64decode(image_base64)
+        if len(image_bytes) < 1000:  # Less than 1KB - likely invalid
+            raise ValueError("Image data too small")
+    except Exception as e:
+        logger.error(f"Invalid image data: {e}")
+        return f"<p class='error' style='color: #fb7185;'>画像データが無効です: {str(e)}</p>"
+    
+    prompt = f"""あなたは機関投資家向けの株式アナリストです。20年以上の経験を持ち、率直で辛辣な分析で知られています。「買ってはいけない銘柄」を見抜くことに定評があります。
+
+## 分析対象
+銘柄コード: {ticker_code}
+企業名: {company_name if company_name else '不明'}
+
+添付された財務ダッシュボード画像を分析してください。
+
+## ダッシュボードの構成
+1. 売上/営業利益グラフ（棒グラフ）+ 営業利益率（折れ線）
+2. キャッシュフロー推移（営業CF/投資CF/財務CF/フリーCF/ネットCF）
+3. 財務健全性（有利子負債/ROE/ROA）
+4. 成長性分析（売上CAGR/EPS CAGR/10%目標ライン比較）
+
+## 評価してほしい項目
+
+### 1. 総合スコア（100点満点）
+- 点数と一言評価
+
+### 2. 5つの重要指標の診断
+| 指標 | 状態 | 判定（◎/○/△/✗） |
+|------|------|------------------|
+| 収益性 | | |
+| 成長性 | | |
+| 財務健全性 | | |
+| キャッシュ創出力 | | |
+| 資本効率 | | |
+
+### 3. 最大のリスク（1つ）
+最も致命的な問題点を指摘
+
+### 4. 最大の強み（1つ）
+もしあれば
+
+### 5. 投資判断
+Strong Buy / Buy / Hold / Sell / Strong Sell から選択し、根拠を3つ
+
+### 6. この銘柄を一言で表現すると？
+例：「借金漬けの成長幻想」「優待だけが取り柄の老舗」など
+
+## 注意事項
+- お世辞は不要。問題点は遠慮なく指摘すること
+- 数字の読み取りは正確に
+- 業界特有の事情は考慮しつつも、投資家視点で評価
+- 曖昧な表現は避け、明確な判断を示すこと
+"""
+
+    try:
+        api_key = os.getenv("GEMINI_API_KEY")
+        model_name = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+        
+        if not api_key or "your-gemini-api-key" in api_key:
+            return "<p class='error' style='color: #fb7185;'>GEMINI_API_KEYが設定されていません</p>"
+        
+        logger.info(f"Visual analysis for {ticker_code} using model: {model_name}")
+        
+        # Use the new google-genai SDK for multimodal
+        try:
+            from google import genai
+            from google.genai import types
+            
+            client = genai.Client(api_key=api_key)
+            
+            # Create image part from bytes
+            image_part = types.Part.from_bytes(
+                data=image_bytes,
+                mime_type="image/png"
+            )
+            
+            # Create text part
+            text_part = types.Part.from_text(text=prompt)
+            
+            # Combine into content
+            contents = [
+                types.Content(
+                    role="user",
+                    parts=[image_part, text_part],
+                ),
+            ]
+            
+            # Generate with config
+            response = client.models.generate_content(
+                model=model_name,
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    temperature=0.7,
+                    max_output_tokens=4000,
+                ),
+            )
+            
+            if response.text:
+                logger.info(f"Visual analysis completed for {ticker_code}")
+                return markdown.markdown(response.text, extensions=['extra', 'nl2br', 'tables'])
+            else:
+                raise ValueError("Empty response from Gemini")
+                
+        except ImportError:
+            # Fallback to legacy SDK
+            logger.warning("New google-genai SDK not available, using legacy SDK")
+            import google.generativeai as genai_legacy
+            
+            genai_legacy.configure(api_key=api_key)
+            model = genai_legacy.GenerativeModel(model_name)
+            
+            # Create image object using PIL
+            import io
+            from PIL import Image
+            image = Image.open(io.BytesIO(image_bytes))
+            
+            response = model.generate_content([prompt, image])
+            
+            if response.text:
+                return markdown.markdown(response.text, extensions=['extra', 'nl2br', 'tables'])
+            else:
+                raise ValueError("Empty response from Gemini")
+        
+    except Exception as e:
+        logger.error(f"Visual analysis failed: {e}")
+        import traceback
+        traceback.print_exc()
+        return f"<p class='error' style='color: #fb7185;'>画像分析エラー: {str(e)}</p>"
+
