@@ -1595,6 +1595,7 @@ async def lookup_yahoo_finance(
                 <script>
                 // Clipboard copy function
                 async function captureDashboard() {{
+                    console.log('Capture started');
                     const btn = document.getElementById('capture-dashboard-btn');
                     const originalText = btn.innerHTML;
                     
@@ -1603,116 +1604,119 @@ async def lookup_yahoo_finance(
                         btn.innerHTML = '⏳';
                         
                         if (typeof html2canvas === 'undefined') {{
+                            alert('画像化ライブラリが読み込まれていません。');
                             throw new Error('html2canvas not loaded');
                         }}
                         
                         const chartSection = document.getElementById('charts-only');
+                        if (!chartSection) {{
+                            throw new Error('Chart section not found');
+                        }}
+                        
                         const canvas = await html2canvas(chartSection, {{
                             backgroundColor: '#0f172a',
-                            scale: 2,
+                            scale: 1.5,
                             useCORS: true,
-                            allowTaint: true,
+                            allowTaint: false,
                             logging: false,
                             onclone: (clonedDoc) => {{
                                 const el = clonedDoc.getElementById('charts-only');
-                                el.style.width = chartSection.offsetWidth + 'px';
-                                el.style.display = 'flex';
+                                if (el) {{
+                                    el.style.width = chartSection.offsetWidth + 'px';
+                                    el.style.display = 'flex';
+                                }}
                             }}
                         }});
                         
                         canvas.toBlob(async function(blob) {{
+                            if (!blob) return;
                             try {{
-                                const clipboardItem = new ClipboardItem({{ 'image/png': blob }});
-                                await navigator.clipboard.write([clipboardItem]);
-                                btn.innerHTML = '✅';
-                                setTimeout(() => {{ btn.innerHTML = originalText; btn.disabled = false; }}, 1500);
+                                // Check for ClipboardItem support
+                                if (typeof ClipboardItem !== 'undefined' && navigator.clipboard && navigator.clipboard.write) {{
+                                    const clipboardItem = new ClipboardItem({{ 'image/png': blob }});
+                                    await navigator.clipboard.write([clipboardItem]);
+                                    btn.innerHTML = '✅';
+                                    setTimeout(() => {{ btn.innerHTML = originalText; btn.disabled = false; }}, 1500);
+                                }} else {{
+                                    throw new Error('ClipboardItem not supported');
+                                }}
                             }} catch (e) {{
-                                // Fallback to download
+                                console.log('Falling back to download due to:', e.message);
                                 const url = URL.createObjectURL(blob);
                                 const a = document.createElement('a');
                                 a.href = url;
                                 a.download = 'dashboard.png';
+                                document.body.appendChild(a);
                                 a.click();
+                                document.body.removeChild(a);
                                 URL.revokeObjectURL(url);
                                 btn.innerHTML = '📥';
                                 setTimeout(() => {{ btn.innerHTML = originalText; btn.disabled = false; }}, 1500);
                             }}
-                        }}, 'image/png', 1.0);
+                        }}, 'image/png');
                         
                     }} catch (error) {{
                         console.error('Capture failed:', error);
                         btn.innerHTML = '❌';
+                        alert('コピーに失敗しました: ' + error.message);
                         setTimeout(() => {{ btn.innerHTML = originalText; btn.disabled = false; }}, 2000);
                     }}
                 }}
+                window.captureDashboard = captureDashboard;
                 
                 // AI Visual Analysis function
                 async function visualAnalyzeDashboard() {{
-                    console.log('Visual analysis started');
+                    console.log('AI Visual analysis started');
                     const btn = document.getElementById('visual-analyze-btn');
                     const resultContainer = document.getElementById('visual-analysis-result');
                     const resultContent = document.getElementById('visual-analysis-content');
+                    if (!btn || !resultContainer || !resultContent) return;
+                    
                     const originalText = btn.innerHTML;
                     
                     try {{
-                        // Show loading state
                         btn.disabled = true;
                         btn.innerHTML = '⏳ 分析中...';
                         btn.style.opacity = '0.7';
                         resultContainer.style.display = 'block';
                         resultContent.innerHTML = '<div style="text-align: center; padding: 2rem;"><p style="color: #94a3b8;">🤖 AIがグラフを分析中...</p></div>';
                         
-                        // Check html2canvas
                         if (typeof html2canvas === 'undefined') {{
                             throw new Error('html2canvas not loaded');
                         }}
-                        console.log('html2canvas OK');
                         
-                        // Capture charts only (not the header or analysis result)
                         const chartSection = document.getElementById('charts-only');
+                        if (!chartSection) throw new Error('Chart section not found');
+                        
                         const canvas = await html2canvas(chartSection, {{
                             backgroundColor: '#0f172a',
-                            scale: 1.5,
+                            scale: 1.2,
                             useCORS: true,
                             logging: false
                         }});
-                        console.log('Canvas captured');
                         
                         const imageData = canvas.toDataURL('image/png');
                         const tickerCode = '{code_only}';
-                        const companyName = document.querySelector('h3')?.innerText || '';
+                        const h3 = document.querySelector('h3');
+                        const companyName = h3 ? h3.innerText : '';
                         
-                        // Send to API
                         const formData = new FormData();
                         formData.append('image_data', imageData);
                         formData.append('ticker_code', tickerCode);
                         formData.append('company_name', companyName);
                         
-                        console.log('Sending to API...');
                         const response = await fetch('/api/ai/visual-analyze', {{
                             method: 'POST',
                             body: formData
                         }});
                         
-                        console.log('Response status:', response.status);
+                        if (!response.ok) throw new Error('API request failed');
                         const data = await response.json();
-                        console.log('Response data:', data);
+                        if (data.error) throw new Error(data.error);
                         
-                        if (data.error) {{
-                            throw new Error(data.error);
-                        }}
-                        
-                        // Render markdown
                         let markdown = data.markdown || '';
-                        
-                        // Robust newline handling: convert literal \n strings to real newlines
-                        // This handles cases where the API returns escaped string literals
-                        if (markdown.includes('\\\\n')) {{
-                            markdown = markdown.split('\\\\n').join('\\n');
-                        }}
-                        if (markdown.includes('\\\\t')) {{
-                            markdown = markdown.split('\\\\t').join('\\t');
-                        }}
+                        if (markdown.includes('\\\\n')) markdown = markdown.split('\\\\n').join('\\n');
+                        if (markdown.includes('\\\\t')) markdown = markdown.split('\\\\t').join('\\t');
                         
                         let html = '';
                         if (data.cached) {{
@@ -1722,13 +1726,8 @@ async def lookup_yahoo_finance(
                         }}
                         
                         if (typeof marked !== 'undefined') {{
-                            // Use marked.parse with explicit options for better GFM support
-                            html += marked.parse(markdown, {{ 
-                                breaks: true, 
-                                gfm: true,
-                                headerIds: false,
-                                mangle: false
-                            }});
+                            // Minimalist marked call for maximum compatibility
+                            html += marked.parse(markdown);
                         }} else {{
                             html += '<pre style="white-space: pre-wrap; word-break: break-all; color: #94a3b8;">' + markdown + '</pre>';
                         }}
@@ -1745,8 +1744,8 @@ async def lookup_yahoo_finance(
                         }}, 2000);
                         
                     }} catch (error) {{
-                        console.error('Error:', error);
-                        resultContent.innerHTML = '<p style="color:#fb7185;">エラー: ' + error.message + '</p>';
+                        console.error('Error in visualAnalyzeDashboard:', error);
+                        resultContent.innerHTML = '<p style="color:#fb7185; padding: 1rem; border: 1px solid rgba(251,113,133,0.3); border-radius: 8px;">❌ エラー: ' + error.message + '</p>';
                         btn.innerHTML = '❌ エラー';
                         btn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
                         setTimeout(function() {{
@@ -1757,6 +1756,7 @@ async def lookup_yahoo_finance(
                         }}, 3000);
                     }}
                 }}
+                window.visualAnalyzeDashboard = visualAnalyzeDashboard;
                 </script>
                 
                 <!-- Chart Grid (responsive) -->
