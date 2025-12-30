@@ -1,14 +1,13 @@
 from fastapi import FastAPI, Request, Form, Depends, HTTPException, status, Response, Query, BackgroundTasks
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
-from typing import Annotated, Optional
-from typing import List, Optional, Annotated
+from typing import Annotated, Optional, List
 from sqlalchemy.orm import Session
 from database import SessionLocal, CompanyFundamental, User, Company, UserFavorite, StockComment, UserProfile, UserFollow, AIAnalysisCache
 from utils.mail_sender import send_email
 from passlib.context import CryptContext
 from jose import JWTError, jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 import os
 import yfinance as yf
@@ -28,11 +27,16 @@ from utils.ai_analysis import analyze_stock_with_ai, analyze_financial_health, a
 # Load environment variables
 load_dotenv()
 
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-keep-it-secret")
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY environment variable must be set")
+
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "password")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+if not ADMIN_PASSWORD:
+    raise ValueError("ADMIN_PASSWORD environment variable must be set")
 LOG_DIR = os.getenv("LOG_DIR", "logs")
 
 # --- Logging Configuration ---
@@ -197,7 +201,7 @@ def get_hashed_password(password):
 
 def create_access_token(data: dict):
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -432,7 +436,9 @@ async def edinet_page(request: Request,
         }
     )
 
+from datetime import datetime, timezone
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 
 @app.get("/catalog", response_class=HTMLResponse)
 async def catalog_page(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -654,7 +660,7 @@ async def login(response: Response, username: str = Form(...), password: str = F
     
     access_token = create_access_token(data={"sub": user.username})
     response = RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
-    response.set_cookie(key="access_token", value=access_token, httponly=True)
+    response.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="lax")
     return response
 
 @app.get("/register", response_class=HTMLResponse)
@@ -781,15 +787,15 @@ async def send_test_email(email: str = Form(...), current_user: User = Depends(g
         """, status_code=500)
 
 @app.get("/api/market/upcoming-earnings")
-async def get_upcoming_earnings():
+async def get_upcoming_earnings(db: Session = Depends(get_db)):
     """
     Get list of companies with upcoming earnings announcements (from DB).
     """
-    db = SessionLocal()
     try:
         today = datetime.now().date()
-        # Get earnings from today onwards, limit 10
+        # Get earnings from today onwards, limit 10 - filter out None dates
         upcoming = db.query(Company).filter(
+            Company.next_earnings_date.isnot(None),
             Company.next_earnings_date >= today
         ).order_by(Company.next_earnings_date.asc()).limit(15).all()
         
@@ -811,6 +817,8 @@ async def get_upcoming_earnings():
         """
         
         for company in upcoming:
+            if not company.next_earnings_date:
+                continue
             delta = (company.next_earnings_date - today).days
             date_str = company.next_earnings_date.strftime("%m/%d")
             
@@ -853,13 +861,8 @@ async def get_upcoming_earnings():
         return HTMLResponse(content=html)
         
     except Exception as e:
-        # Assuming logger is defined elsewhere, otherwise this would be an error
-        # import logging
-        # logger = logging.getLogger(__name__)
-        # logger.error(f"Upcoming earnings error: {e}")
+        logger.error(f"Upcoming earnings error: {e}", exc_info=True)
         return HTMLResponse(content=f"<div class='alert alert-error'>Error: {str(e)}</div>", status_code=500)
-    finally:
-        db.close()
 
 
 # --- Favorites API Endpoints ---
@@ -947,7 +950,7 @@ async def list_comments(
     if not current_user:
         return "<p class='text-gray-400 text-center p-4'>掲示板を表示するにはログインが必要です。</p>"
     
-    comments = db.query(StockComment).filter(StockComment.ticker == ticker).order_by(StockComment.created_at.desc()).all()
+    comments = db.query(StockComment).options(joinedload(StockComment.user)).filter(StockComment.ticker == ticker).order_by(StockComment.created_at.desc()).all()
     
     html_content = f"""
         <div id="discussion-board-{ticker}" style="background: rgba(15, 23, 42, 0.4); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); padding: 1.5rem;">
@@ -1135,21 +1138,23 @@ async def lookup_yahoo_finance(
         # yfinance の dividendYield は小数形式 (0.0217 = 2.17%)
         yf_yield = info.get("dividendYield") or info.get("trailingAnnualDividendYield")
         
-        if yf_yield is not None and yf_yield > 0:
-            # yfinance usually returns decimal (0.0217 = 2.17%) -> *100 = 2.17
-            dividend_yield = yf_yield * 100
-        else:
-            # Fallback: Calculate manually
-            if price and price > 0:
-                div_rate = info.get("dividendRate") or info.get("trailingAnnualDividendRate")
-                if div_rate and div_rate > 0:
-                    dividend_yield = (div_rate / price) * 100
-        
-        # [HEURISTIC FIX]
-        # Calculate yield is abnormally high (e.g. > 20%), it's likely a scaling issue.
-        # User reported 0.62% showing as 62.000%, implying input was 0.62.
-        # If yield > 20%, we assume it should be divided by 100.
-        if dividend_yield is not None and dividend_yield > 20.0:
+        if yf_yield is not None:
+            if yf_yield < 1: # Decimal (0.02) -> 2.0%
+                dividend_yield = yf_yield * 100
+            elif yf_yield > 100: # Too big -> Divide
+                 dividend_yield = yf_yield / 100
+            else: # Already percent (2.5) -> 2.5%
+                dividend_yield = yf_yield
+
+        # Fallback if None
+        if dividend_yield is None and price and price > 0:
+             div_rate = info.get("dividendRate") or info.get("trailingAnnualDividendRate")
+             if div_rate and div_rate > 0:
+                 dividend_yield = (div_rate / price) * 100
+
+        # Final sanity check (Double correction prevention)
+        # If > 50%, it's likely wrong (unless special case), but keeping user heuristic
+        if dividend_yield and dividend_yield > 50.0:
             dividend_yield /= 100.0
 
         dividend_str = f"{dividend_yield:.2f}%" if dividend_yield is not None else "-"
@@ -1231,7 +1236,8 @@ async def lookup_yahoo_finance(
                 if not df.empty and key in df.index:
                     val = df.loc[key, date_col]
                     return float(val) if pd.notna(val) else 0
-            except:
+            except (KeyError, IndexError, ValueError, TypeError) as e:
+                logger.debug(f"Error extracting value for {key} at {date_col}: {e}")
                 pass
             return 0
         
@@ -2136,7 +2142,7 @@ async def lookup_yahoo_finance(
         """)
 
 
-@app.post("/api/ai/analyze")
+@app.post("/api/ai/analyze-legacy")
 async def ai_analyze_stock(ticker_code: Annotated[str, Form()]):
     try:
         # 1. データの再取得（コンテキスト構築用）
@@ -2590,7 +2596,7 @@ async def search_edinet_company(
         """, status_code=500)
 
 @app.post("/api/ai/analyze", response_class=HTMLResponse)
-def api_ai_analyze(
+async def api_ai_analyze(
     ticker_code: str = Form(...),
     force_refresh: str = Form(None),
     current_user: User = Depends(get_current_user),
@@ -2610,7 +2616,7 @@ def api_ai_analyze(
             cached = db.query(AIAnalysisCache).filter(
                 AIAnalysisCache.ticker_code == clean_code,
                 AIAnalysisCache.analysis_type == analysis_type,
-                AIAnalysisCache.expires_at > datetime.utcnow()
+                AIAnalysisCache.expires_at > datetime.now(timezone.utc)
             ).first()
             
             if cached:
@@ -2658,7 +2664,7 @@ def api_ai_analyze(
         company_name = f"Code: {clean_code}"
         
         # Fetch latest financial data for context
-        history = get_financial_history(company_code=clean_code, years=1)
+        history = await run_in_threadpool(get_financial_history, company_code=clean_code, years=1)
         if history and len(history) > 0:
             data = history[0]
             # Generate summary text using the fixed formatter
@@ -2684,15 +2690,15 @@ def api_ai_analyze(
         
         if existing:
             existing.analysis_html = analysis_html
-            existing.created_at = datetime.utcnow()
-            existing.expires_at = datetime.utcnow() + timedelta(days=cache_days)
+            existing.created_at = datetime.now(timezone.utc)
+            existing.expires_at = datetime.now(timezone.utc) + timedelta(days=cache_days)
         else:
             new_cache = AIAnalysisCache(
                 ticker_code=clean_code,
                 analysis_type=analysis_type,
                 analysis_html=analysis_html,
-                created_at=datetime.utcnow(),
-                expires_at=datetime.utcnow() + timedelta(days=cache_days)
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=cache_days)
             )
             db.add(new_cache)
         db.commit()
@@ -2797,7 +2803,7 @@ def _run_specialized_analysis(
     cached = db.query(AIAnalysisCache).filter(
         AIAnalysisCache.ticker_code == clean_code,
         AIAnalysisCache.analysis_type == analysis_type,
-        AIAnalysisCache.expires_at > datetime.utcnow()
+        AIAnalysisCache.expires_at > datetime.now(timezone.utc)
     ).first()
     
     if cached:
@@ -2816,6 +2822,9 @@ def _run_specialized_analysis(
     
     # Get financial context - include both numeric and text data
     financial_context = {}
+    # Note: get_financial_history is synchronous, but this function is called from async context
+    # The caller should use run_in_threadpool if needed, but since this is a helper function
+    # called from sync endpoints, it's acceptable here
     history = get_financial_history(company_code=clean_code, years=1)
     if history and len(history) > 0:
         data = history[0]
@@ -2845,15 +2854,15 @@ def _run_specialized_analysis(
     
     if existing:
         existing.analysis_html = result_html
-        existing.created_at = datetime.utcnow()
-        existing.expires_at = datetime.utcnow() + timedelta(days=cache_days)
+        existing.created_at = datetime.now(timezone.utc)
+        existing.expires_at = datetime.now(timezone.utc) + timedelta(days=cache_days)
     else:
         new_cache = AIAnalysisCache(
             ticker_code=clean_code,
             analysis_type=analysis_type,
             analysis_html=result_html,
-            created_at=datetime.utcnow(),
-            expires_at=datetime.utcnow() + timedelta(days=cache_days)
+            created_at=datetime.now(timezone.utc),
+            expires_at=datetime.now(timezone.utc) + timedelta(days=cache_days)
         )
         db.add(new_cache)
     db.commit()
@@ -2942,7 +2951,7 @@ async def api_ai_visual_analyze(
             cached = db.query(AIAnalysisCache).filter(
                 AIAnalysisCache.ticker_code == clean_code,
                 AIAnalysisCache.analysis_type == analysis_type,
-                AIAnalysisCache.expires_at > datetime.utcnow()
+                AIAnalysisCache.expires_at > datetime.now(timezone.utc)
             ).first()
             
             if cached:
@@ -2976,15 +2985,15 @@ async def api_ai_visual_analyze(
         
         if existing:
             existing.analysis_html = result_markdown  # Store raw markdown
-            existing.created_at = datetime.utcnow()
-            existing.expires_at = datetime.utcnow() + timedelta(days=cache_days)
+            existing.created_at = datetime.now(timezone.utc)
+            existing.expires_at = datetime.now(timezone.utc) + timedelta(days=cache_days)
         else:
             new_cache = AIAnalysisCache(
                 ticker_code=clean_code,
                 analysis_type=analysis_type,
                 analysis_html=result_markdown,  # Store raw markdown
-                created_at=datetime.utcnow(),
-                expires_at=datetime.utcnow() + timedelta(days=cache_days)
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=cache_days)
             )
             db.add(new_cache)
         db.commit()
@@ -3013,10 +3022,8 @@ async def get_edinet_history(code: str, current_user: User = Depends(get_current
          return HTMLResponse(content="<div class='text-red-400'>Login required</div>")
     
     try:
-
-        
-        # Fetch history (heavy operation)
-        history = get_financial_history(company_code=code, years=5)
+        # Fetch history (heavy operation) - run in thread pool to avoid blocking
+        history = await run_in_threadpool(get_financial_history, company_code=code, years=5)
         
         if not history:
             return HTMLResponse(content="<div class='text-gray-400 p-4 text-center'>履歴データが見つかりませんでした</div>")
@@ -3168,7 +3175,8 @@ async def get_edinet_history(code: str, current_user: User = Depends(get_current
             if not company and code.endswith('.T'):
                  company = db.query(Company).filter(Company.ticker == code[:-2]).first()
             company_name = company.name if company else code
-        except:
+        except Exception as db_error:
+             logger.warning(f"Error querying company name for {code}: {db_error}")
              company_name = code
         finally:
             db.close()
@@ -3224,8 +3232,8 @@ async def get_edinet_ratios(code: str, current_user: User = Depends(get_current_
         import yfinance as yf
         from utils.financial_analysis import analyze_company_performance
         
-        # Fetch history (reuse the same function)
-        history = get_financial_history(company_code=code, years=5)
+        # Fetch history (reuse the same function) - run in thread pool for async endpoint
+        history = await run_in_threadpool(get_financial_history, company_code=code, years=5)
         
         if not history:
             return HTMLResponse(content="<div class='text-gray-400 p-4 text-center'>財務指標データが見つかりませんでした</div>")
