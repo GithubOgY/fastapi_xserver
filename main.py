@@ -1556,31 +1556,33 @@ async def lookup_yahoo_finance(
                 </div>
                 
                 <!-- Visual Analysis Result Container -->
-                <div id="visual-analysis-result" style="display: none; margin-bottom: 1rem; padding: 1rem; background: rgba(15, 23, 42, 0.9); border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.4); max-height: 500px; overflow-y: auto;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; position: sticky; top: 0; background: rgba(15, 23, 42, 0.95); padding: 0.5rem 0; border-bottom: 1px solid rgba(99, 102, 241, 0.2);">
+                <div id="visual-analysis-result" style="display: none; margin-bottom: 1rem; padding: 1rem; background: rgba(15, 23, 42, 0.95); border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.4); max-height: 600px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #6366f1 rgba(30, 41, 59, 0.5);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; position: sticky; top: 0; background: rgba(15, 23, 42, 0.95); padding: 0.5rem 0; border-bottom: 1px solid rgba(99, 102, 241, 0.2); z-index: 10;">
                         <h4 style="margin: 0; color: #a5b4fc; font-size: 0.95rem; font-weight: 600;">🤖 AI画像診断レポート</h4>
                         <button onclick="document.getElementById('visual-analysis-result').style.display='none'" 
                             style="background: rgba(239, 68, 68, 0.2); border: none; color: #fb7185; cursor: pointer; font-size: 0.8rem; padding: 0.25rem 0.5rem; border-radius: 4px;">✕ 閉じる</button>
                     </div>
                     <style>
-                        #visual-analysis-content {{ color: #e2e8f0; font-size: 0.85rem; line-height: 1.7; }}
-                        #visual-analysis-content h1, #visual-analysis-content h2, #visual-analysis-content h3, #visual-analysis-content h4 {{ color: #a5b4fc; margin: 1rem 0 0.5rem 0; font-weight: 600; }}
-                        #visual-analysis-content h1 {{ font-size: 1.3rem; border-bottom: 1px solid rgba(165, 180, 252, 0.3); padding-bottom: 0.5rem; }}
-                        #visual-analysis-content h2 {{ font-size: 1.1rem; }}
-                        #visual-analysis-content h3 {{ font-size: 1rem; }}
-                        #visual-analysis-content p {{ margin: 0.5rem 0; }}
-                        #visual-analysis-content table {{ width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.8rem; }}
-                        #visual-analysis-content th, #visual-analysis-content td {{ border: 1px solid rgba(100, 116, 139, 0.4); padding: 0.5rem; text-align: left; }}
-                        #visual-analysis-content th {{ background: rgba(99, 102, 241, 0.2); color: #c7d2fe; font-weight: 600; }}
-                        #visual-analysis-content td {{ background: rgba(30, 41, 59, 0.5); }}
-                        #visual-analysis-content strong {{ color: #fbbf24; }}
-                        #visual-analysis-content ul, #visual-analysis-content ol {{ margin: 0.5rem 0; padding-left: 1.5rem; }}
-                        #visual-analysis-content li {{ margin: 0.25rem 0; }}
-                        #visual-analysis-content code {{ background: rgba(99, 102, 241, 0.2); padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.8rem; }}
-                        #visual-analysis-content hr {{ border: none; border-top: 1px solid rgba(100, 116, 139, 0.3); margin: 1rem 0; }}
-                        #visual-analysis-result::-webkit-scrollbar {{ width: 6px; }}
-                        #visual-analysis-result::-webkit-scrollbar-track {{ background: rgba(30, 41, 59, 0.5); border-radius: 3px; }}
-                        #visual-analysis-result::-webkit-scrollbar-thumb {{ background: rgba(99, 102, 241, 0.5); border-radius: 3px; }}
+                        /* Base styles for Markdown content */
+                        #visual-analysis-content {{ color: #e2e8f0; font-size: 0.9rem; line-height: 1.7; }}
+                        #visual-analysis-content h1, #visual-analysis-content h2, #visual-analysis-content h3 {{ color: #a5b4fc; margin-top: 1.5rem; margin-bottom: 0.75rem; font-weight: 700; }}
+                        #visual-analysis-content h1 {{ font-size: 1.4rem; border-bottom: 1px solid rgba(99, 102, 241, 0.3); padding-bottom: 0.5rem; }}
+                        #visual-analysis-content h2 {{ font-size: 1.2rem; }}
+                        #visual-analysis-content h3 {{ font-size: 1.1rem; }}
+                        #visual-analysis-content p {{ margin-bottom: 1rem; }}
+                        #visual-analysis-content ul, #visual-analysis-content ol {{ padding-left: 1.5rem; margin-bottom: 1rem; }}
+                        #visual-analysis-content li {{ margin-bottom: 0.5rem; }}
+                        #visual-analysis-content strong {{ color: #fbbf24; font-weight: 700; }}
+                        #visual-analysis-content table {{ width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }}
+                        #visual-analysis-content th {{ background: rgba(99, 102, 241, 0.2); color: #c7d2fe; padding: 0.75rem; border: 1px solid rgba(71, 85, 105, 0.4); }}
+                        #visual-analysis-content td {{ padding: 0.75rem; border: 1px solid rgba(71, 85, 105, 0.4); background: rgba(30, 41, 59, 0.3); }}
+                        #visual-analysis-content blockquote {{ border-left: 4px solid #6366f1; padding-left: 1rem; color: #94a3b8; margin: 1rem 0; font-style: italic; }}
+                        
+                        /* Scrollbar styling */
+                        #visual-analysis-result::-webkit-scrollbar {{ width: 8px; }}
+                        #visual-analysis-result::-webkit-scrollbar-track {{ background: rgba(15, 23, 42, 0.5); border-radius: 4px; }}
+                        #visual-analysis-result::-webkit-scrollbar-thumb {{ background: #6366f1; border-radius: 4px; }}
+                        #visual-analysis-result::-webkit-scrollbar-thumb:hover {{ background: #4f46e5; }}
                     </style>
                     <div id="visual-analysis-content"></div>
                 </div>
