@@ -1996,7 +1996,17 @@ async def lookup_yahoo_finance(
                 </div>
             </div>
 
-            <!-- OOB Swap: Update Register Button in Search Form -->
+            <!-- News Section (OOB Swap) - Restored for Sidebar -->
+            <div id="news-section" hx-swap-oob="true" style="display: block; margin-top: 1rem;">
+                <div hx-get="/api/news/{code_only}?name={urllib.parse.quote(name)}" hx-trigger="load delay:500ms" hx-swap="innerHTML">
+                    <div class="flex items-center justify-center p-8 space-x-3 text-gray-400">
+                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-green-400"></div>
+                        <span class="text-sm font-medium">最新ニュースを取得中...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Favorite Button (OOB Swap) -->
             <div id="fav-button-container" hx-swap-oob="true" style="display: flex; align-items: center; margin-left: 0.5rem;">
                 {fav_button}
             </div>
