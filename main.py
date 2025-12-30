@@ -1578,12 +1578,7 @@ async def lookup_yahoo_finance(
                         #visual-analysis-content td {{ padding: 0.8rem; border: 1px solid rgba(71, 85, 105, 0.6); color: #e2e8f0; }}
                         #visual-analysis-content blockquote {{ border-left: 4px solid #6366f1; padding-left: 1rem; color: #94a3b8; margin: 1.5rem 0; font-style: italic; background: rgba(99, 102, 241, 0.05); padding: 0.5rem 1rem; border-radius: 0 8px 8px 0; }}
                         
-                        /* Native scrollbar fallback and custom look */
-                        #visual-analysis-result {{
-                            max-height: 600px !important;
-                            overflow-y: scroll !important; /* Force scrollbar track visibility */
-                            display: block !important;
-                        }}
+                        /* Custom scrollbar look */
                         #visual-analysis-result::-webkit-scrollbar {{ width: 10px; }}
                         #visual-analysis-result::-webkit-scrollbar-track {{ background: rgba(15, 23, 42, 0.6); border-radius: 5px; }}
                         #visual-analysis-result::-webkit-scrollbar-thumb {{ background: #6366f1; border-radius: 5px; border: 2px solid rgba(15, 23, 42, 0.6); }}
@@ -1726,8 +1721,19 @@ async def lookup_yahoo_finance(
                         }}
                         
                         if (typeof marked !== 'undefined') {{
-                            // Minimalist marked call for maximum compatibility
-                            html += marked.parse(markdown);
+                            // Pre-process markdown to ensure table pipes have whitespace for better parsing
+                            // e.g., |指標| -> | 指標 |
+                            var cleanMarkdown = markdown.replace(/\\|(?!\s)/g, '| ').replace(/(?<!\s)\\|/g, ' |');
+                            
+                            // Configure marked for maximum GFM compatibility
+                            marked.setOptions({{
+                                breaks: true,
+                                gfm: true,
+                                headerIds: false,
+                                mangle: false
+                            }});
+                            
+                            html += marked.parse(cleanMarkdown);
                         }} else {{
                             html += '<pre style="white-space: pre-wrap; word-break: break-all; color: #94a3b8;">' + markdown + '</pre>';
                         }}
