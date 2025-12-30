@@ -312,6 +312,10 @@ def startup_event():
     finally:
         db.close()
 
+@app.get("/demo", response_class=HTMLResponse)
+async def demo(request: Request):
+    return templates.TemplateResponse("demo.html", {"request": request})
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request, current_user: User = Depends(get_current_user)):
     # ログイン済みならダッシュボードへリダイレクト

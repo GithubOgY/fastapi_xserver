@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo | X-Stock Analyzer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Outfit:wght@500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        /* Dark Theme (Default) */
+        :root {
+            --bg-gradient: radial-gradient(circle at top right, #1e1b4b, #0f172a);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --section-bg: rgba(0, 0, 0, 0.2);
+            --accent: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --success: #10b981;
+            --danger: #f43f5e;
+            --select-bg: rgba(30, 41, 59, 0.8);
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            backdrop-filter: blur(12px);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.5rem;
+            margin: 0;
+            background: linear-gradient(to right, #fff, #818cf8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: var(--text-dim);
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+
+        .demo-badge {
+            display: inline-block;
+            background: #f43f5e;
+            color: white;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+
+        .section {
+            background: var(--section-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-outline {
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            background: transparent;
+        }
+
+        .btn-outline:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        /* Chart */
+        canvas {
+            max-width: 100%;
+        }
+
+        /* Price */
+        .price-display {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.5rem;
+        }
+
+        .price-change {
+            font-size: 1.2rem;
+            color: var(--success);
+            font-weight: 500;
+        }
+
+        /* AI Report Mockup */
+        .ai-report h2 {
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+            color: var(--accent);
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .ai-report h3 {
+            color: #818cf8;
+            margin-top: 1.5rem;
+        }
+
+        .ai-report p,
+        .ai-report li {
+            line-height: 1.7;
+            color: #e2e8f0;
+            margin-bottom: 0.8rem;
+        }
+
+        /* Banner */
+        .demo-banner {
+            background: rgba(244, 63, 94, 0.1);
+            border: 1px solid rgba(244, 63, 94, 0.3);
+            color: #f43f5e;
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>X-Stock Analyzer <span class="demo-badge">DEMO</span></h1>
+                <p class="subtitle">Premium Analysis Dashboard Preview</p>
+            </div>
+            <div>
+                <a href="/register" class="btn btn-primary">登録して全機能を使う</a>
+                <a href="/" class="btn btn-outline" style="margin-left: 0.5rem;">トップへ戻る</a>
+            </div>
+        </div>
+
+        <div class="demo-banner">
+            <p>これはデモ画面です。表示されているデータは架空のものです。</p>
+        </div>
+
+        <!-- Mock Search Bar -->
+        <div class="section" style="text-align: center;">
+            <p style="color: var(--text-dim); margin-bottom: 1rem;">銘柄コードで検索 (デモでは操作できません)</p>
+            <div style="display: flex; gap: 0.5rem; justify-content: center; opacity: 0.6;">
+                <input type="text" value="9999" disabled
+                    style="width: 200px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.8rem 1rem; color: white; text-align: center;">
+                <button disabled
+                    style="background: var(--accent); color: white; border: none; border-radius: 12px; padding: 0.8rem 1.5rem; opacity: 0.5;">
+                    取得
+                </button>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="main-content">
+                <!-- Stock Info -->
+                <div class="section">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem;">
+                        <div>
+                            <h2 style="margin: 0; font-size: 1.8rem; color: #fff;">Future Tech Corp (9999)</h2>
+                            <p style="color: var(--text-dim); margin: 0;">東証プライム • 情報・通信業</p>
+                        </div>
+                        <div style="text-align: right;">
+                            <div class="price-display">¥12,500</div>
+                            <div class="price-change">+350 (+2.88%)</div>
+                        </div>
+                    </div>
+
+                    <!-- Chart -->
+                    <div style="height: 300px; position: relative;">
+                        <canvas id="demoChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- AI Analysis -->
+                <div class="section ai-report">
+                    <h2>🤖 AIファンダメンタル分析</h2>
+
+                    <h3>💡 総合評価: B (投資適格)</h3>
+                    <p>
+                        Future Tech Corpは、AIおよびクラウドインフラストラクチャ分野での強力な市場ポジションを確立しており、持続的な売上成長を実現しています。
+                        特に、直近の第3四半期におけるエンタープライズ顧客の獲得数が前年同期比で40%増加しており、これが営業利益率の改善（15% → 18%）に寄与しています。
+                    </p>
+
+                    <h3>📈 成長性の検証</h3>
+                    <ul>
+                        <li><strong>売上高成長率</strong>: 過去3年間の平均成長率は12.5%であり、業界平均（8.0%）を上回っています。</li>
+                        <li><strong>新規事業</strong>: 生成AI関連サービスの売上が全体の20%を占めるまでに成長しており、新たな収益の柱となっています。</li>
+                    </ul>
+
+                    <h3>⚠️ リスク要因（EDINET「事業等のリスク」より）</h3>
+                    <p>
+                        急速な技術革新への対応遅れが最大のリスク要因として挙げられています。また、半導体不足によるサーバー調達コストの上昇が、短期的には利益率を圧迫する可能性があります。
+                    </p>
+
+                    <div
+                        style="margin-top: 1.5rem; padding: 1rem; background: rgba(99, 102, 241, 0.1); border-radius: 8px; font-size: 0.9rem;">
+                        <strong style="color: #a5b4fc;">Demo Note:</strong>
+                        実際のアプリでは、EDINETから取得した有価証券報告書の定性情報と、Yahoo Financeの最新数値をGoogle Gemini
+                        Proがリアルタイムで解析し、このようなレポートを数秒で自動生成します。
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Init Static Chart
+        document.addEventListener('DOMContentLoaded', function () {
+            const ctx = document.getElementById('demoChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['2021年', '2022年', '2023年', '2024年(予)'],
+                    datasets: [
+                        {
+                            label: '売上収益 (億円)',
+                            data: [5000, 5800, 6500, 7200],
+                            backgroundColor: 'rgba(99, 102, 241, 0.5)',
+                            borderColor: '#6366f1',
+                            borderWidth: 1,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: '営業利益 (億円)',
+                            data: [800, 950, 1100, 1300],
+                            type: 'line',
+                            borderColor: '#10b981',
+                            backgroundColor: '#10b981',
+                            tension: 0.3,
+                            yAxisID: 'y'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#94a3b8' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#94a3b8' },
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                        },
+                        y: {
+                            ticks: { color: '#94a3b8' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
