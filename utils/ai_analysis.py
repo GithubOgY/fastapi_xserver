@@ -92,7 +92,7 @@ def analyze_stock_with_ai(ticker_code: str, financial_context: Dict[str, Any], c
         if edinet_data and "text_data" in edinet_data:
             text_blocks = edinet_data["text_data"]
             # Priority order for prompt (most important first)
-            priority_keys = ["事業等のリスク", "対処すべき課題", "経営者による分析", "研究開発活動"]
+            priority_keys = ["経営者による分析", "財政状態の分析", "経営成績の分析", "キャッシュフローの状況", "事業等のリスク", "対処すべき課題", "設備投資の状況"]
             
             # Add priority keys first
             for key in priority_keys:
@@ -246,8 +246,23 @@ def analyze_financial_health(ticker_code: str, financial_context: Dict[str, Any]
     edinet_text = ""
     try:
         text_blocks = financial_context.get("edinet_data", {}).get("text_data", {})
-        if "経営者による分析" in text_blocks:
-            edinet_text = f"### 経営者による財務分析\n{text_blocks['経営者による分析'][:3000]}\n"
+        
+        # 財務関連のテキストセクションを収集
+        financial_keys = [
+            "経営者による分析", 
+            "財政状態の分析", 
+            "経営成績の分析", 
+            "キャッシュフローの状況",
+            "経理の状況",
+            "重要な会計方針"
+        ]
+        
+        for key in financial_keys:
+            if key in text_blocks and text_blocks[key]:
+                # 各セクション2000文字程度に制限して連結
+                content = text_blocks[key][:2000]
+                edinet_text += f"\n### {key}\n{content}\n"
+                
     except Exception as e:
         logger.error(f"Failed to extract EDINET data for financial analysis: {e}")
     
