@@ -231,3 +231,255 @@ def analyze_stock_with_ai(ticker_code: str, financial_context: Dict[str, Any], c
             </div>
             """
         return f"<p class='error' style='color: #fb7185;'>分析の生成中にエラーが発生しました: {error_msg}</p>"
+
+
+def analyze_financial_health(ticker_code: str, financial_context: Dict[str, Any], company_name: str = "") -> str:
+    """
+    💰 財務健全性分析
+    キャッシュフローを中心に財務の安定性を評価
+    """
+    model = setup_gemini()
+    if not model:
+        return "<p class='error' style='color: #fb7185;'>Gemini APIキーが設定されていません</p>"
+    
+    # 財務データ + 経営者による分析のみ使用
+    edinet_text = ""
+    try:
+        text_blocks = financial_context.get("edinet_data", {}).get("text_data", {})
+        if "経営者による分析" in text_blocks:
+            edinet_text = f"### 経営者による財務分析\n{text_blocks['経営者による分析'][:3000]}\n"
+    except Exception as e:
+        logger.error(f"Failed to extract EDINET data for financial analysis: {e}")
+    
+    prompt = f"""
+あなたは財務分析の専門家です。
+キャッシュフローを中心に、企業の財務健全性を厳格に評価してください。
+
+## 対象企業
+{company_name} ({ticker_code})
+
+## 財務データ
+{financial_context.get('summary_text', '財務データなし')}
+
+## 経営陣の財務認識
+{edinet_text if edinet_text else "経営者による分析データなし"}
+
+## 分析項目
+1. **営業CFの安定性** - 5年トレンドで評価
+2. **フリーCFの健全性** - 投資余力の確認
+3. **負債比率と自己資本比率** - 財務リスクの評価
+4. **配当維持能力** - 株主還元の持続可能性
+5. **総合的な財務リスク評価**
+
+## 出力フォーマット
+💰 **財務健全性: [S/A/B/C/D]**
+
+### 📊 評価サマリー
+- ✅ 強み: ...
+- ⚠️ 懸念点: ...
+
+### 📈 詳細分析
+
+#### 1. キャッシュフロー分析
+- 営業CF: ...
+- フリーCF: ...
+
+#### 2. 財務安全性
+- 自己資本比率: ...
+- 負債水準: ...
+
+#### 3. 配当政策
+- 配当性向: ...
+- 配当継続性: ...
+
+### 💡 投資家へのアドバイス
+財務面から見た投資判断を明確に述べてください。
+
+---
+**注意:** 本分析は参考情報であり、投資を保証するものではありません。
+"""
+    
+    try:
+        api_key = os.getenv("GEMINI_API_KEY")
+        model_name = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+        response_text = generate_with_fallback(prompt, api_key, model_name)
+        return markdown.markdown(response_text, extensions=['extra', 'nl2br'])
+    except Exception as e:
+        logger.error(f"Financial analysis failed: {e}")
+        return f"<p class='error' style='color: #fb7185;'>財務分析エラー: {str(e)}</p>"
+
+
+def analyze_business_competitiveness(ticker_code: str, financial_context: Dict[str, Any], company_name: str = "") -> str:
+    """
+    🚀 事業競争力分析
+    ビジネスモデルと成長戦略の実行力を評価
+    """
+    model = setup_gemini()
+    if not model:
+        return "<p class='error' style='color: #fb7185;'>Gemini APIキーが設定されていません</p>"
+    
+    # 事業関連データを抽出
+    edinet_text = ""
+    try:
+        text_blocks = financial_context.get("edinet_data", {}).get("text_data", {})
+        business_keys = ["事業の内容", "経営方針・経営戦略", "研究開発活動", "設備投資の状況"]
+        
+        for key in business_keys:
+            if key in text_blocks:
+                limit = 3000 if key in ["事業の内容", "経営方針・経営戦略"] else 2000
+                edinet_text += f"### {key}\n{text_blocks[key][:limit]}\n\n"
+        
+        if not edinet_text:
+            edinet_text = "事業・戦略情報が見つかりませんでした。"
+    except Exception as e:
+        logger.error(f"Failed to extract EDINET data for business analysis: {e}")
+        edinet_text = "事業・戦略情報が見つかりませんでした。"
+    
+    prompt = f"""
+あなたは事業戦略の専門家です。
+企業のビジネスモデルと成長戦略の競争力を評価してください。
+
+## 対象企業
+{company_name} ({ticker_code})
+
+## 事業・戦略情報
+{edinet_text}
+
+## 分析項目
+1. **ビジネスモデルの競争優位性** - 収益構造・差別化要因
+2. **参入障壁の高さ** - 技術力、ブランド、規制
+3. **R&D投資の効果** - イノベーション力
+4. **設備投資効率** - 成長投資の妥当性
+5. **成長戦略の実現可能性** - 具体性と実績
+
+## 出力フォーマット
+🚀 **事業競争力: [S/A/B/C/D]**
+
+### 📊 評価サマリー
+- ✅ 競争優位性: ...
+- 🎯 成長可能性: ...
+
+### 📈 詳細分析
+
+#### 1. ビジネスモデル評価
+- 収益構造: ...
+- 競争優位性: ...
+
+#### 2. イノベーション力
+- R&D投資水準: ...
+- 技術力評価: ...
+
+#### 3. 成長戦略
+- 戦略の具体性: ...
+- 実現可能性: ...
+
+### 💡 投資家へのアドバイス
+事業面から見た長期投資の可否を明確に述べてください。
+
+---
+**注意:** 本分析は参考情報であり、投資を保証するものではありません。
+"""
+    
+    try:
+        api_key = os.getenv("GEMINI_API_KEY")
+        model_name = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+        response_text = generate_with_fallback(prompt, api_key, model_name)
+        return markdown.markdown(response_text, extensions=['extra', 'nl2br'])
+    except Exception as e:
+        logger.error(f"Business analysis failed: {e}")
+        return f"<p class='error' style='color: #fb7185;'>事業分析エラー: {str(e)}</p>"
+
+
+def analyze_risk_governance(ticker_code: str, financial_context: Dict[str, Any], company_name: str = "") -> str:
+    """
+    ⚠️ リスク・ガバナンス分析
+    投資リスクと経営の質を徹底評価
+    """
+    model = setup_gemini()
+    if not model:
+        return "<p class='error' style='color: #fb7185;'>Gemini APIキーが設定されていません</p>"
+    
+    # リスク・ガバナンスデータを抽出
+    edinet_text = ""
+    try:
+        text_blocks = financial_context.get("edinet_data", {}).get("text_data", {})
+        risk_keys = ["事業等のリスク", "対処すべき課題", "コーポレートガバナンス", "従業員の状況", "サステナビリティ"]
+        char_limits = {
+            "事業等のリスク": 4000,
+            "対処すべき課題": 2000,
+            "コーポレートガバナンス": 1500,
+            "従業員の状況": 1500,
+            "サステナビリティ": 1500,
+        }
+        
+        for key in risk_keys:
+            if key in text_blocks:
+                limit = char_limits.get(key, 1500)
+                edinet_text += f"### {key}\n{text_blocks[key][:limit]}\n\n"
+        
+        if not edinet_text:
+            edinet_text = "リスク・ガバナンス情報が見つかりませんでした。"
+    except Exception as e:
+        logger.error(f"Failed to extract EDINET data for risk analysis: {e}")
+        edinet_text = "リスク・ガバナンス情報が見つかりませんでした。"
+    
+    prompt = f"""
+あなたはリスク管理とガバナンスの専門家です。
+投資リスクと経営の質を徹底的に評価してください。
+
+## 対象企業
+{company_name} ({ticker_code})
+
+## リスク・ガバナンス情報
+{edinet_text}
+
+## 分析項目（最重要）
+1. **事業リスクの具体性と規模**
+   - 為替リスク
+   - サプライチェーンリスク
+   - 競争リスク
+   - 規制リスク
+   - その他固有リスク
+2. **リスク対応力** - 課題認識と対策の妥当性
+3. **ガバナンス体制の透明性** - 取締役会構成、内部統制
+4. **人材戦略・従業員満足度** - 組織力の評価
+5. **ESGリスク** - 長期的持続可能性
+
+## 出力フォーマット
+⚠️ **リスク・ガバナンス: [S/A/B/C/D]**
+
+### 📊 評価サマリー
+- 🚨 主要リスク: ...
+- ✅ ガバナンス評価: ...
+
+### 📈 詳細分析
+
+#### 1. 事業リスク分析（最重要）
+- 為替・原材料リスク: ...
+- 競争・規制リスク: ...
+- リスク対応力: ...
+
+#### 2. ガバナンス評価
+- 経営体制: ...
+- 透明性: ...
+
+#### 3. ESG・人材
+- 従業員状況: ...
+- 持続可能性: ...
+
+### 💡 投資家へのアドバイス
+リスク面から見た投資判断を明確に述べてください。
+リスクが重大な場合は、率直に「見送り」と評価してください。
+
+---
+**注意:** 本分析は参考情報であり、投資を保証するものではありません。
+"""
+    
+    try:
+        api_key = os.getenv("GEMINI_API_KEY")
+        model_name = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+        response_text = generate_with_fallback(prompt, api_key, model_name)
+        return markdown.markdown(response_text, extensions=['extra', 'nl2br'])
+    except Exception as e:
+        logger.error(f"Risk analysis failed: {e}")
+        return f"<p class='error' style='color: #fb7185;'>リスク分析エラー: {str(e)}</p>"

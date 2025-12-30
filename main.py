@@ -1802,7 +1802,7 @@ async def search_edinet_company(
         if website_url:
             website_html = f'<a href="{website_url}" target="_blank" rel="noopener" class="text-blue-400 hover:text-blue-300 underline text-sm">企業サイト</a>'
 
-        # AI Analysis Button
+        # AI Analysis Buttons (3 specialized analyses)
         ai_btn = ""
         if sec_code:
             code_only = sec_code[:4]
@@ -1811,21 +1811,57 @@ async def search_edinet_company(
                 <h4 style="font-size: 1.2rem; font-weight: bold; text-align: center; margin-bottom: 1rem; background: linear-gradient(to right, #c084fc, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-block; width: 100%;">
                     🤖 AIアナリスト・レポート
                 </h4>
+                <p style="text-align: center; color: #94a3b8; font-size: 0.875rem; margin-bottom: 1rem;">専門特化型AIが3つの視点で分析します</p>
                 <div id="ai-analysis-container">
-                    <button id="ai-gen-btn-{code_only}" 
-                        style="width: 100%; padding: 1rem; background: linear-gradient(135deg, #9333ea, #db2777); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s;"
-                        hx-post="/api/ai/analyze"
-                        hx-target="#ai-analysis-content"
-                        hx-vals='{{"ticker_code": "{code_only}"}}'
-                        hx-on:htmx:before-request="this.querySelector('span').innerText = '🤖 AI分析を生成中... (30~60秒)'; this.disabled = true; this.style.opacity = '0.8';"
-                        hx-on:htmx:after-request="this.querySelector('span').innerText = 'AIによる詳細分析を生成 (Gemini 2.0 Flash)'; this.disabled = false; this.style.opacity = '1';">
-                        <span>AIによる詳細分析を生成 (Gemini 2.0 Flash)</span>
-                    </button>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; margin-bottom: 1rem;">
+                        <button id="ai-financial-btn-{code_only}" 
+                            style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 0.875rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s;"
+                            hx-post="/api/ai/analyze-financial"
+                            hx-target="#ai-analysis-content"
+                            hx-vals='{{\"code\": \"{code_only}\", \"name\": \"{metadata.get('company_name')}\" }}'
+                            hx-on:htmx:before-request="this.querySelector('span').innerText = '⏳ 分析中...'; this.disabled = true; this.style.opacity = '0.6';"
+                            hx-on:htmx:after-request="this.querySelector('span').innerText = '財務健全性'; this.disabled = false; this.style.opacity = '1';">
+                            <span style="font-size: 1.2em;">💰</span>
+                            <span>財務健全性</span>
+                        </button>
+                        
+                        <button id="ai-business-btn-{code_only}" 
+                            style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 0.875rem; cursor: pointer; display: flex; align-items: center; justify-center; gap: 0.5rem; transition: all 0.2s;"
+                            hx-post="/api/ai/analyze-business"
+                            hx-target="#ai-analysis-content"
+                            hx-vals='{{\"code\": \"{code_only}\", \"name\": \"{metadata.get('company_name')}\" }}'
+                            hx-on:htmx:before-request="this.querySelector('span').innerText = '⏳ 分析中...'; this.disabled = true; this.style.opacity = '0.6';"
+                            hx-on:htmx:after-request="this.querySelector('span').innerText = '事業競争力'; this.disabled = false; this.style.opacity = '1';">
+                            <span style="font-size: 1.2em;">🚀</span>
+                            <span>事業競争力</span>
+                        </button>
+                        
+                        <button id="ai-risk-btn-{code_only}" 
+                            style="padding: 0.75rem 1rem; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 0.875rem; cursor: pointer; display: flex; align-items: center; justify-center; gap: 0.5rem; transition: all 0.2s;"
+                            hx-post="/api/ai/analyze-risk"
+                            hx-target="#ai-analysis-content"
+                            hx-vals='{{\"code\": \"{code_only}\", \"name\": \"{metadata.get('company_name')}\" }}'
+                            hx-on:htmx:before-request="this.querySelector('span').innerText = '⏳ 分析中...'; this.disabled = true; this.style.opacity = '0.6';"
+                            hx-on:htmx:after-request="this.querySelector('span').innerText = 'リスク・ガバナンス'; this.disabled = false; this.style.opacity = '1';">
+                            <span style="font-size: 1.2em;">⚠️</span>
+                            <span>リスク・ガバナンス</span>
+                        </button>
+                    </div>
+                    
                     <style>
-                        @keyframes spin {{ to {{ transform: rotate(360deg); }} }}
-                        #ai-gen-btn-{code_only}:disabled {{ cursor: wait; }}
+                        #ai-financial-btn-{code_only}:hover, #ai-business-btn-{code_only}:hover, #ai-risk-btn-{code_only}:hover {{
+                            transform: translateY(-2px);
+                            box-shadow: 0 4px 12px rgb(0 0 0 / 0.3);
+                        }}
+                        #ai-financial-btn-{code_only}:disabled, #ai-business-btn-{code_only}:disabled, #ai-risk-btn-{code_only}:disabled {{ 
+                            cursor: wait; 
+                            transform: none;
+                        }}
                     </style>
-                    <div id="ai-analysis-content" style="margin-top: 1rem; color: #e2e8f0; line-height: 1.7; font-size: 0.95rem;"></div>
+                    
+                    <div id="ai-analysis-content" style="margin-top: 1rem; padding: 1rem; background: rgba(31, 41, 55, 0.5); border-radius: 8px; color: #e2e8f0; line-height: 1.7; font-size: 0.95rem; min-height: 100px; display: flex; align-items: center; justify-center; color: #9ca3af;">
+                        👆 上のボタンをクリックして分析を開始してください
+                    </div>
                 </div>
             </div>
             """
@@ -2620,3 +2656,115 @@ async def list_followers(username: str, request: Request, db: Session = Depends(
         "target_username": username,
         "active_tab": "followers"
     })
+
+
+# ==========================================
+# Specialized AI Analysis Endpoints
+# ==========================================
+
+@app.post("/api/ai/analyze-financial", response_class=HTMLResponse)
+def api_ai_analyze_financial(
+    code: str = Form(...),
+    name: str = Form(""),
+    current_user: User = Depends(get_current_user)
+):
+    """💰 財務健全性分析"""
+    if not current_user:
+        return "<div class='text-red-400'>ログインが必要です</div>"
+    
+    try:
+        from utils.ai_analysis import analyze_financial_health
+        from utils.edinet_enhanced import get_company_financials
+        
+        clean_code = code.replace(".T", "")
+        
+        # EDINETデータ取得
+        edinet_data = get_company_financials(company_code=clean_code)
+        
+        financial_context = {
+            "edinet_data": edinet_data,
+            "summary_text": f"銘柄コード: {clean_code}",
+        }
+        
+        # AI分析実行
+        analysis_html = analyze_financial_health(clean_code, financial_context, name)
+        
+        return f"<div class='prose prose-invert max-w-none'>{analysis_html}</div>"
+        
+    except Exception as e:
+        logger.error(f"Financial analysis error: {e}")
+        import traceback
+        traceback.print_exc()
+        return f"<div class='text-red-400'>財務分析エラー: {str(e)}</div>"
+
+
+@app.post("/api/ai/analyze-business", response_class=HTMLResponse)
+def api_ai_analyze_business(
+    code: str = Form(...),
+    name: str = Form(""),
+    current_user: User = Depends(get_current_user)
+):
+    """🚀 事業競争力分析"""
+    if not current_user:
+        return "<div class='text-red-400'>ログインが必要です</div>"
+    
+    try:
+        from utils.ai_analysis import analyze_business_competitiveness
+        from utils.edinet_enhanced import get_company_financials
+        
+        clean_code = code.replace(".T", "")
+        
+        # EDINETデータ取得
+        edinet_data = get_company_financials(company_code=clean_code)
+        
+        financial_context = {
+            "edinet_data": edinet_data,
+            "summary_text": f"銘柄コード: {clean_code}",
+        }
+        
+        # AI分析実行
+        analysis_html = analyze_business_competitiveness(clean_code, financial_context, name)
+        
+        return f"<div class='prose prose-invert max-w-none'>{analysis_html}</div>"
+        
+    except Exception as e:
+        logger.error(f"Business analysis error: {e}")
+        import traceback
+        traceback.print_exc()
+        return f"<div class='text-red-400'>事業分析エラー: {str(e)}</div>"
+
+
+@app.post("/api/ai/analyze-risk", response_class=HTMLResponse)
+def api_ai_analyze_risk(
+    code: str = Form(...),
+    name: str = Form(""),
+    current_user: User = Depends(get_current_user)
+):
+    """⚠️ リスク・ガバナンス分析"""
+    if not current_user:
+        return "<div class='text-red-400'>ログインが必要です</div>"
+    
+    try:
+        from utils.ai_analysis import analyze_risk_governance
+        from utils.edinet_enhanced import get_company_financials
+        
+        clean_code = code.replace(".T", "")
+        
+        # EDINETデータ取得
+        edinet_data = get_company_financials(company_code=clean_code)
+        
+        financial_context = {
+            "edinet_data": edinet_data,
+            "summary_text": f"銘柄コード: {clean_code}",
+        }
+        
+        # AI分析実行
+        analysis_html = analyze_risk_governance(clean_code, financial_context, name)
+        
+        return f"<div class='prose prose-invert max-w-none'>{analysis_html}</div>"
+        
+    except Exception as e:
+        logger.error(f"Risk analysis error: {e}")
+        import traceback
+        traceback.print_exc()
+        return f"<div class='text-red-400'>リスク分析エラー: {str(e)}</div>"
