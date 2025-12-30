@@ -652,9 +652,11 @@ Strong Buy / Buy / Hold / Sell / Strong Sell から選択し、根拠を3つ
                 ),
             ]
             
-            # Generate with config
+            # Generate with config - use vision-capable model
+            vision_model = "gemini-2.5-flash-lite"  # Fixed vision model for image analysis
+            logger.info(f"Using vision model: {vision_model}")
             response = client.models.generate_content(
-                model=model_name,
+                model=vision_model,
                 contents=contents,
                 config=types.GenerateContentConfig(
                     temperature=0.7,
@@ -664,7 +666,9 @@ Strong Buy / Buy / Hold / Sell / Strong Sell から選択し、根拠を3つ
             
             if response.text:
                 logger.info(f"Visual analysis completed for {ticker_code}")
-                return markdown.markdown(response.text, extensions=['extra', 'nl2br', 'tables'])
+                # Clean up escaped newlines that might come from API
+                clean_text = response.text.replace('\\n', '\n').replace('\\t', '\t')
+                return markdown.markdown(clean_text, extensions=['extra', 'nl2br', 'tables'])
             else:
                 raise ValueError("Empty response from Gemini")
                 
@@ -687,7 +691,9 @@ Strong Buy / Buy / Hold / Sell / Strong Sell から選択し、根拠を3つ
             response = model.generate_content([prompt, image])
             
             if response.text:
-                return markdown.markdown(response.text, extensions=['extra', 'nl2br', 'tables'])
+                # Clean up escaped newlines
+                clean_text = response.text.replace('\\n', '\n').replace('\\t', '\t')
+                return markdown.markdown(clean_text, extensions=['extra', 'nl2br', 'tables'])
             else:
                 raise ValueError("Empty response from Gemini")
         
