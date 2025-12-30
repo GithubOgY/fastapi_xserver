@@ -1984,76 +1984,24 @@ async def search_edinet_company(
         except Exception as e:
             logger.error(f"Error fetching badges: {e}")
         
-        # ========== Financial Summary Section ==========
-        financial_summary_html = ""
-        if normalized:
-            # Build financial metrics HTML
-            metrics = []
-            
-            # Key financial items to display
-            fin_items = [
-                ("売上高", normalized.get("売上高") or normalized.get("revenue")),
-                ("営業利益", normalized.get("営業利益") or normalized.get("operating_income")),
-                ("経常利益", normalized.get("経常利益") or normalized.get("ordinary_income")),
-                ("当期純利益", normalized.get("当期純利益") or normalized.get("net_income")),
-                ("営業CF", normalized.get("営業CF") or normalized.get("operating_cf")),
-                ("投資CF", normalized.get("投資CF") or normalized.get("investing_cf")),
-                ("財務CF", normalized.get("財務CF") or normalized.get("financing_cf")),
-                ("自己資本比率", normalized.get("自己資本比率") or normalized.get("equity_ratio")),
-                ("ROE", normalized.get("ROE") or normalized.get("roe")),
-                ("ROA", normalized.get("ROA") or normalized.get("roa")),
-            ]
-            
-            for label, val in fin_items:
-                if val is not None:
-                    # Format value
-                    if isinstance(val, (int, float)):
-                        if abs(val) >= 100000000:  # 1億以上
-                            formatted = f"{val/100000000:,.1f}億円"
-                        elif abs(val) >= 10000:  # 1万以上
-                            formatted = f"{val/10000:,.1f}万円"
-                        elif "比率" in label or "ROE" in label or "ROA" in label:
-                            formatted = f"{val:.1f}%"
-                        else:
-                            formatted = f"{val:,.0f}"
-                    else:
-                        formatted = str(val)
-                    
-                    # Color coding
-                    color = "#f8fafc"  # default white
-                    if "利益" in label or "CF" in label:
-                        if isinstance(val, (int, float)):
-                            color = "#10b981" if val > 0 else "#f43f5e"  # green/red
-                    elif "比率" in label or "ROE" in label or "ROA" in label:
-                        color = "#818cf8"  # purple
-                        
-                    metrics.append(f'<div style="background: rgba(0,0,0,0.2); padding: 0.5rem 0.75rem; border-radius: 8px; text-align: center;"><div style="color: #64748b; font-size: 0.7rem;">{label}</div><div style="color: {color}; font-weight: 600; font-size: 0.9rem;">{formatted}</div></div>')
-            
-            if metrics:
-                financial_summary_html = f'''
-                <div style="margin-bottom: 1.5rem;">
-                    <h4 style="font-size: 1rem; font-weight: 600; color: #e2e8f0; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-                        💰 財務データ (EDINET)
-                    </h4>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 0.5rem;">
-                        {"".join(metrics)}
-                    </div>
-                </div>
-                '''
-        
         # Qualitative Information Sections - Grid Layout
         sections_html = ""
-        # Add financial summary first
-        sections_html = financial_summary_html
         # Add instruction
         sections_html += '<p style="color: #64748b; font-size: 0.8rem; margin-bottom: 0.75rem;">▼ をクリックして展開（📋 でコピー）</p>'
         # Start Grid Container
         sections_html += '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">'
-        # Display order: Business overview -> Strategy -> Analysis -> Risks -> Challenges -> Operations
+        # Display order: Business overview -> Strategy -> Financial Analysis -> Risks -> Operations
         text_keys = [
             "事業の内容",
             "経営方針・経営戦略", 
             "経営者による分析",
+            # New financial-focused sections
+            "財政状態の分析",
+            "経営成績の分析",
+            "キャッシュフローの状況",
+            "経理の状況",
+            "重要な会計方針",
+            # Other sections
             "事業等のリスク",
             "対処すべき課題",
             "研究開発活動",

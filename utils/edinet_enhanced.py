@@ -569,6 +569,12 @@ def extract_financial_data(xbrl_dir: str) -> Dict[str, Any]:
             "事業の内容": ["DescriptionOfBusinessTextBlock", "OverviewOfBusinessTextBlock"],
             "経営方針・経営戦略": ["ManagementPolicyBusinessPolicyAndManagementStrategyTextBlock", "ManagementPolicyTextBlock"],
             "経営者による分析": ["ManagementAnalysisOfFinancialPosition", "ManagementAnalysisOfFinancialPositionOperatingResultsAndCashFlowsTextBlock", "OverviewOfBusinessResultsTextBlock"],
+            # New financial-focused sections
+            "財政状態の分析": ["AnalysisOfFinancialPositionTextBlock", "FinancialPositionTextBlock", "OverviewOfFinancialPositionTextBlock"],
+            "経営成績の分析": ["AnalysisOfOperatingResultsTextBlock", "OperatingResultsTextBlock", "OverviewOfOperatingResultsTextBlock"],
+            "キャッシュフローの状況": ["AnalysisOfCashFlowsTextBlock", "CashFlowsTextBlock", "OverviewOfCashFlowsTextBlock", "CashFlowPositionTextBlock"],
+            "経理の状況": ["AccountingPoliciesTextBlock", "SignificantAccountingPoliciesTextBlock", "BusinessAccountingStandardsTextBlock"],
+            "重要な会計方針": ["SignificantAccountingPoliciesAndEstimatesTextBlock", "AccountingEstimatesTextBlock"],
             "対処すべき課題": ["IssuesToBeAddressedTextBlock"],
             "事業等のリスク": ["BusinessRisksTextBlock", "RiskManagementTextBlock", "RisksOfBusinessEtcTextBlock"],
             "研究開発活動": ["ResearchAndDevelopmentActivitiesTextBlock"],
