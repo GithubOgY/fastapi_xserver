@@ -1751,7 +1751,7 @@ async def search_edinet_company(
         # Add instruction at the top
         sections_html = '<p style="color: #64748b; font-size: 0.8rem; margin-bottom: 0.75rem;">▼ をクリックして展開（📋 でコピー）</p>'
         # Start Grid Container
-        sections_html += '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;">'
+        sections_html += '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">'
         # Display order: Business overview -> Strategy -> Analysis -> Risks -> Challenges -> Operations
         text_keys = [
             "事業の内容",
