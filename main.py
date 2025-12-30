@@ -1389,11 +1389,17 @@ async def lookup_yahoo_finance(
                         {sector_html}
                     </div>
                     <div style="text-align: right;">
-                        <div style="font-size: 2rem; font-weight: 700; color: #f8fafc;">¥{price:,.0f}</div>
-                        <div style="color: {change_color}; font-size: 1rem; font-weight: 600;">
+                        <div style="display: flex; align-items: baseline; justify-content: flex-end; gap: 1rem;">
+                            {f'<div style="font-size: 2rem; font-weight: 700; color: #fbbf24;">¥{target_mean_price:,.0f}</div>' if target_mean_price else ''}
+                            <div style="font-size: 2rem; font-weight: 700; color: #f8fafc;">¥{price:,.0f}</div>
+                        </div>
+                        <div style="display: flex; justify-content: flex-end; gap: 1rem; font-size: 0.75rem; color: #64748b; margin-top: 0.2rem;">
+                            {f'<span>目標株価</span>' if target_mean_price else ''}
+                            <span>現在株価</span>
+                        </div>
+                        <div style="color: {change_color}; font-size: 1rem; font-weight: 600; margin-top: 0.3rem;">
                             {change_sign}{change:,.0f} ({change_sign}{change_pct:.2f}%)
                         </div>
-                        {target_price_html}
                         <a href="/edinet?company_name={edinet_name}" 
                            style="display: inline-flex; align-items: center; gap: 0.3rem; margin-top: 0.5rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; text-decoration: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);">
                            <span>📄</span> EDINETで分析
