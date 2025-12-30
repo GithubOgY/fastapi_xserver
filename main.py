@@ -2776,23 +2776,76 @@ async def api_ai_visual_analyze(
     image_data: str = Form(...),
     ticker_code: str = Form(...),
     company_name: str = Form(""),
-    current_user: User = Depends(get_current_user)
+    force_refresh: str = Form(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
-    """📊 Visual dashboard analysis using Gemini multimodal"""
+    """📊 Visual dashboard analysis using Gemini multimodal with caching"""
     if not current_user:
         return "<div class='text-red-400'>ログインが必要です</div>"
     
     try:
-        logger.info(f"Visual analysis request for {ticker_code}")
+        clean_code = ticker_code.replace(".T", "")
+        analysis_type = "visual"
+        cache_days = 7
+        
+        # Check cache first (unless force refresh requested)
+        if not force_refresh:
+            cached = db.query(AIAnalysisCache).filter(
+                AIAnalysisCache.ticker_code == clean_code,
+                AIAnalysisCache.analysis_type == analysis_type,
+                AIAnalysisCache.expires_at > datetime.utcnow()
+            ).first()
+            
+            if cached:
+                logger.info(f"[Visual Cache HIT] {clean_code}")
+                cache_date = cached.created_at.strftime("%Y-%m-%d %H:%M") if cached.created_at else ""
+                return f"""
+                <div style='margin-bottom: 0.5rem;'>
+                    <span style='background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem;'>⚡ キャッシュ ({cache_date})</span>
+                    <button onclick="document.getElementById('visual-analyze-btn').click()" style="margin-left: 0.5rem; background: rgba(239,68,68,0.2); color: #fb7185; border: none; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; cursor: pointer;" formnovalidate>🔄 再生成</button>
+                </div>
+                <div>{cached.analysis_html}</div>
+                """
+        
+        logger.info(f"[Visual Cache MISS] {clean_code} - generating new analysis")
         
         # Validate image data exists
         if not image_data or len(image_data) < 100:
             return "<div class='text-red-400'>画像データが無効です</div>"
         
         # Call the visual analysis function
-        result_html = analyze_dashboard_image(image_data, ticker_code, company_name)
+        result_html = analyze_dashboard_image(image_data, clean_code, company_name)
         
-        return result_html
+        # Save to cache
+        existing = db.query(AIAnalysisCache).filter(
+            AIAnalysisCache.ticker_code == clean_code,
+            AIAnalysisCache.analysis_type == analysis_type
+        ).first()
+        
+        if existing:
+            existing.analysis_html = result_html
+            existing.created_at = datetime.utcnow()
+            existing.expires_at = datetime.utcnow() + timedelta(days=cache_days)
+        else:
+            new_cache = AIAnalysisCache(
+                ticker_code=clean_code,
+                analysis_type=analysis_type,
+                analysis_html=result_html,
+                created_at=datetime.utcnow(),
+                expires_at=datetime.utcnow() + timedelta(days=cache_days)
+            )
+            db.add(new_cache)
+        db.commit()
+        logger.info(f"[Visual Cache SAVED] {clean_code}")
+        
+        gen_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+        return f"""
+        <div style='margin-bottom: 0.5rem;'>
+            <span style='background: rgba(99, 102, 241, 0.2); color: #818cf8; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem;'>🆕 新規生成 ({gen_date})</span>
+        </div>
+        <div>{result_html}</div>
+        """
         
     except Exception as e:
         logger.error(f"Visual analysis error: {e}")
