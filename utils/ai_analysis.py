@@ -675,7 +675,7 @@ Strong Buy / Buy / Hold / Sell / Strong Sell から選択し、根拠を3つ
             
             genai_legacy.configure(api_key=api_key)
             # Use vision-capable model for image analysis
-            vision_model = "gemini-2.0-flash"  # Force vision-capable model
+            vision_model = "gemini-2.5-flash-lite"  # Force vision-capable model
             logger.info(f"Using vision model: {vision_model}")
             model = genai_legacy.GenerativeModel(vision_model)
             
