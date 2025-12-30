@@ -1947,15 +1947,7 @@ async def lookup_yahoo_finance(
 
 
 
-            <!-- News Section (OOB Swap) -->
-            <div id="news-section" class="section" hx-swap-oob="true" style="margin-top: 2rem;">
-                <div hx-get="/api/news/{code_only}?name={urllib.parse.quote(name)}" hx-trigger="load delay:500ms" hx-swap="innerHTML">
-                    <div class="flex items-center justify-center p-8 space-x-3 text-gray-400">
-                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-green-400"></div>
-                        <span class="text-sm font-medium">最新ニュースを取得中...</span>
-                    </div>
-                </div>
-            </div>
+
 
             <!-- Financial Data Table (OOB Swap) -->
             <div id="financial-data-section" class="section" hx-swap-oob="true">
