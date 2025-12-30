@@ -1532,9 +1532,84 @@ async def lookup_yahoo_finance(
 
             <!-- Charts Section (OOB Swap) -->
             <div id="chart-section" class="section" hx-swap-oob="true">
-                <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; margin-bottom: 1rem; color: #818cf8; text-align: center;">
-                    📊 財務パフォーマンス
-                </h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; margin: 0; color: #818cf8;">
+                        📊 財務パフォーマンス
+                    </h2>
+                    <button id="capture-dashboard-btn" onclick="captureDashboard()" 
+                        style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 8px; cursor: pointer; font-size: 0.75rem; display: flex; align-items: center; gap: 0.3rem; transition: all 0.2s;">
+                        📸 グラフをキャプチャ
+                    </button>
+                </div>
+                
+                <script>
+                async function captureDashboard() {{
+                    const btn = document.getElementById('capture-dashboard-btn');
+                    const originalText = btn.innerHTML;
+                    
+                    try {{
+                        // Show loading state
+                        btn.disabled = true;
+                        btn.innerHTML = '⏳ 処理中...';
+                        btn.style.opacity = '0.7';
+                        
+                        // Check if html2canvas is loaded
+                        if (typeof html2canvas === 'undefined') {{
+                            throw new Error('html2canvas ライブラリが読み込まれていません');
+                        }}
+                        
+                        // Get the chart section element
+                        const chartSection = document.getElementById('chart-section');
+                        if (!chartSection) {{
+                            throw new Error('チャートセクションが見つかりません');
+                        }}
+                        
+                        // Capture with options
+                        const canvas = await html2canvas(chartSection, {{
+                            backgroundColor: '#0f172a',
+                            scale: 2,
+                            useCORS: true,
+                            allowTaint: false,
+                            logging: false,
+                            width: Math.min(chartSection.scrollWidth, 1280),
+                            windowWidth: 1280
+                        }});
+                        
+                        // Convert to blob for download
+                        canvas.toBlob(function(blob) {{
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'dashboard_' + new Date().toISOString().slice(0,10) + '.png';
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                            
+                            // Success feedback
+                            btn.innerHTML = '✅ ダウンロード完了!';
+                            btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                            setTimeout(() => {{
+                                btn.innerHTML = originalText;
+                                btn.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)';
+                                btn.disabled = false;
+                                btn.style.opacity = '1';
+                            }}, 2000);
+                        }}, 'image/png', 0.95);
+                        
+                    }} catch (error) {{
+                        console.error('Dashboard capture failed:', error);
+                        btn.innerHTML = '❌ エラー: ' + error.message.substring(0, 20);
+                        btn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+                        setTimeout(() => {{
+                            btn.innerHTML = originalText;
+                            btn.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)';
+                            btn.disabled = false;
+                            btn.style.opacity = '1';
+                        }}, 3000);
+                    }}
+                }}
+                </script>
                 
                 <!-- Chart Grid (responsive) -->
                 <style>
