@@ -508,8 +508,57 @@ def extract_financial_data(xbrl_dir: str) -> Dict[str, Any]:
         # Define namespaces
         namespaces = {
             'jpcrp_cor': 'http://disclosure.edinet-fsa.go.jp/taxonomy/jpcrp/2023-03-31/jpcrp_cor', # Approximate
-            'xbrli': 'http://www.xbrl.org/2003/instance'
+            'xbrli': 'http://www.xbrl.org/2003/instance',
+            'link': 'http://www.xbrl.org/2003/linkbase'
         }
+
+        # Context Analysis: Identify Current Year Contexts to avoid reading Prior Year data
+        valid_contexts = set()
+        context_dates = {}
+        target_ns = namespaces['xbrli']
+        
+        try:
+            # Find all contexts
+            # Note: ElementTree findall needs full namespaced path or *
+            # Using wildcard for safety against prefix variations
+            for context in root.findall(f".//{{{target_ns}}}context"):
+                c_id = context.get("id")
+                if not c_id: continue
+                
+                # specific check for CurrentYear/CurrentPeriod
+                if "CurrentYear" in c_id or "CurrentPeriod" in c_id:
+                    valid_contexts.add(c_id)
+                
+                # Extract date to find the latest one
+                date_val = None
+                
+                # Check for instant
+                instant = context.find(f".//{{{target_ns}}}period/{{{target_ns}}}instant")
+                if instant is not None and instant.text:
+                    date_val = instant.text
+                else:
+                    # Check for endDate
+                    end_date = context.find(f".//{{{target_ns}}}period/{{{target_ns}}}endDate")
+                    if end_date is not None and end_date.text:
+                        date_val = end_date.text
+                
+                if date_val:
+                    context_dates[c_id] = date_val
+
+            # Determine latest date
+            if context_dates:
+                latest_date = max(context_dates.values())
+                logger.info(f"Latest context date identified in XBRL: {latest_date}")
+                
+                # Add all contexts matching the latest date to valid_contexts
+                for c_id, d_val in context_dates.items():
+                    if d_val == latest_date:
+                        valid_contexts.add(c_id)
+            
+            logger.info(f"Selected valid context IDs: {len(valid_contexts)}")
+            
+        except Exception as e:
+            logger.warning(f"Context analysis failed, falling back to simple filtering: {e}")
         
         # Extract qualitative text data
         text_data = {}
@@ -576,6 +625,18 @@ def extract_financial_data(xbrl_dir: str) -> Dict[str, Any]:
             # Skip non-data elements
             if not elem.text or not elem.text.strip():
                 continue
+
+            # Context Filtering
+            # Ensure we only read data from the Current Year / Latest Date
+            context_ref = elem.get("contextRef")
+            if context_ref:
+                # If we successfully identified valid contexts, strict filter
+                if valid_contexts:
+                    if context_ref not in valid_contexts:
+                        continue
+                # Fallback: Filter out obvious Prior/Previous year tags if context anaylsis failed
+                elif "Prior" in context_ref or "Previous" in context_ref:
+                    continue
             
             text = elem.text.strip()
             
@@ -703,9 +764,9 @@ def format_financial_data(data: Dict[str, Any]) -> Dict[str, str]:
         # Handle ratios (ROE, 自己資本比率, etc.)
         if is_ratio_key(key):
             if isinstance(value, (int, float)):
-                # Sanity check: ratios shouldn't exceed 200% normally
-                # If value > 2 (200%), it's probably not a ratio - might be per-share data
-                if abs(value) > 2:
+                # Sanity check: ratios shouldn't exceed 10000% normally
+                # Changed from 2 (200%) to 100 (10000%) to accommodate extreme ROE etc.
+                if abs(value) > 100:
                     # Likely misidentified - treat as currency or skip
                     logger.debug(f"Skipping abnormal ratio value for {key}: {value}")
                     formatted[key] = f"{value:,.2f} (異常値)"
