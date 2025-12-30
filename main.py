@@ -51,6 +51,35 @@ logging.getLogger("uvicorn.access").addHandler(logging.FileHandler(f"{LOG_DIR}/a
 
 app = FastAPI()
 
+@app.on_event("startup")
+async def startup_event():
+    """Run startup tasks including DB migration checks"""
+    logger.info("Application starting up...")
+    
+    # Simple migration check for scale_category
+    try:
+        from database import engine
+        from sqlalchemy import text
+        # Using connect() as a context manager operates in autocommit mode or requires explicit commit depending on driver
+        # For DDL, autocommit is often preferred
+        connection = engine.connect()
+        try:
+            # Check if column exists
+            try:
+                connection.execute(text("SELECT scale_category FROM companies LIMIT 1"))
+            except Exception:
+                logger.info("[Migration] 'scale_category' column missing. Adding it...")
+                # SQLite and PostgreSQL compatible syntax for adding nullable column
+                connection.execute(text("ALTER TABLE companies ADD COLUMN scale_category VARCHAR"))
+                logger.info("[Migration] Successfully added 'scale_category' column.")
+        except Exception as e:
+             logger.error(f"[Migration] Error during migration check: {e}")
+        finally:
+            connection.close()
+            
+    except Exception as e:
+        logger.warning(f"[Migration] Startup migration check failed: {e}")
+
 # Mount static files for PWA support
 from fastapi.staticfiles import StaticFiles
 app.mount("/static", StaticFiles(directory="static"), name="static")
