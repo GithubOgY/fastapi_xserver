@@ -1780,12 +1780,11 @@ async def search_edinet_company(
                             <button 
                                 id="{copy_btn_id}"
                                 onclick="event.stopPropagation(); event.preventDefault(); copyToClipboard('{section_id}', '{copy_btn_id}');"
-                                class="px-1.5 py-0.5 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-300 hover:text-indigo-200 text-xs rounded transition-colors flex items-center gap-0.5"
+                                class="p-0 text-gray-500 hover:text-indigo-400 transition-colors"
                                 title="クリップボードにコピー">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                 </svg>
-                                <span class="copy-btn-label">コピー</span>
                             </button>
                             <span class="text-gray-500 text-sm">クリックして展開</span>
                         </div>
@@ -1882,7 +1881,6 @@ async def search_edinet_company(
                     function copyToClipboard(sectionId, btnId) {{
                         const content = document.getElementById(sectionId);
                         const button = document.getElementById(btnId);
-                        const label = button.querySelector('.copy-btn-label');
                         
                         if (!content) return;
                         
@@ -1891,28 +1889,24 @@ async def search_edinet_company(
                         
                         // Copy to clipboard
                         navigator.clipboard.writeText(text).then(() => {{
-                            // Success feedback
-                            const originalText = label.innerText;
-                            label.innerText = '✓完了';
-                            button.classList.remove('text-indigo-300', 'hover:text-indigo-200');
-                            button.classList.add('text-green-400');
+                            // Success feedback - icon color green
+                            button.classList.remove('text-gray-500', 'hover:text-indigo-400');
+                            button.classList.add('text-green-500');
                             
-                            // Reset after 2 seconds
+                            // Reset after 1.5 seconds
                             setTimeout(() => {{
-                                label.innerText = originalText;
-                                button.classList.remove('text-green-400');
-                                button.classList.add('text-indigo-300', 'hover:text-indigo-200');
-                            }}, 2000);
+                                button.classList.remove('text-green-500');
+                                button.classList.add('text-gray-500', 'hover:text-indigo-400');
+                            }}, 1500);
                         }}).catch(err => {{
                             console.error('コピー失敗:', err);
-                            label.innerText = '✗失敗';
-                            button.classList.remove('text-indigo-300', 'hover:text-indigo-200');
-                            button.classList.add('text-red-400');
+                            // Error feedback - icon color red
+                            button.classList.remove('text-gray-500', 'hover:text-indigo-400');
+                            button.classList.add('text-red-500');
                             setTimeout(() => {{
-                                label.innerText = 'コピー';
-                                button.classList.remove('text-red-400');
-                                button.classList.add('text-indigo-300', 'hover:text-indigo-200');
-                            }}, 2000);
+                                button.classList.remove('text-red-500');
+                                button.classList.add('text-gray-500', 'hover:text-indigo-400');
+                            }}, 1500);
                         }});
                     }}
                 </script>
