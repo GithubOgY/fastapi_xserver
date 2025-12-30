@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Dashboard - 日本株ファンダメンタル分析ツール</title>
-    <meta name="description" content="日本株の財務データを可視化・分析できる無料ツール。トヨタ、ソニー、ソフトバンクなどの業績推移をグラフで確認。">
+    <title>Stock Dashboard - 次世代の日本株AI分析ツール</title>
+    <meta name="description" content="EDINET公式データとAI分析を融合。日本の全上場企業の財務諸表を自動解析し、投資判断を強力にサポートする無料ツール。">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700&display=swap"
@@ -30,6 +30,15 @@
         }
     </script>
     <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #6366f1, #818cf8);
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            --glass-bg: rgba(30, 41, 59, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -38,33 +47,62 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            background: var(--bg-gradient);
             min-height: 100vh;
-            color: #e2e8f0;
+            color: var(--text-primary);
             overflow-x: hidden;
+            line-height: 1.6;
         }
 
-        /* ナビゲーション */
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        /* Utilities */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #ffffff 0%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Navigation */
         nav {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             z-index: 100;
-            padding: 1rem 2rem;
+            padding: 1rem 0;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .nav-content {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .logo {
             font-family: 'Outfit', sans-serif;
             font-size: 1.5rem;
             font-weight: 700;
-            background: linear-gradient(135deg, #818cf8, #c084fc);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo span {
+            background: var(--primary-gradient);
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -77,10 +115,10 @@
 
         .btn {
             padding: 0.6rem 1.5rem;
-            border-radius: 10px;
-            text-decoration: none;
+            border-radius: 9999px;
             font-weight: 500;
             transition: all 0.3s ease;
+            font-size: 0.95rem;
         }
 
         .btn-outline {
@@ -89,196 +127,320 @@
         }
 
         .btn-outline:hover {
-            background: rgba(129, 140, 248, 0.2);
+            background: rgba(129, 140, 248, 0.1);
+            border-color: #818cf8;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #6366f1, #818cf8);
+            background: var(--primary-gradient);
             color: white;
             border: none;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
         }
 
-        /* ヒーローセクション */
+        /* Hero Section */
         .hero {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            padding: 8rem 0 5rem;
             text-align: center;
-            padding: 6rem 2rem 4rem;
+            position: relative;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            padding: 0.4rem 1rem;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 20px;
+            color: #a5b4fc;
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(5px);
         }
 
         .hero h1 {
             font-family: 'Outfit', sans-serif;
-            font-size: 3.5rem;
+            font-size: 4rem;
+            line-height: 1.1;
             margin-bottom: 1.5rem;
-            background: linear-gradient(135deg, #ffffff, #94a3b8);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-weight: 700;
         }
 
         .hero p {
             font-size: 1.25rem;
-            color: #94a3b8;
-            max-width: 600px;
-            margin-bottom: 2.5rem;
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto 3rem;
             line-height: 1.8;
         }
 
         .hero-buttons {
             display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
+            gap: 1.5rem;
             justify-content: center;
+            margin-bottom: 4rem;
         }
 
-        .btn-large {
-            padding: 1rem 2.5rem;
+        .hero-buttons .btn {
             font-size: 1.1rem;
-            border-radius: 14px;
+            padding: 1rem 2.5rem;
         }
 
-        /* 特徴セクション */
-        .features {
-            padding: 5rem 2rem;
-            background: rgba(30, 41, 59, 0.3);
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            max-width: 900px;
+            margin: 0 auto;
+            border-top: 1px solid var(--glass-border);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 2rem 0;
+            background: rgba(15, 23, 42, 0.3);
         }
 
-        .features h2 {
-            font-family: 'Outfit', sans-serif;
-            font-size: 2rem;
+        .stat-item {
             text-align: center;
-            margin-bottom: 3rem;
-            color: #818cf8;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #fff;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 6rem 0;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-header h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        .section-header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
         }
 
         .feature-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 2rem;
-            max-width: 1000px;
-            margin: 0 auto;
         }
 
         .feature-card {
-            background: rgba(30, 41, 59, 0.6);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            padding: 2rem;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2.5rem;
+            position: relative;
+            overflow: hidden;
             transition: all 0.3s ease;
         }
 
         .feature-card:hover {
             transform: translateY(-5px);
             border-color: rgba(129, 140, 248, 0.3);
+            background: rgba(30, 41, 59, 0.8);
         }
 
         .feature-icon {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .feature-card h3 {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1.2rem;
-            margin-bottom: 0.75rem;
-            color: #e2e8f0;
-        }
-
-        .feature-card p {
-            color: #94a3b8;
-            font-size: 0.95rem;
-            line-height: 1.6;
-        }
-
-        /* 使い方セクション */
-        .how-to {
-            padding: 5rem 2rem;
-        }
-
-        .how-to h2 {
-            font-family: 'Outfit', sans-serif;
-            font-size: 2rem;
-            text-align: center;
-            margin-bottom: 3rem;
-            color: #10b981;
-        }
-
-        .steps {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .step {
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-            padding: 1.5rem;
-            background: rgba(30, 41, 59, 0.5);
+            width: 50px;
+            height: 50px;
+            background: rgba(99, 102, 241, 0.1);
             border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .step-number {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #10b981, #34d399);
-            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 700;
-            color: white;
-            flex-shrink: 0;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: #818cf8;
         }
 
-        .step-content h4 {
-            font-size: 1.1rem;
+        .feature-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+
+        /* Strengths Section */
+        .strengths {
+            padding: 6rem 0;
+            background: rgba(15, 23, 42, 0.5);
+            position: relative;
+        }
+
+        .strengths::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%236366f1' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.5;
+            z-index: -1;
+        }
+
+        .grid-2-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .strength-list {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .strength-item {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .strength-number {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3rem;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.1);
+            line-height: 1;
+        }
+
+        .strength-content h4 {
+            font-size: 1.2rem;
             margin-bottom: 0.5rem;
+            color: #fff;
+        }
+
+        .strength-content p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Legal Section */
+        .legal-section {
+            padding: 4rem 0;
+            font-size: 0.85rem;
+            color: #64748b;
+            background: #0f172a;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .legal-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        details.legal-details {
+            background: rgba(30, 41, 59, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        details.legal-details[open] {
+            background: rgba(30, 41, 59, 0.5);
+        }
+
+        details.legal-details summary {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            color: #94a3b8;
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        details.legal-details summary:hover {
             color: #e2e8f0;
         }
 
-        .step-content p {
-            color: #94a3b8;
-            font-size: 0.9rem;
+        details.legal-details summary::after {
+            content: '+';
+            font-size: 1.2rem;
         }
 
-        /* CTA セクション */
-        .cta {
-            padding: 5rem 2rem;
-            text-align: center;
-            background: rgba(99, 102, 241, 0.1);
+        details.legal-details[open] summary::after {
+            content: '-';
         }
 
-        .cta h2 {
-            font-family: 'Outfit', sans-serif;
-            font-size: 2rem;
+        .legal-content {
+            padding: 1.5rem;
+            border-top: 1px solid var(--glass-border);
+            line-height: 1.8;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .legal-content h3 {
+            color: #cbd5e1;
+            margin: 1.5rem 0 1rem;
+            font-size: 1rem;
+        }
+
+        .legal-content p {
             margin-bottom: 1rem;
         }
 
-        .cta p {
-            color: #94a3b8;
-            margin-bottom: 2rem;
+        .legal-content ul,
+        .legal-content ol {
+            margin-bottom: 1rem;
+            padding-left: 1.5rem;
         }
 
-        /* フッター */
+        .legal-content li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Footer */
         footer {
             padding: 2rem;
             text-align: center;
             color: #64748b;
-            font-size: 0.9rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.8rem;
+            border-top: 1px solid var(--glass-border);
+            background: #0b1120;
         }
 
         @media (max-width: 768px) {
@@ -290,12 +452,17 @@
                 font-size: 1rem;
             }
 
-            nav {
-                padding: 1rem;
+            .grid-2-col {
+                grid-template-columns: 1fr;
+                gap: 2rem;
             }
 
-            .logo {
-                font-size: 1.2rem;
+            .container {
+                padding: 0 1.5rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
             }
         }
     </style>
@@ -303,81 +470,217 @@
 
 <body>
     <nav>
-        <div class="logo">📊 Stock Dashboard</div>
-        <div class="nav-buttons">
-            <a href="/login" class="btn btn-outline">ログイン</a>
-            <a href="/register" class="btn btn-primary">無料で始める</a>
+        <div class="container nav-content">
+            <div class="logo">
+                📊 <span class="gradient-text">Stock Dashboard</span>
+            </div>
+            <div class="nav-buttons">
+                <a href="/login" class="btn btn-outline">ログイン</a>
+                <a href="/register" class="btn btn-primary">登録する</a>
+            </div>
         </div>
     </nav>
 
-    <section class="hero">
-        <h1>日本株の業績を<br>ひと目で把握</h1>
-        <p>
-            トヨタ、ソニー、ソフトバンクなど主要企業の財務データを
-            美しいグラフで可視化。投資判断に必要な情報をすぐに確認できます。
-        </p>
-        <div class="hero-buttons">
-            <a href="/register" class="btn btn-primary btn-large">無料アカウント作成</a>
-            <a href="/login" class="btn btn-outline btn-large">ログイン</a>
-        </div>
-    </section>
+    <!-- Hero Section -->
+    <div class="hero">
+        <div class="container">
+            <span class="hero-badge">✨ Gemini Pro AI 搭載</span>
+            <h1 class="gradient-text">データとAIで導く<br>確かな投資判断</h1>
+            <p>
+                EDINETの公式財務データと最新のAI分析を融合。<br>
+                プロレベルのファンダメンタル分析を、誰でも簡単に。
+            </p>
+            <div class="hero-buttons">
+                <a href="/register" class="btn btn-primary">無料で始める</a>
+                <a href="/login" class="btn btn-outline">デモを見る</a>
+            </div>
 
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value">3,900+</div>
+                    <div class="stat-label">全上場企業対応</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">100%</div>
+                    <div class="stat-label">EDINET公式データ</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">AI</div>
+                    <div class="stat-label">自動定性分析</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
     <section class="features">
-        <h2>✨ 主な機能</h2>
-        <div class="feature-grid">
-            <div class="feature-card">
-                <div class="feature-icon">📈</div>
-                <h3>業績グラフ</h3>
-                <p>売上収益・営業利益・純利益の推移をインタラクティブなグラフで表示。トレンドを一目で把握できます。</p>
+        <div class="container">
+            <div class="section-header">
+                <h2>Why Stock Dashboard?</h2>
+                <p>投資家の「知りたい」に直結する機能</p>
             </div>
-            <div class="feature-card">
-                <div class="feature-icon">🔄</div>
-                <h3>自動データ更新</h3>
-                <p>Yahoo Finance APIと連携し、最新の財務データをワンクリックで取得・更新できます。</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">🏢</div>
-                <h3>複数銘柄管理</h3>
-                <p>複数の企業を登録して、簡単に切り替えながら比較分析できます。</p>
-            </div>
-        </div>
-    </section>
 
-    <section class="how-to">
-        <h2>🚀 使い方</h2>
-        <div class="steps">
-            <div class="step">
-                <div class="step-number">1</div>
-                <div class="step-content">
-                    <h4>アカウント作成</h4>
-                    <p>メールアドレス不要。ユーザー名とパスワードだけで無料登録できます。</p>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3>AI財務分析</h3>
+                    <p>Google Gemini AIが財務諸表だけでなく、有価証券報告書の定性情報（経営者による分析、対処すべき課題など）も読み込み、企業の強みとリスクを要約します。</p>
                 </div>
-            </div>
-            <div class="step">
-                <div class="step-number">2</div>
-                <div class="step-content">
-                    <h4>銘柄を選択</h4>
-                    <p>ダッシュボードから分析したい銘柄を選択します。</p>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>EDINET公式データ連携</h3>
+                    <p>国の開示システム「EDINET」からXBRLデータを直接取得。加工されていない一次情報を元にした、信頼性の高いデータ分析が可能です。</p>
                 </div>
-            </div>
-            <div class="step">
-                <div class="step-number">3</div>
-                <div class="step-content">
-                    <h4>データを確認</h4>
-                    <p>グラフとテーブルで直近4年分の財務データを確認できます。</p>
+
+                <div class="feature-card">
+                    <div class="feature-icon">💹</div>
+                    <h3>バリュエーション評価</h3>
+                    <p>PER、PBR、ROEなどの主要指標はもちろん、キャッシュフローの推移や自己資本比率など、企業の安全性を測る指標も即座に可視化します。</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🔎</div>
+                    <h3>スクリーニング＆比較</h3>
+                    <p>条件に合う銘柄の検索や、気になる銘柄同士の財務比較が簡単に行えます。ウォッチリスト機能で監視銘柄を一元管理。</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="cta">
-        <h2>今すぐ始めましょう</h2>
-        <p>完全無料で利用できます。登録は30秒で完了します。</p>
-        <a href="/register" class="btn btn-primary btn-large">無料アカウント作成 →</a>
+    <!-- Strengths Section -->
+    <section class="strengths">
+        <div class="container">
+            <div class="grid-2-col">
+                <div>
+                    <h2 style="font-size: 2.5rem; margin-bottom: 1.5rem; color: #fff; font-family: 'Outfit';">
+                        本質的な価値を<br>見極めるために</h2>
+                    <p style="color: #94a3b8; font-size: 1.1rem; line-height: 1.8;">
+                        株価の値動きだけでなく、企業の「稼ぐ力」や「財務の質」に着目した分析ツールです。<br><br>
+                        ノイズの多い市場情報に惑わされず、数字と事実に裏付けられた投資判断をサポートします。
+                    </p>
+                </div>
+                <div class="strength-list">
+                    <div class="strength-item">
+                        <div class="strength-number">01</div>
+                        <div class="strength-content">
+                            <h4>客観的なデータ主義</h4>
+                            <p>感情や思惑を排し、公開された財務データのみに基づいた客観的な分析結果を提供します。</p>
+                        </div>
+                    </div>
+                    <div class="strength-item">
+                        <div class="strength-number">02</div>
+                        <div class="strength-content">
+                            <h4>時間の節約</h4>
+                            <p>膨大な有価証券報告書をAIが要約。数時間かかる分析作業を数秒に短縮します。</p>
+                        </div>
+                    </div>
+                    <div class="strength-item">
+                        <div class="strength-number">03</div>
+                        <div class="strength-content">
+                            <h4>継続的な機能進化</h4>
+                            <p>個人開発ならではのスピード感で、ユーザーの声を反映した機能改善を日々行っています。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Legal Section -->
+    <section class="legal-section">
+        <div class="container legal-container">
+            <h2 style="text-align: center; color: #e2e8f0; margin-bottom: 2rem; font-size: 1.5rem;">利用規約・免責事項</h2>
+
+            <details class="legal-details">
+                <summary>免責事項・禁止事項</summary>
+                <div class="legal-content">
+                    <p>本サービスに掲載する情報は、投資判断の参考として投資一般に関する情報提供を目的としたものであり、投資の勧誘を目的としたものではありません。投資に関する最終的な決定は、利用者ご自身の判断でお願いします。
+                    </p>
+                    <p>本サービスの情報の内容に関しては万全を期していますが、その内容の正確性および安全性を保証するものではありません。当該情報に基づいて被ったいかなる損害についても、本サービス運営者および情報提供者は一切の責任を負いかねます。
+                    </p>
+                    <p>また、サービス内から他のサイトやリソースへリンクしたり、第三者が他のサイトやリソースへのリンクを提供している場合があります。移動された先のページは本サービス運営者または情報提供者が管理するものでも運営するものではありません。よって、その内容の真偽等につきまして本サービス運営者および情報提供者は一切責任を負いかねますのでご了承ください。
+                    </p>
+                    <p>なお、予告なしに内容が変更または廃止される場合もあります。あらかじめご了承ください。</p>
+                    <p><strong>禁止事項</strong></p>
+                    <p>本サービスに掲載する情報の著作権その他一切の権利は、本サービス運営者、情報提供者またはその他の権利者に帰属します。当該掲載情報の転用、複製および外部配信ならびに販売を含む商用利用等の一切を固く禁じています。
+                    </p>
+                </div>
+            </details>
+
+            <details class="legal-details">
+                <summary>利用規約</summary>
+                <div class="legal-content">
+                    <p>この利用規約（以下「本利用規約」といいます。）は、本サービス運営者（以下「運営者」といいます。）の提供するサービス（以下「本サービス」といいます。）をご利用になるすべての方（以下「お客様」といいます。）に共通して適用されます。
+                    </p>
+
+                    <h3>第1章 総則</h3>
+                    <p><strong>1. 本サービスのご利用</strong><br>
+                        代金の有無、アカウント登録の要否にかかわらず、本サービスをご利用いただくためには、本利用規約にご同意いただくことが必要です。無料で提供している本サービスにつきましては、実際にご利用いただくことにより本利用規約にご同意いただいたものとします。
+                    </p>
+
+                    <p><strong>2. 本サービスの利用制限</strong><br>
+                        運営者は、本サービスのご利用をアカウントを登録された方に限定したり、一定の要件を満たしたお客様のみに限定したりする等、利用に際して条件を付すことができるものとします。運営者は、反社会的勢力の構成員およびその関係者の方や、本サービスを悪用したり、第三者に迷惑をかけたりするようなお客様に対してはご利用をお断りしています。
+                    </p>
+
+                    <p><strong>3. アカウントの登録情報</strong><br>
+                        アカウントを登録していただく場合、真実かつ正確な情報を登録していただくことがお客様の義務となります。アカウントは、お客様に一身専属的に帰属します。すべての利用権は、第三者に譲渡、貸与その他の処分または相続させることはできません。
+                    </p>
+
+                    <p><strong>4. お客様のデータおよびコンテンツの取扱い</strong><br>
+                        お客様が運営者の管理するサーバーに保存しているデータや投稿コンテンツについて、運営者ではバックアップの義務を負わないものとし、お客様ご自身においてバックアップを行っていただくものとします。
+                    </p>
+
+                    <p><strong>5. アカウントおよびパスワード等に関するお客様の責任</strong><br>
+                        お客様は、本サービスのご利用に際して認証情報を登録する場合、これを不正に利用されないようご自身の責任で厳重に管理しなければなりません。運営者は、登録されたお客様の認証情報を利用して操作が行われた場合には、お客様ご本人の行為として本サービスを提供します。
+                    </p>
+
+                    <h3>第2章 本サービスの提供・変更・中断</h3>
+                    <p><strong>6. 本サービスの提供</strong><br>
+                        お客様は、本サービスを利用するにあたり、必要な通信機器、通信手段および電力等を、お客様の費用と責任で用意しなければなりません。
+                        運営者は、システムのメンテナンス、天災、事故、システム障害、その他運営者が必要と判断した場合、本サービスの全部または一部の提供を一時的に停止することができます。
+                    </p>
+
+                    <p><strong>7. 本サービスの保証および変更</strong><br>
+                        運営者は、本サービスの内容について、不具合（バグやエラーを含みます）がないこと、その安全性、正確性、完全性、有効性および特定の目的への適合性を保証していません。運営者は、お客様に対して、これらの不具合を除去して本サービスを提供する義務を負いません。また、運営者は事前の通知なく本サービスの内容を変更・終了することがあります。
+                    </p>
+
+                    <h3>第3章 禁止事項・免責</h3>
+                    <p><strong>8. 禁止事項</strong><br>
+                        本サービスのご利用に際しては、以下に定める行為を禁止いたします。<br>
+                        (1) 法令、裁判所の判決、決定もしくは命令、または法令上拘束力のある行政措置に違反する行為<br>
+                        (2) 公序良俗に反する行為<br>
+                        (3) 運営者または第三者の権利を侵害する行為<br>
+                        (4) 本サービスのサーバーやネットワークシステムに支障を与える行為、BOT等の技術的手段を利用して本サービスを不正に操作する行為<br>
+                        (5) 本サービスの不具合を意図的に利用する行為<br>
+                        (6) 営業、宣伝、広告、勧誘、その他営利を目的とする行為（運営者が認めたものを除きます）<br>
+                        (7) 反社会的勢力に対する利益供与その他の協力行為<br>
+                        (8) その他、運営者が不適当と判断した行為
+                    </p>
+
+                    <p><strong>9. 利用停止・アカウント削除</strong><br>
+                        運営者は、お客様が本利用規約に違反した場合、その他運営者が不適切と判断した場合には、あらかじめ通知することなく、本サービスの利用停止、アカウント削除等の措置を講じることができるものとします。
+                    </p>
+
+                    <p><strong>10. 免責事項</strong><br>
+                        運営者の責任は、その性質を問わず、運営者の故意または重過失によらない場合には免責されるものとします。
+                    </p>
+
+                    <p><strong>11. 準拠法、裁判管轄</strong><br>
+                        本利用規約は日本法を準拠法とします。本サービスに起因または関連して運営者とお客様との間で生じた紛争については東京地方裁判所を第一審の専属的合意管轄裁判所とします。
+                    </p>
+                </div>
+            </details>
+        </div>
     </section>
 
     <footer>
-        <p>© 2024 Stock Dashboard. All rights reserved.</p>
+        <div class="container">
+            <p>© 2024 Stock Dashboard. All rights reserved.</p>
+            <p style="margin-top: 0.5rem; opacity: 0.6; font-size: 0.75rem;">
+                本サイトの提供する情報は投資勧誘を目的としたものではありません。投資判断は自己責任で行ってください。
+            </p>
+        </div>
     </footer>
 </body>
 
