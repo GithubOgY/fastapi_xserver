@@ -1552,7 +1552,7 @@ async def lookup_yahoo_finance(
                 </div>
                 
                 <!-- Visual Analysis Result Container -->
-                <div id="visual-analysis-result" style="display: none; margin-bottom: 1rem; padding: 1rem; background: rgba(15, 23, 42, 0.95); border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.4); max-height: 600px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #6366f1 rgba(30, 41, 59, 0.5);">
+                <div id="visual-analysis-result" style="display: none; margin-bottom: 1rem; padding: 1rem; background: rgba(15, 23, 42, 0.95); border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.4); max-height: 600px; overflow-y: scroll; scrollbar-width: thin; scrollbar-color: #6366f1 rgba(30, 41, 59, 0.5);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; position: sticky; top: 0; background: rgba(15, 23, 42, 0.95); padding: 0.5rem 0; border-bottom: 1px solid rgba(99, 102, 241, 0.2); z-index: 10;">
                         <h4 style="margin: 0; color: #a5b4fc; font-size: 0.95rem; font-weight: 600;">🤖 AI画像診断レポート</h4>
                         <button onclick="document.getElementById('visual-analysis-result').style.display='none'" 
