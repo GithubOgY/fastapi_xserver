@@ -81,6 +81,13 @@
             transition: background 0.3s ease, color 0.3s ease;
         }
 
+        /* スマホ表示の横幅を10%拡大 */
+        @media (max-width: 768px) {
+            body {
+                padding: 0.8rem;
+            }
+        }
+
         .container {
             width: 100%;
             max-width: 1200px;
@@ -340,8 +347,13 @@
 
         /* Responsive adjustments */
         @media (max-width: 768px) {
+            body {
+                padding: 0.8rem;
+            }
+
             .container {
-                padding: 1.5rem;
+                padding: 1rem;
+                max-width: 100%;
             }
 
             h1 {
