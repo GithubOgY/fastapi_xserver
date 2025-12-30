@@ -2341,7 +2341,15 @@ def api_ai_analyze(
         history = get_financial_history(company_code=clean_code, years=1)
         if history and len(history) > 0:
             data = history[0]
-            financial_context = data.get("normalized_data", {})
+            # Generate summary text using the fixed formatter
+            summary_text = _format_summary(data.get("normalized_data", {}))
+            
+            # Build context correctly for ai_analysis
+            financial_context = {
+                "summary_text": summary_text,
+                "edinet_data": data, # Complete data including text_data
+                "normalized_data": data.get("normalized_data", {})
+            }
             meta = data.get("metadata", {})
             company_name = meta.get("company_name", company_name)
         
