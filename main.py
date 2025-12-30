@@ -1538,7 +1538,7 @@ async def lookup_yahoo_finance(
                     </h2>
                     <button id="capture-dashboard-btn" onclick="captureDashboard()" 
                         style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 8px; cursor: pointer; font-size: 0.75rem; display: flex; align-items: center; gap: 0.3rem; transition: all 0.2s;">
-                        📸 グラフをキャプチャ
+                        📋 グラフをコピー
                     </button>
                 </div>
                 
@@ -1575,27 +1575,44 @@ async def lookup_yahoo_finance(
                             windowWidth: 1280
                         }});
                         
-                        // Convert to blob for download
-                        canvas.toBlob(function(blob) {{
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = 'dashboard_' + new Date().toISOString().slice(0,10) + '.png';
-                            document.body.appendChild(a);
-                            a.click();
-                            document.body.removeChild(a);
-                            URL.revokeObjectURL(url);
-                            
-                            // Success feedback
-                            btn.innerHTML = '✅ ダウンロード完了!';
-                            btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
-                            setTimeout(() => {{
-                                btn.innerHTML = originalText;
-                                btn.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)';
-                                btn.disabled = false;
-                                btn.style.opacity = '1';
-                            }}, 2000);
-                        }}, 'image/png', 0.95);
+                        // Copy to clipboard using Clipboard API
+                        canvas.toBlob(async function(blob) {{
+                            try {{
+                                // Use Clipboard API to copy image
+                                const clipboardItem = new ClipboardItem({{ 'image/png': blob }});
+                                await navigator.clipboard.write([clipboardItem]);
+                                
+                                // Success feedback
+                                btn.innerHTML = '✅ クリップボードにコピー!';
+                                btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                                setTimeout(() => {{
+                                    btn.innerHTML = originalText;
+                                    btn.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)';
+                                    btn.disabled = false;
+                                    btn.style.opacity = '1';
+                                }}, 2000);
+                            }} catch (clipboardError) {{
+                                // Fallback: If clipboard fails, offer download instead
+                                console.warn('Clipboard failed, falling back to download:', clipboardError);
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = 'dashboard_' + new Date().toISOString().slice(0,10) + '.png';
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                URL.revokeObjectURL(url);
+                                
+                                btn.innerHTML = '📥 ダウンロード完了 (コピー非対応)';
+                                btn.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+                                setTimeout(() => {{
+                                    btn.innerHTML = originalText;
+                                    btn.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)';
+                                    btn.disabled = false;
+                                    btn.style.opacity = '1';
+                                }}, 2500);
+                            }}
+                        }}, 'image/png', 1.0);
                         
                     }} catch (error) {{
                         console.error('Dashboard capture failed:', error);
