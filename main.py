@@ -2,19 +2,20 @@ from fastapi import FastAPI, Request, Form, Depends, HTTPException, status, Resp
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
 from typing import Annotated, Optional
+from typing import List, Optional, Annotated
 from sqlalchemy.orm import Session
 from database import SessionLocal, CompanyFundamental, User, Company, UserFavorite, StockComment, UserProfile, UserFollow, AIAnalysisCache
 from utils.mail_sender import send_email
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
-from dotenv import load_dotenv
+from dotenv import os
+import sys
 import logging
 import time
-import os
 import json
-import yfinance as yf
-import pandas as pd
+import asyncio
+import html
 import requests
 import urllib.parse
 from utils.edinet_enhanced import get_financial_history, format_financial_data, search_company_reports, process_document
@@ -302,11 +303,19 @@ def sync_stock_data(db: Session, target_ticker: Optional[str] = None):
         except Exception as e:
             error_msg = f"同期エラー: {str(e)[:50]}"
             logger.error(f"Major error for {ticker_symbol}: {str(e)}")
-            company.last_sync_at = now_str
-            company.last_sync_error = error_msg
-            db.commit()
             db.rollback()
-
+            try:
+                # Re-fetch company to ensure attached to session after rollback if needed, 
+                # or just rely on session expiry. 
+                # Safety: Re-query to be sure.
+                company = db.query(Company).filter(Company.ticker == ticker_symbol).first()
+                if company:
+                    company.last_sync_at = now_str
+                    company.last_sync_error = error_msg
+                    db.commit()
+            except Exception as secondary_e:
+                logger.error(f"Failed to update error status for {ticker_symbol}: {secondary_e}")
+                db.rollback()
 # --- Routes & Endpoints ---
 @app.get("/demo", response_class=HTMLResponse)
 async def demo(request: Request):
@@ -980,7 +989,7 @@ async def list_comments(
                         <a href="/u/{comment.user.username}" style="color: #94a3b8; font-size: 0.8rem; font-weight: 600; text-decoration: none;" onmouseover="this.style.color='#818cf8'" onmouseout="this.style.color='#94a3b8'">@{comment.user.username}</a>
                         <span style="color: #475569; font-size: 0.75rem;">{comment.created_at.strftime('%Y-%m-%d %H:%M')}</span>
                     </div>
-                    <div style="color: #f8fafc; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap;">{comment.content}</div>
+                    <div style="color: #f8fafc; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap;">{html.escape(comment.content)}</div>
                     <div style="text-align: right; margin-top: 0.5rem;">
                         {delete_btn}
                     </div>
@@ -1022,7 +1031,7 @@ async def post_comment(
                 <a href="/u/{current_user.username}" style="color: #10b981; font-size: 0.8rem; font-weight: 600; text-decoration: none;" onmouseover="this.style.color='#34d399'" onmouseout="this.style.color='#10b981'">@{current_user.username}</a>
                 <span style="color: #475569; font-size: 0.75rem;">Now</span>
             </div>
-            <div style="color: #f8fafc; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap;">{comment.content}</div>
+            <div style="color: #f8fafc; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap;">{html.escape(comment.content)}</div>
             <div style="text-align: right; margin-top: 0.5rem;">
                  <button hx-delete="/api/comments/{comment.id}" hx-confirm="この投稿を削除しますか？" hx-target="closest .comment-card" hx-swap="outerHTML"
                     style="background: transparent; border: none; color: #f43f5e; cursor: pointer; font-size: 0.75rem; opacity: 0.6; padding: 0;">
@@ -1552,16 +1561,36 @@ async def lookup_yahoo_finance(
                 </div>
                 
                 <!-- Visual Analysis Result Container -->
-                <div id="visual-analysis-result" style="display: none; margin-bottom: 1rem; padding: 1rem; background: rgba(15, 23, 42, 0.95); border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.4); max-height: 600px; overflow-y: scroll; scrollbar-width: thin; scrollbar-color: #6366f1 rgba(30, 41, 59, 0.5);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; position: sticky; top: 0; background: rgba(15, 23, 42, 0.95); padding: 0.5rem 0; border-bottom: 1px solid rgba(99, 102, 241, 0.2); z-index: 10;">
+                <div id="visual-analysis-result" style="display: none; margin-bottom: 1rem; padding: 1rem; background: rgba(15, 23, 42, 0.95); border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.4);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgba(99, 102, 241, 0.2);">
                         <h4 style="margin: 0; color: #a5b4fc; font-size: 0.95rem; font-weight: 600;">🤖 AI画像診断レポート</h4>
                         <button onclick="document.getElementById('visual-analysis-result').style.display='none'" 
                             style="background: rgba(239, 68, 68, 0.2); border: none; color: #fb7185; cursor: pointer; font-size: 0.8rem; padding: 0.25rem 0.5rem; border-radius: 4px;">✕ 閉じる</button>
                     </div>
+                    
+                    <!-- markedライブラリの読み込み -->
+                    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+                    
                     <style>
-                        /* Base styles for Markdown content */
-                        #visual-analysis-content {{ color: #e2e8f0; font-size: 0.95rem; line-height: 1.8; }}
-                        #visual-analysis-content h1, #visual-analysis-content h2, #visual-analysis-content h3 {{ color: #a5b4fc; margin-top: 1.5rem; margin-bottom: 0.75rem; font-weight: 700; }}
+                        /* スクロール可能なコンテンツエリア */
+                        #visual-analysis-content {{
+                            max-height: 500px;
+                            overflow-y: auto;
+                            padding-right: 0.5rem;
+                            color: #e2e8f0; 
+                            font-size: 0.95rem; 
+                            line-height: 1.8;
+                        }}
+                        
+                        /* Markdown スタイル */
+                        #visual-analysis-content h1, 
+                        #visual-analysis-content h2, 
+                        #visual-analysis-content h3 {{ 
+                            color: #a5b4fc; 
+                            margin-top: 1.5rem; 
+                            margin-bottom: 0.75rem; 
+                            font-weight: 700; 
+                        }}
                         #visual-analysis-content h1 {{ font-size: 1.5rem; border-bottom: 1px solid rgba(99, 102, 241, 0.4); padding-bottom: 0.5rem; }}
                         #visual-analysis-content h2 {{ font-size: 1.25rem; }}
                         #visual-analysis-content h3 {{ font-size: 1.15rem; }}
@@ -1569,17 +1598,45 @@ async def lookup_yahoo_finance(
                         #visual-analysis-content ul, #visual-analysis-content ol {{ padding-left: 1.5rem; margin-bottom: 1.2rem; }}
                         #visual-analysis-content li {{ margin-bottom: 0.6rem; }}
                         #visual-analysis-content strong {{ color: #fbbf24; font-weight: 700; }}
-                        #visual-analysis-content table {{ width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.9rem; background: rgba(30, 41, 59, 0.4); }}
-                        #visual-analysis-content th {{ background: rgba(99, 102, 241, 0.25); color: #c7d2fe; padding: 0.8rem; border: 1px solid rgba(71, 85, 105, 0.6); text-align: left; }}
-                        #visual-analysis-content td {{ padding: 0.8rem; border: 1px solid rgba(71, 85, 105, 0.6); color: #e2e8f0; }}
-                        #visual-analysis-content blockquote {{ border-left: 4px solid #6366f1; padding-left: 1rem; color: #94a3b8; margin: 1.5rem 0; font-style: italic; background: rgba(99, 102, 241, 0.05); padding: 0.5rem 1rem; border-radius: 0 8px 8px 0; }}
                         
-                        /* Custom scrollbar look */
-                        #visual-analysis-result::-webkit-scrollbar {{ width: 10px; }}
-                        #visual-analysis-result::-webkit-scrollbar-track {{ background: rgba(15, 23, 42, 0.6); border-radius: 5px; }}
-                        #visual-analysis-result::-webkit-scrollbar-thumb {{ background: #6366f1; border-radius: 5px; border: 2px solid rgba(15, 23, 42, 0.6); }}
-                        #visual-analysis-result::-webkit-scrollbar-thumb:hover {{ background: #818cf8; }}
+                        /* テーブルスタイル */
+                        #visual-analysis-content table {{ 
+                            width: 100%; 
+                            border-collapse: collapse; 
+                            margin: 1.5rem 0; 
+                            font-size: 0.9rem; 
+                            background: rgba(30, 41, 59, 0.4); 
+                        }}
+                        #visual-analysis-content th {{ 
+                            background: rgba(99, 102, 241, 0.25); 
+                            color: #c7d2fe; 
+                            padding: 0.8rem; 
+                            border: 1px solid rgba(71, 85, 105, 0.6); 
+                            text-align: left; 
+                        }}
+                        #visual-analysis-content td {{ 
+                            padding: 0.8rem; 
+                            border: 1px solid rgba(71, 85, 105, 0.6); 
+                            color: #e2e8f0; 
+                        }}
+                        #visual-analysis-content blockquote {{ 
+                            border-left: 4px solid #6366f1; 
+                            padding-left: 1rem; 
+                            color: #94a3b8; 
+                            margin: 1.5rem 0; 
+                            font-style: italic; 
+                            background: rgba(99, 102, 241, 0.05); 
+                            padding: 0.5rem 1rem; 
+                            border-radius: 0 8px 8px 0; 
+                        }}
+                        
+                        /* カスタムスクロールバー */
+                        #visual-analysis-content::-webkit-scrollbar {{ width: 8px; }}
+                        #visual-analysis-content::-webkit-scrollbar-track {{ background: rgba(15, 23, 42, 0.6); border-radius: 4px; }}
+                        #visual-analysis-content::-webkit-scrollbar-thumb {{ background: #6366f1; border-radius: 4px; }}
+                        #visual-analysis-content::-webkit-scrollbar-thumb:hover {{ background: #818cf8; }}
                     </style>
+                    
                     <div id="visual-analysis-content"></div>
                 </div>
                 
@@ -1706,8 +1763,9 @@ async def lookup_yahoo_finance(
                         if (data.error) throw new Error(data.error);
                         
                         let markdown = data.markdown || '';
-                        if (markdown.includes('\\\\n')) markdown = markdown.split('\\\\n').join('\\n');
-                        if (markdown.includes('\\\\t')) markdown = markdown.split('\\\\t').join('\\t');
+                        
+                        // 改行コードの正規化（エスケープされた改行を実際の改行に変換）
+                        markdown = markdown.replace(/\\\\n/g, '\\n').replace(/\\\\t/g, '\\t');
                         
                         let html = '';
                         if (data.cached) {{
@@ -1716,22 +1774,30 @@ async def lookup_yahoo_finance(
                             html += '<div style="margin-bottom:0.5rem;"><span style="background:rgba(99,102,241,0.2);color:#818cf8;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.7rem;">🆕 新規生成</span></div>';
                         }}
                         
-                        if (typeof marked !== 'undefined') {{
-                            // Pre-process markdown to ensure table pipes have whitespace for better parsing
-                            // e.g., |指標| -> | 指標 |
-                            var cleanMarkdown = markdown.replace(/\\|(?![\\s])/g, '| ').replace(/(?<![\\s])\\|/g, ' |');
-                            
-                            // Configure marked for maximum GFM compatibility
-                            marked.setOptions({{
-                                breaks: true,
-                                gfm: true,
-                                headerIds: false,
-                                mangle: false
-                            }});
-                            
-                            html += marked.parse(cleanMarkdown);
+                        // markedライブラリでMarkdownをパース
+                        if (typeof marked !== 'undefined' && typeof marked.parse === 'function') {{
+                            try {{
+                                // markedの設定
+                                marked.setOptions({{
+                                    breaks: true,
+                                    gfm: true
+                                }});
+                                
+                                html += marked.parse(markdown);
+                                console.log('Markdown parsed successfully with marked');
+                            }} catch (parseError) {{
+                                console.error('Marked parse error:', parseError);
+                                html += '<pre style="white-space: pre-wrap; word-break: break-word; color: #e2e8f0; line-height: 1.8;">' + markdown + '</pre>';
+                            }}
                         }} else {{
-                            html += '<pre style="white-space: pre-wrap; word-break: break-all; color: #94a3b8;">' + markdown + '</pre>';
+                            console.warn('marked library not available, using pre tag');
+                            // markedがない場合は簡易的なHTMLエスケープと改行処理
+                            const escaped = markdown
+                                .replace(/&/g, '&amp;')
+                                .replace(/</g, '&lt;')
+                                .replace(/>/g, '&gt;')
+                                .replace(/\\n/g, '<br>');
+                            html += '<div style="white-space: pre-wrap; word-break: break-word; color: #e2e8f0; line-height: 1.8;">' + escaped + '</div>';
                         }}
                         
                         resultContent.innerHTML = html;
