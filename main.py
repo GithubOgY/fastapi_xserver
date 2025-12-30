@@ -68,34 +68,77 @@ async def background_sync_jquants():
 
 @app.on_event("startup")
 async def startup_event():
-    """Run startup tasks including DB migration checks"""
+    """Unified startup tasks: migration, initial data, and initialization"""
     logger.info("Application starting up...")
     
-    # Simple migration check for scale_category
+    # 1. DB Migration Check
     try:
         from database import engine
         from sqlalchemy import text
-        # Using connect() as a context manager operates in autocommit mode or requires explicit commit depending on driver
-        # For DDL, autocommit is often preferred
-        connection = engine.connect()
-        try:
-            # Check if column exists
+        with engine.connect() as connection:
+            # Check scale_category
             try:
                 connection.execute(text("SELECT scale_category FROM companies LIMIT 1"))
             except Exception:
                 logger.info("[Migration] 'scale_category' column missing. Adding it...")
-                # SQLite and PostgreSQL compatible syntax for adding nullable column
                 connection.execute(text("ALTER TABLE companies ADD COLUMN scale_category VARCHAR"))
                 logger.info("[Migration] Successfully added 'scale_category' column.")
-        except Exception as e:
-             logger.error(f"[Migration] Error during migration check: {e}")
-        finally:
-            connection.close()
             
+            # Check last_sync columns
+            try:
+                connection.execute(text("SELECT last_sync_at FROM companies LIMIT 1"))
+            except Exception:
+                logger.info("[Migration] 'last_sync' columns missing. Adding them...")
+                connection.execute(text("ALTER TABLE companies ADD COLUMN last_sync_at VARCHAR"))
+                connection.execute(text("ALTER TABLE companies ADD COLUMN last_sync_error VARCHAR"))
+                logger.info("[Migration] Successfully added last_sync columns.")
+            
+            # Check is_admin column
+            try:
+                connection.execute(text("SELECT is_admin FROM users LIMIT 1"))
+            except Exception:
+                logger.info("[Migration] 'is_admin' column missing. Adding it...")
+                connection.execute(text("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0"))
+                logger.info("[Migration] Successfully added 'is_admin' column.")
+            
+            # Commit changes if not autocommited
+            connection.commit()
     except Exception as e:
         logger.warning(f"[Migration] Startup migration check failed: {e}")
     
-    # Trigger background sync to ensure data is populated
+    # 2. Initial Data Setup
+    db = SessionLocal()
+    try:
+        # Admin user
+        if db.query(User).count() == 0:
+            admin_user = User(username=ADMIN_USERNAME, hashed_password=get_hashed_password(ADMIN_PASSWORD), is_admin=1)
+            db.add(admin_user)
+            db.commit()
+            logger.info(f"Created initial admin user: {ADMIN_USERNAME}")
+        else:
+            admin = db.query(User).filter(User.username == ADMIN_USERNAME).first()
+            if admin and not admin.is_admin:
+                admin.is_admin = 1
+                db.commit()
+                logger.info(f"Ensured admin status for: {ADMIN_USERNAME}")
+        
+        # Initial companies
+        if db.query(Company).count() == 0:
+            initial_companies = {
+                "7203.T": "トヨタ自動車",
+                "6758.T": "ソニーグループ",
+                "9984.T": "ソフトバンクグループ"
+            }
+            for ticker, name in initial_companies.items():
+                db.add(Company(ticker=ticker, name=name))
+            db.commit()
+            logger.info("Added initial companies.")
+    except Exception as e:
+        logger.error(f"Initial data setup error: {e}")
+    finally:
+        db.close()
+    
+    # 3. Background Tasks
     asyncio.create_task(background_sync_jquants())
 
 # Mount static files for PWA support
@@ -264,54 +307,7 @@ def sync_stock_data(db: Session, target_ticker: Optional[str] = None):
             db.commit()
             db.rollback()
 
-# 初期データの設定
-@app.on_event("startup")
-def startup_event():
-    db = SessionLocal()
-    try:
-        # DBスキーマの自動更新 (簡単なマイグレーション)
-        from sqlalchemy import text
-        try:
-            db.execute(text("ALTER TABLE companies ADD COLUMN last_sync_at VARCHAR"))
-            db.execute(text("ALTER TABLE companies ADD COLUMN last_sync_error VARCHAR"))
-            db.commit()
-            logger.info("Database schema updated: added last_sync columns.")
-        except Exception:
-            db.rollback()
-
-        # is_admin カラムの追加
-        try:
-            db.execute(text("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0"))
-            db.commit()
-            logger.info("Database schema updated: added is_admin column.")
-        except Exception:
-            db.rollback()
-
-        if db.query(User).count() == 0:
-            admin_user = User(username=ADMIN_USERNAME, hashed_password=get_hashed_password(ADMIN_PASSWORD), is_admin=1)
-            db.add(admin_user)
-            db.commit()
-        else:
-            # 既存のadminユーザーに管理者権限を付与
-            admin = db.query(User).filter(User.username == ADMIN_USERNAME).first()
-            if admin and not admin.is_admin:
-                admin.is_admin = 1
-                db.commit()
-        
-        if db.query(Company).count() == 0:
-            initial_companies = {
-                "7203.T": "トヨタ自動車",
-                "6758.T": "ソニーグループ",
-                "9984.T": "ソフトバンクグループ"
-            }
-            for ticker, name in initial_companies.items():
-                db.add(Company(ticker=ticker, name=name))
-            db.commit()
-    except Exception as e:
-        logger.error(f"Startup error: {str(e)}")
-    finally:
-        db.close()
-
+# --- Routes & Endpoints ---
 @app.get("/demo", response_class=HTMLResponse)
 async def demo(request: Request):
     return templates.TemplateResponse("demo.html", {"request": request})
@@ -1723,7 +1719,7 @@ async def lookup_yahoo_finance(
                         if (typeof marked !== 'undefined') {{
                             // Pre-process markdown to ensure table pipes have whitespace for better parsing
                             // e.g., |指標| -> | 指標 |
-                            var cleanMarkdown = markdown.replace(/\\|(?!\s)/g, '| ').replace(/(?<!\s)\\|/g, ' |');
+                            var cleanMarkdown = markdown.replace(/\\|(?![\\s])/g, '| ').replace(/(?<![\\s])\\|/g, ' |');
                             
                             // Configure marked for maximum GFM compatibility
                             marked.setOptions({{
@@ -3606,113 +3602,4 @@ async def list_followers(username: str, request: Request, db: Session = Depends(
     })
 
 
-# ==========================================
-# Specialized AI Analysis Endpoints
-# ==========================================
-
-@app.post("/api/ai/analyze-financial", response_class=HTMLResponse)
-def api_ai_analyze_financial(
-    code: str = Form(...),
-    name: str = Form(""),
-    current_user: User = Depends(get_current_user)
-):
-    """💰 財務健全性分析"""
-    if not current_user:
-        return "<div class='text-red-400'>ログインが必要です</div>"
-    
-    try:
-        from utils.ai_analysis import analyze_financial_health
-        from utils.edinet_enhanced import get_company_financials
-        
-        clean_code = code.replace(".T", "")
-        
-        # EDINETデータ取得
-        edinet_data = get_company_financials(company_code=clean_code)
-        
-        financial_context = {
-            "edinet_data": edinet_data,
-            "summary_text": f"銘柄コード: {clean_code}",
-        }
-        
-        # AI分析実行
-        analysis_html = analyze_financial_health(clean_code, financial_context, name)
-        
-        return f"<div class='prose prose-invert max-w-none'>{analysis_html}</div>"
-        
-    except Exception as e:
-        logger.error(f"Financial analysis error: {e}")
-        import traceback
-        traceback.print_exc()
-        return f"<div class='text-red-400'>財務分析エラー: {str(e)}</div>"
-
-
-@app.post("/api/ai/analyze-business", response_class=HTMLResponse)
-def api_ai_analyze_business(
-    code: str = Form(...),
-    name: str = Form(""),
-    current_user: User = Depends(get_current_user)
-):
-    """🚀 事業競争力分析"""
-    if not current_user:
-        return "<div class='text-red-400'>ログインが必要です</div>"
-    
-    try:
-        from utils.ai_analysis import analyze_business_competitiveness
-        from utils.edinet_enhanced import get_company_financials
-        
-        clean_code = code.replace(".T", "")
-        
-        # EDINETデータ取得
-        edinet_data = get_company_financials(company_code=clean_code)
-        
-        financial_context = {
-            "edinet_data": edinet_data,
-            "summary_text": f"銘柄コード: {clean_code}",
-        }
-        
-        # AI分析実行
-        analysis_html = analyze_business_competitiveness(clean_code, financial_context, name)
-        
-        return f"<div class='prose prose-invert max-w-none'>{analysis_html}</div>"
-        
-    except Exception as e:
-        logger.error(f"Business analysis error: {e}")
-        import traceback
-        traceback.print_exc()
-        return f"<div class='text-red-400'>事業分析エラー: {str(e)}</div>"
-
-
-@app.post("/api/ai/analyze-risk", response_class=HTMLResponse)
-def api_ai_analyze_risk(
-    code: str = Form(...),
-    name: str = Form(""),
-    current_user: User = Depends(get_current_user)
-):
-    """⚠️ リスク・ガバナンス分析"""
-    if not current_user:
-        return "<div class='text-red-400'>ログインが必要です</div>"
-    
-    try:
-        from utils.ai_analysis import analyze_risk_governance
-        from utils.edinet_enhanced import get_company_financials
-        
-        clean_code = code.replace(".T", "")
-        
-        # EDINETデータ取得
-        edinet_data = get_company_financials(company_code=clean_code)
-        
-        financial_context = {
-            "edinet_data": edinet_data,
-            "summary_text": f"銘柄コード: {clean_code}",
-        }
-        
-        # AI分析実行
-        analysis_html = analyze_risk_governance(clean_code, financial_context, name)
-        
-        return f"<div class='prose prose-invert max-w-none'>{analysis_html}</div>"
-        
-    except Exception as e:
-        logger.error(f"Risk analysis error: {e}")
-        import traceback
-        traceback.print_exc()
-        return f"<div class='text-red-400'>リスク分析エラー: {str(e)}</div>"
+# End of file
