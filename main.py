@@ -1564,25 +1564,30 @@ async def lookup_yahoo_finance(
                     </div>
                     <style>
                         /* Base styles for Markdown content */
-                        #visual-analysis-content {{ color: #e2e8f0; font-size: 0.9rem; line-height: 1.7; }}
+                        #visual-analysis-content {{ color: #e2e8f0; font-size: 0.95rem; line-height: 1.8; }}
                         #visual-analysis-content h1, #visual-analysis-content h2, #visual-analysis-content h3 {{ color: #a5b4fc; margin-top: 1.5rem; margin-bottom: 0.75rem; font-weight: 700; }}
-                        #visual-analysis-content h1 {{ font-size: 1.4rem; border-bottom: 1px solid rgba(99, 102, 241, 0.3); padding-bottom: 0.5rem; }}
-                        #visual-analysis-content h2 {{ font-size: 1.2rem; }}
-                        #visual-analysis-content h3 {{ font-size: 1.1rem; }}
-                        #visual-analysis-content p {{ margin-bottom: 1rem; }}
-                        #visual-analysis-content ul, #visual-analysis-content ol {{ padding-left: 1.5rem; margin-bottom: 1rem; }}
-                        #visual-analysis-content li {{ margin-bottom: 0.5rem; }}
+                        #visual-analysis-content h1 {{ font-size: 1.5rem; border-bottom: 1px solid rgba(99, 102, 241, 0.4); padding-bottom: 0.5rem; }}
+                        #visual-analysis-content h2 {{ font-size: 1.25rem; }}
+                        #visual-analysis-content h3 {{ font-size: 1.15rem; }}
+                        #visual-analysis-content p {{ margin-bottom: 1.2rem; }}
+                        #visual-analysis-content ul, #visual-analysis-content ol {{ padding-left: 1.5rem; margin-bottom: 1.2rem; }}
+                        #visual-analysis-content li {{ margin-bottom: 0.6rem; }}
                         #visual-analysis-content strong {{ color: #fbbf24; font-weight: 700; }}
-                        #visual-analysis-content table {{ width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }}
-                        #visual-analysis-content th {{ background: rgba(99, 102, 241, 0.2); color: #c7d2fe; padding: 0.75rem; border: 1px solid rgba(71, 85, 105, 0.4); }}
-                        #visual-analysis-content td {{ padding: 0.75rem; border: 1px solid rgba(71, 85, 105, 0.4); background: rgba(30, 41, 59, 0.3); }}
-                        #visual-analysis-content blockquote {{ border-left: 4px solid #6366f1; padding-left: 1rem; color: #94a3b8; margin: 1rem 0; font-style: italic; }}
+                        #visual-analysis-content table {{ width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.9rem; background: rgba(30, 41, 59, 0.4); }}
+                        #visual-analysis-content th {{ background: rgba(99, 102, 241, 0.25); color: #c7d2fe; padding: 0.8rem; border: 1px solid rgba(71, 85, 105, 0.6); text-align: left; }}
+                        #visual-analysis-content td {{ padding: 0.8rem; border: 1px solid rgba(71, 85, 105, 0.6); color: #e2e8f0; }}
+                        #visual-analysis-content blockquote {{ border-left: 4px solid #6366f1; padding-left: 1rem; color: #94a3b8; margin: 1.5rem 0; font-style: italic; background: rgba(99, 102, 241, 0.05); padding: 0.5rem 1rem; border-radius: 0 8px 8px 0; }}
                         
-                        /* Scrollbar styling */
-                        #visual-analysis-result::-webkit-scrollbar {{ width: 8px; }}
-                        #visual-analysis-result::-webkit-scrollbar-track {{ background: rgba(15, 23, 42, 0.5); border-radius: 4px; }}
-                        #visual-analysis-result::-webkit-scrollbar-thumb {{ background: #6366f1; border-radius: 4px; }}
-                        #visual-analysis-result::-webkit-scrollbar-thumb:hover {{ background: #4f46e5; }}
+                        /* Native scrollbar fallback and custom look */
+                        #visual-analysis-result {{
+                            max-height: 600px !important;
+                            overflow-y: scroll !important; /* Force scrollbar track visibility */
+                            display: block !important;
+                        }}
+                        #visual-analysis-result::-webkit-scrollbar {{ width: 10px; }}
+                        #visual-analysis-result::-webkit-scrollbar-track {{ background: rgba(15, 23, 42, 0.6); border-radius: 5px; }}
+                        #visual-analysis-result::-webkit-scrollbar-thumb {{ background: #6366f1; border-radius: 5px; border: 2px solid rgba(15, 23, 42, 0.6); }}
+                        #visual-analysis-result::-webkit-scrollbar-thumb:hover {{ background: #818cf8; }}
                     </style>
                     <div id="visual-analysis-content"></div>
                 </div>
@@ -1699,8 +1704,15 @@ async def lookup_yahoo_finance(
                         
                         // Render markdown
                         let markdown = data.markdown || '';
-                        // Unescape escaped characters for marked.js
-                        markdown = markdown.replace(/\\\\n/g, '\\n').replace(/\\\\t/g, '\\t');
+                        
+                        // Robust newline handling: convert literal \n strings to real newlines
+                        // This handles cases where the API returns escaped string literals
+                        if (markdown.includes('\\\\n')) {{
+                            markdown = markdown.split('\\\\n').join('\\n');
+                        }}
+                        if (markdown.includes('\\\\t')) {{
+                            markdown = markdown.split('\\\\t').join('\\t');
+                        }}
                         
                         let html = '';
                         if (data.cached) {{
@@ -1710,9 +1722,15 @@ async def lookup_yahoo_finance(
                         }}
                         
                         if (typeof marked !== 'undefined') {{
-                            html += marked.parse(markdown);
+                            // Use marked.parse with explicit options for better GFM support
+                            html += marked.parse(markdown, {{ 
+                                breaks: true, 
+                                gfm: true,
+                                headerIds: false,
+                                mangle: false
+                            }});
                         }} else {{
-                            html += '<pre>' + markdown + '</pre>';
+                            html += '<pre style="white-space: pre-wrap; word-break: break-all; color: #94a3b8;">' + markdown + '</pre>';
                         }}
                         
                         resultContent.innerHTML = html;
