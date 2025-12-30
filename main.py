@@ -1862,7 +1862,7 @@ async def search_edinet_company(
                         分析したい視点を選択してください
                     </div>
                     
-                    <a href="/ai-policy" target="_blank" style="display: block; text-align: right; margin-top: 0.5rem; color: #64748b; font-size: 0.7rem; text-decoration: underline; cursor: pointer;" onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#64748b'">
+                    <a href="#" onclick="window.open('/ai-policy', '_blank'); return false;" style="display: block; text-align: right; margin-top: 0.5rem; color: #64748b; font-size: 0.7rem; text-decoration: underline; cursor: pointer;" onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#64748b'">
                         AI生成コンテンツに関する免責事項
                     </a>
                 </div>
