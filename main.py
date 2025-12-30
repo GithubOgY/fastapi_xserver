@@ -1631,99 +1631,82 @@ async def lookup_yahoo_finance(
                 
                 // AI Visual Analysis function
                 async function visualAnalyzeDashboard() {{
+                    console.log('Visual analysis started');
                     const btn = document.getElementById('visual-analyze-btn');
                     const resultContainer = document.getElementById('visual-analysis-result');
                     const resultContent = document.getElementById('visual-analysis-content');
                     const originalText = btn.innerHTML;
                     
                     try {{
+                        // Show loading state
                         btn.disabled = true;
                         btn.innerHTML = '⏳ 分析中...';
                         btn.style.opacity = '0.7';
-                        
-                        // Show loading in result container
                         resultContainer.style.display = 'block';
-                        resultContent.innerHTML = '<div style="text-align: center; padding: 2rem;"><div style="font-size: 2rem; animation: pulse 1s infinite;">🤖</div><p style="color: #94a3b8; margin-top: 0.5rem;">AIがグラフを分析中...</p></div>';
+                        resultContent.innerHTML = '<div style="text-align: center; padding: 2rem;"><p style="color: #94a3b8;">🤖 AIがグラフを分析中...</p></div>';
                         
+                        // Check html2canvas
                         if (typeof html2canvas === 'undefined') {{
-                            throw new Error('html2canvas ライブラリが読み込まれていません');
+                            throw new Error('html2canvas not loaded');
                         }}
+                        console.log('html2canvas OK');
                         
+                        // Capture chart
                         const chartSection = document.getElementById('chart-section');
                         const canvas = await html2canvas(chartSection, {{
                             backgroundColor: '#0f172a',
                             scale: 1.5,
                             useCORS: true,
-                            allowTaint: false,
-                            logging: false,
-                            width: Math.min(chartSection.scrollWidth, 1280),
-                            windowWidth: 1280
+                            logging: false
                         }});
+                        console.log('Canvas captured');
                         
-                        // Convert to base64
                         const imageData = canvas.toDataURL('image/png');
-                        
-                        // Get ticker code from URL or page
                         const tickerCode = '{code_only}';
                         const companyName = document.querySelector('h3')?.innerText || '';
                         
-                        // Send to backend
+                        // Send to API
                         const formData = new FormData();
                         formData.append('image_data', imageData);
                         formData.append('ticker_code', tickerCode);
                         formData.append('company_name', companyName);
                         
+                        console.log('Sending to API...');
                         const response = await fetch('/api/ai/visual-analyze', {{
                             method: 'POST',
                             body: formData
                         }});
                         
-                        if (!response.ok) {{
-                            throw new Error('API request failed: ' + response.status);
-                        }}
-                        
-                        // Parse JSON response
+                        console.log('Response status:', response.status);
                         const data = await response.json();
+                        console.log('Response data:', data);
                         
-                        // Check for errors
                         if (data.error) {{
                             throw new Error(data.error);
                         }}
                         
-                        // Clean up any escaped newlines in the markdown
-                        let cleanMarkdown = (data.markdown || '')
-                            .replace(/\\n/g, '\n')
-                            .replace(/\\t/g, '\t')
-                            .replace(/\n{{3,}}/g, '\n\n');
+                        // Render markdown
+                        let markdown = data.markdown || '';
+                        markdown = markdown.replace(/\\\\n/g, '\\n').replace(/\\\\t/g, '\\t');
                         
-                        // Create cache/new badge
-                        let badgeHtml = '';
+                        let html = '';
                         if (data.cached) {{
-                            badgeHtml = `<div style="margin-bottom: 0.75rem;">
-                                <span style="background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">⚡ キャッシュ (${{data.cache_date || ''}})</span>
-                            </div>`;
-                        }} else if (data.gen_date) {{
-                            badgeHtml = `<div style="margin-bottom: 0.75rem;">
-                                <span style="background: rgba(99, 102, 241, 0.2); color: #818cf8; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">🆕 新規生成 (${{data.gen_date}})</span>
-                            </div>`;
-                        }}
-                        
-                        // Use marked.js to render markdown to HTML
-                        let renderedHtml = '';
-                        if (typeof marked !== 'undefined' && cleanMarkdown) {{
-                            renderedHtml = marked.parse(cleanMarkdown);
-                        }} else if (cleanMarkdown) {{
-                            renderedHtml = '<pre style="white-space: pre-wrap;">' + cleanMarkdown + '</pre>';
+                            html += '<div style="margin-bottom:0.5rem;"><span style="background:rgba(16,185,129,0.2);color:#10b981;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.7rem;">⚡ キャッシュ</span></div>';
                         }} else {{
-                            renderedHtml = '<p style="color: #94a3b8;">分析結果がありません</p>';
+                            html += '<div style="margin-bottom:0.5rem;"><span style="background:rgba(99,102,241,0.2);color:#818cf8;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.7rem;">🆕 新規生成</span></div>';
                         }}
                         
-                        resultContent.innerHTML = badgeHtml + renderedHtml;
+                        if (typeof marked !== 'undefined') {{
+                            html += marked.parse(markdown);
+                        }} else {{
+                            html += '<pre>' + markdown + '</pre>';
+                        }}
                         
-                        // Success
-                        btn.innerHTML = '✅ 分析完了';
+                        resultContent.innerHTML = html;
+                        btn.innerHTML = '✅ 完了';
                         btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
-                        setTimeout(() => {{
+                        
+                        setTimeout(function() {{
                             btn.innerHTML = originalText;
                             btn.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)';
                             btn.disabled = false;
@@ -1731,11 +1714,11 @@ async def lookup_yahoo_finance(
                         }}, 2000);
                         
                     }} catch (error) {{
-                        console.error('Visual analysis failed:', error);
-                        resultContent.innerHTML = '<p style="color: #fb7185;">エラー: ' + error.message + '</p>';
+                        console.error('Error:', error);
+                        resultContent.innerHTML = '<p style="color:#fb7185;">エラー: ' + error.message + '</p>';
                         btn.innerHTML = '❌ エラー';
                         btn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
-                        setTimeout(() => {{
+                        setTimeout(function() {{
                             btn.innerHTML = originalText;
                             btn.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)';
                             btn.disabled = false;
