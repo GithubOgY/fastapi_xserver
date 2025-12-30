@@ -1389,9 +1389,9 @@ async def lookup_yahoo_finance(
                         {sector_html}
                     </div>
                     <div style="text-align: right;">
-                        <div style="display: flex; align-items: baseline; justify-content: flex-end; gap: 1.5rem;">
-                            {f'<div><span style="font-size: 0.9rem; color: #64748b; margin-right: 0.3rem;">目標株価</span><span style="font-size: 2rem; font-weight: 700; color: #fbbf24;">¥{target_mean_price:,.0f}</span></div>' if target_mean_price else ''}
-                            <div><span style="font-size: 0.9rem; color: #64748b; margin-right: 0.3rem;">株価</span><span style="font-size: 2rem; font-weight: 700; color: #f8fafc;">¥{price:,.0f}</span></div>
+                        <div class="price-container" style="display: flex; align-items: baseline; justify-content: flex-end; gap: 1.5rem;">
+                            {f'<div class="price-item"><span style="font-size: 0.9rem; color: #64748b; margin-right: 0.3rem;">目標株価</span><span style="font-size: 2rem; font-weight: 700; color: #fbbf24;">¥{target_mean_price:,.0f}</span></div>' if target_mean_price else ''}
+                            <div class="price-item"><span style="font-size: 0.9rem; color: #64748b; margin-right: 0.3rem;">株価</span><span style="font-size: 2rem; font-weight: 700; color: #f8fafc;">¥{price:,.0f}</span></div>
                         </div>
                         <div style="color: {change_color}; font-size: 1rem; font-weight: 600; margin-top: 0.3rem;">
                             {change_sign}{change:,.0f} ({change_sign}{change_pct:.2f}%)
@@ -1405,27 +1405,76 @@ async def lookup_yahoo_finance(
                 
                 {earnings_html}
                 
-                <!-- Key Metrics Grid -->
-                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; margin-top: 1.25rem;">
-                    <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px; text-align: center;">
-                        <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.3rem;">時価総額</div>
-                        <div style="color: #f8fafc; font-weight: 600; font-size: 1.2rem;">{market_cap_str}</div>
+                <!-- Key Metrics Grid with Responsive CSS -->
+                <style>
+                    .metrics-grid {{ 
+                        display: grid; 
+                        grid-template-columns: repeat(5, 1fr); 
+                        gap: 0.75rem; 
+                        margin-top: 1.25rem; 
+                    }}
+                    .metrics-item {{
+                        background: rgba(0,0,0,0.2);
+                        padding: 0.75rem;
+                        border-radius: 10px;
+                        text-align: center;
+                    }}
+                    .metrics-label {{
+                        color: #64748b;
+                        font-size: 0.75rem;
+                        margin-bottom: 0.2rem;
+                    }}
+                    .metrics-value {{
+                        font-weight: 600;
+                        font-size: 1rem;
+                    }}
+                    @media (max-width: 600px) {{
+                        .metrics-grid {{
+                            grid-template-columns: repeat(3, 1fr);
+                            gap: 0.5rem;
+                        }}
+                        .metrics-item {{
+                            padding: 0.5rem;
+                        }}
+                        .metrics-label {{
+                            font-size: 0.65rem;
+                        }}
+                        .metrics-value {{
+                            font-size: 0.85rem;
+                        }}
+                        .price-container {{
+                            flex-direction: column !important;
+                            gap: 0.5rem !important;
+                            align-items: flex-end !important;
+                        }}
+                        .price-item span:first-child {{
+                            font-size: 0.7rem !important;
+                        }}
+                        .price-item span:last-child {{
+                            font-size: 1.4rem !important;
+                        }}
+                    }}
+                </style>
+                <div class="metrics-grid">
+                    <div class="metrics-item">
+                        <div class="metrics-label">時価総額</div>
+                        <div class="metrics-value" style="color: #f8fafc;">{market_cap_str}</div>
                     </div>
-                    <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px; text-align: center;">
-                        <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.3rem;">PER</div>
-                        <div style="color: #f8fafc; font-weight: 600; font-size: 1.2rem;">{per if isinstance(per, str) else f'{per:.1f}'}</div>
+                    <div class="metrics-item">
+                        <div class="metrics-label">PER</div>
+                        <div class="metrics-value" style="color: #f8fafc;">{per if isinstance(per, str) else f'{per:.1f}'}</div>
                     </div>
-                    <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px; text-align: center;">
-                        <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.3rem;">PBR</div>
-                        <div style="color: #f8fafc; font-weight: 600; font-size: 1.2rem;">{pbr if isinstance(pbr, str) else f'{pbr:.2f}'}</div>
+                    <div class="metrics-item">
+                        <div class="metrics-label">PBR</div>
+                        <div class="metrics-value" style="color: #f8fafc;">{pbr if isinstance(pbr, str) else f'{pbr:.2f}'}</div>
                     </div>
-                    <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px; text-align: center;">
-                        <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.3rem;">配当利回り</div>
-                        <div style="color: #10b981; font-weight: 600; font-size: 1.2rem;">{dividend_str}</div>
+                    <div class="metrics-item">
+                        <div class="metrics-label">配当利回り</div>
+                        <div class="metrics-value" style="color: #10b981;">{dividend_str}</div>
                     </div>
-                    <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 10px; text-align: center;">
-                        <div style="color: #64748b; font-size: 0.85rem; margin-bottom: 0.3rem;">ROE</div>
-                        <div style="color: #818cf8; font-weight: 600; font-size: 1.2rem;">{roe_str}</div>
+                    <div class="metrics-item">
+                        <div class="metrics-label">ROE</div>
+                        <div class="metrics-value" style="color: #818cf8;">{roe_str}</div>
                     </div>
                 </div>
                 
