@@ -585,6 +585,15 @@ def extract_financial_data(xbrl_dir: str) -> Dict[str, Any]:
                 if not isinstance(tag, str):
                     continue
                 
+                # Context Filtering for Text
+                # Text blocks also have contextRefs. We should prefer CurrentYear.
+                context_ref = elem.get("contextRef")
+                if context_ref and valid_contexts:
+                    if context_ref not in valid_contexts:
+                        continue
+                elif context_ref and ("Prior" in context_ref or "Previous" in context_ref):
+                    continue
+
                 # Check if tag matches any fragment
                 if any(frag in tag for frag in frags):
                     # Found a potential text block
@@ -677,53 +686,97 @@ def extract_financial_data(xbrl_dir: str) -> Dict[str, Any]:
 def clean_text_block(html_content: str) -> str:
     """
     Clean HTML text block from XBRL to plain text
-    Removes tags, normalizes whitespace, but keeps basic structure.
+    Removes tags, normalizes whitespace, and merges fragmented lines for better readability.
     """
     if not html_content:
         return ""
         
     try:
-        # Use simple regex/replace first for speed, or BeautifulSoup if needed
+        # Pre-process: replace br/p/div with explicit newlines
+        # XBRL often nests nonNumeric tags which causes fragmentation.
+        # We strip tags but insert newlines only for structural elements.
         soup = BeautifulSoup(html_content, "html.parser")
         
-        # Get text with separator, but handle dense text blocks
-        # First, try to preserve some structure
-        for br in soup.find_all("br"):
+        # Replace line breaks
+        for br in soup.find_all(["br", "BR"]):
             br.replace_with("\n")
             
-        text = soup.get_text(separator="\n")
+        # Treat block elements as paragraph breaks
+        for block in soup.find_all(["p", "div", "P", "DIV", "tr", "TR"]):
+            block.insert_after("\n")
+            
+        # Extract text without separator to avoid breaking words found in span/ix:nonNumeric
+        text = soup.get_text(separator="")
         
-        # Improved formatting for readability
-        lines = []
-        for line in text.splitlines():
+        # Post-processing normalization
+        import re
+        
+        # 1. Remove carriage returns and tabs
+        text = text.replace("\r", "").replace("\t", "")
+        
+        # 2. Re-join split lines
+        # Often EDINET text looks like: "This year sales \n 100 billion yen \n was recorded."
+        # We want to merge lines unless the previous line ends with specific punctuation.
+        
+        # First, split into lines
+        raw_lines = text.split('\n')
+        cleaned_lines = []
+        
+        # List markers that should start a new line
+        markers = ["(1)", "(2)", "(3)", "①", "②", "③", "・", "－", "1.", "2.", "3."]
+        
+        current_line_buffer = ""
+        
+        for line in raw_lines:
             stripped = line.strip()
+            # Replace full-width space with half-width or remove if excessive
+            stripped = stripped.replace("　", " ")
+            
             if not stripped:
                 continue
-            
-            # If line is very long and has periods but no line breaks, try to split
-            if len(stripped) > 100:
-                # Add line breaks after periods (。) for better readability
-                # Use single line break, not double
-                stripped = stripped.replace("。", "。\n")
                 
-                # Add line breaks before common list markers (single line break)
-                markers = ["(1)", "(2)", "(3)", "(4)", "(5)", "①", "②", "③", "④", "⑤", "（１）", "（２）", "（３）", "（４）", "（５）"]
-                for marker in markers:
-                    stripped = stripped.replace(marker, f"\n{marker}")
+            # Decision: Should we merge this line with the previous buffer?
+            # Yes if:
+            # 1. Previous buffer doesn't end with typical sentence enders (。, ．, ：)
+            # 2. Current line doesn't start with a list marker
             
-            lines.append(stripped)
-        
-        # Re-join with single line break
-        formatted_text = "\n".join(lines)
-        
-        # Reduce excessive newlines (3+ newlines -> 2 newlines for paragraph breaks)
-        while "\n\n\n" in formatted_text:
-            formatted_text = formatted_text.replace("\n\n\n", "\n\n")
+            should_merge = False
+            if current_line_buffer:
+                # Check previous ending
+                ends_sentence = current_line_buffer.strip().endswith(("。", "．", "：", "!", "?", "！", "？"))
+                # Check current starting
+                starts_marker = any(stripped.startswith(m) for m in markers)
+                
+                if not ends_sentence and not starts_marker:
+                    should_merge = True
             
+            if should_merge:
+                current_line_buffer += stripped
+            else:
+                if current_line_buffer:
+                    cleaned_lines.append(current_line_buffer)
+                current_line_buffer = stripped
+                
+        # Append the last buffer
+        if current_line_buffer:
+            cleaned_lines.append(current_line_buffer)
+            
+        # Join with newlines
+        formatted_text = "\n".join(cleaned_lines)
+        
+        # Final cleanup for parenthesis hacks sometimes seen in XBRL extraction
+        # e.g. "（ \n 1.5% \n ）" -> "（1.5%）"
+        # Since we already merged lines, this might be "（ 1.5% ）"
+        formatted_text = re.sub(r'（\s*', '（', formatted_text)
+        formatted_text = re.sub(r'\s*）', '）', formatted_text)
+        
         return formatted_text
+        
     except Exception as e:
         logger.warning(f"Failed to clean text block: {e}")
-        return str(html_content)[:500] + "..."
+        # Fallback to simple strip
+        tag_clean = re.compile('<.*?>')
+        return re.sub(tag_clean, '', str(html_content)).strip()
 
 
 def is_ratio_key(key: str) -> bool:
