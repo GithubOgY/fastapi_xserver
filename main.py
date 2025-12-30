@@ -1414,6 +1414,11 @@ async def lookup_yahoo_finance(
                 </div>
              """
 
+        # Prepare Header Name HTML (Link to website if available)
+        header_name_html = name
+        if website:
+            header_name_html = f'<a href="{website}" target="_blank" style="color: inherit; text-decoration: none; border-bottom: 1px dotted rgba(255,255,255,0.5); transition: all 0.2s;" onmouseover="this.style.color=\'#818cf8\'; this.style.borderColor=\'#818cf8\'" onmouseout="this.style.color=\'inherit\'; this.style.borderColor=\'rgba(255,255,255,0.5)\'">{name} <span style="font-size: 1rem; vertical-align: middle; opacity: 0.7; margin-left: 0.2rem;">🔗</span></a>'
+
         # Build clean HTML response with cookie to remember last ticker
         html_content = f"""
             <!-- Stock Info Card -->
@@ -1421,7 +1426,7 @@ async def lookup_yahoo_finance(
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
                     <div>
                         <h3 style="font-size: 1.4rem; font-weight: 700; color: #f8fafc; margin: 0;">
-                            {'<a href="' + website + '" target="_blank" style="color: inherit; text-decoration: none; border-bottom: 1px dotted rgba(255,255,255,0.5); transition: all 0.2s;" onmouseover="this.style.color=\'#818cf8\'; this.style.borderColor=\'#818cf8\'" onmouseout="this.style.color=\'inherit\'; this.style.borderColor=\'rgba(255,255,255,0.5)\'">' + name + ' <span style="font-size: 1rem; vertical-align: middle; opacity: 0.7; margin-left: 0.2rem;">🔗</span></a>' if website else name}
+                            {header_name_html}
                         </h3>
                         <p style="color: #94a3b8; font-size: 0.9rem; margin: 0.25rem 0 0 0;">{symbol}</p>
                         {sector_html}
