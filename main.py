@@ -1780,11 +1780,12 @@ async def search_edinet_company(
                             <button 
                                 id="{copy_btn_id}"
                                 onclick="event.stopPropagation(); event.preventDefault(); copyToClipboard('{section_id}', '{copy_btn_id}');"
-                                class="p-1 hover:bg-indigo-600/20 text-gray-400 hover:text-indigo-400 rounded transition-colors"
+                                class="px-1.5 py-0.5 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-300 hover:text-indigo-200 text-xs rounded transition-colors flex items-center gap-0.5"
                                 title="クリップボードにコピー">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                 </svg>
+                                <span class="copy-btn-label">コピー</span>
                             </button>
                             <span class="text-gray-500 text-sm">クリックして展開</span>
                         </div>
@@ -1881,6 +1882,7 @@ async def search_edinet_company(
                     function copyToClipboard(sectionId, btnId) {{
                         const content = document.getElementById(sectionId);
                         const button = document.getElementById(btnId);
+                        const label = button.querySelector('.copy-btn-label');
                         
                         if (!content) return;
                         
@@ -1889,23 +1891,27 @@ async def search_edinet_company(
                         
                         // Copy to clipboard
                         navigator.clipboard.writeText(text).then(() => {{
-                            // Success feedback - change icon color
-                            button.classList.remove('text-gray-400', 'hover:text-indigo-400');
-                            button.classList.add('text-green-500');
+                            // Success feedback
+                            const originalText = label.innerText;
+                            label.innerText = '✓完了';
+                            button.classList.remove('text-indigo-300', 'hover:text-indigo-200');
+                            button.classList.add('text-green-400');
                             
                             // Reset after 2 seconds
                             setTimeout(() => {{
-                                button.classList.remove('text-green-500');
-                                button.classList.add('text-gray-400', 'hover:text-indigo-400');
+                                label.innerText = originalText;
+                                button.classList.remove('text-green-400');
+                                button.classList.add('text-indigo-300', 'hover:text-indigo-200');
                             }}, 2000);
                         }}).catch(err => {{
                             console.error('コピー失敗:', err);
-                            // Error feedback - change to red
-                            button.classList.remove('text-gray-400', 'hover:text-indigo-400');
-                            button.classList.add('text-red-500');
+                            label.innerText = '✗失敗';
+                            button.classList.remove('text-indigo-300', 'hover:text-indigo-200');
+                            button.classList.add('text-red-400');
                             setTimeout(() => {{
-                                button.classList.remove('text-red-500');
-                                button.classList.add('text-gray-400', 'hover:text-indigo-400');
+                                label.innerText = 'コピー';
+                                button.classList.remove('text-red-400');
+                                button.classList.add('text-indigo-300', 'hover:text-indigo-200');
                             }}, 2000);
                         }});
                     }}
