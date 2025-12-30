@@ -415,6 +415,79 @@ async def edinet_page(request: Request,
         }
     )
 
+from sqlalchemy import func
+
+@app.get("/catalog", response_class=HTMLResponse)
+async def catalog_page(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user:
+         return RedirectResponse(url="/login", status_code=303)
+         
+    # Get distinct sectors ordered by company count
+    sectors_data = db.query(Company.sector_33, func.count(Company.ticker))\
+        .filter(Company.sector_33 != None)\
+        .group_by(Company.sector_33)\
+        .order_by(func.count(Company.ticker).desc())\
+        .all()
+        
+    sectors = [s[0] for s in sectors_data]
+    
+    return templates.TemplateResponse("catalog.html", {"request": request, "sectors": sectors})
+
+@app.get("/api/companies/filter", response_class=HTMLResponse)
+async def filter_companies(
+    sector_33: str = Query(...),
+    scale_category: str = Query(None),
+    db: Session = Depends(get_db)
+):
+    query = db.query(Company).filter(Company.sector_33 == sector_33)
+    
+    if scale_category:
+        query = query.filter(Company.scale_category.like(f"%{scale_category}%"))
+        
+    companies = query.order_by(Company.scale_category, Company.code_4digit).all()
+    
+    if not companies:
+        return "<div class='col-span-full text-center text-gray-500 py-4'>該当する企業は見つかりませんでした</div>"
+        
+    html = ""
+    for c in companies:
+        # Scale Badge
+        scale_badge = ""
+        if c.scale_category:
+            s_raw = c.scale_category
+            color = "gray"
+            text = s_raw
+            if "Core30" in s_raw: color = "red"; text="Core30"
+            elif "Large70" in s_raw: color = "orange"; text="Large70"
+            elif "Mid400" in s_raw: color = "yellow"; text="Mid400"
+            elif "Small" in s_raw: color = "green"; text="Small"
+            
+            # Use style directly to avoid purgecss issues if any, matching main.py logic
+            # Actually we use Tailwind classes normally available
+            scale_badge = f'<span class="text-[10px] px-1.5 py-0.5 rounded bg-{color}-500/10 text-{color}-400 border border-{color}-500/20">{text}</span>'
+
+        # Link to EDINET analysis with auto-search params
+        # We need code_4digit for EDINET search API
+        # The edinet.html input takes company name, and existing JS handles 'company_name' query param
+        encoded_name = urllib.parse.quote(c.name)
+        link = f"/edinet?company_name={encoded_name}"
+        
+        html += f"""
+        <a href="{link}" class="company-card group">
+            <div class="flex flex-col">
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-gray-200 group-hover:text-indigo-400 transition-colors">{c.name}</span>
+                    <span class="text-xs text-gray-500 font-mono">{c.code_4digit}</span>
+                </div>
+                <div class="flex items-center gap-2 mt-1">
+                    {scale_badge}
+                </div>
+            </div>
+            <span class="text-gray-600 group-hover:text-indigo-400">→</span>
+        </a>
+        """
+    return html
+
 @app.get("/compare", response_class=HTMLResponse)
 async def compare_page(request: Request, 
                        tickers: str = Query(""),
