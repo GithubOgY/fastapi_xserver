@@ -1949,6 +1949,7 @@ async def lookup_yahoo_finance(
                 }})();
                 </script>
             </div>
+            </div><!-- Closes chart-section -->
 
 
 
