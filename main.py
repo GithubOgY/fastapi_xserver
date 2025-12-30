@@ -1682,21 +1682,43 @@ async def lookup_yahoo_finance(
                             throw new Error('API request failed: ' + response.status);
                         }}
                         
-                        const rawMarkdown = await response.text();
+                        // Parse JSON response
+                        const data = await response.json();
                         
-                        // Clean up any escaped newlines in the raw text
-                        let cleanMarkdown = rawMarkdown
+                        // Check for errors
+                        if (data.error) {{
+                            throw new Error(data.error);
+                        }}
+                        
+                        // Clean up any escaped newlines in the markdown
+                        let cleanMarkdown = (data.markdown || '')
                             .replace(/\\n/g, '\n')
                             .replace(/\\t/g, '\t')
                             .replace(/\n{{3,}}/g, '\n\n');
                         
-                        // Use marked.js to render markdown to HTML
-                        if (typeof marked !== 'undefined') {{
-                            resultContent.innerHTML = marked.parse(cleanMarkdown);
-                        }} else {{
-                            // Fallback: basic text display if marked not loaded
-                            resultContent.innerHTML = '<pre style="white-space: pre-wrap;">' + cleanMarkdown + '</pre>';
+                        // Create cache/new badge
+                        let badgeHtml = '';
+                        if (data.cached) {{
+                            badgeHtml = `<div style="margin-bottom: 0.75rem;">
+                                <span style="background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">⚡ キャッシュ (${{data.cache_date || ''}})</span>
+                            </div>`;
+                        }} else if (data.gen_date) {{
+                            badgeHtml = `<div style="margin-bottom: 0.75rem;">
+                                <span style="background: rgba(99, 102, 241, 0.2); color: #818cf8; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">🆕 新規生成 (${{data.gen_date}})</span>
+                            </div>`;
                         }}
+                        
+                        // Use marked.js to render markdown to HTML
+                        let renderedHtml = '';
+                        if (typeof marked !== 'undefined' && cleanMarkdown) {{
+                            renderedHtml = marked.parse(cleanMarkdown);
+                        }} else if (cleanMarkdown) {{
+                            renderedHtml = '<pre style="white-space: pre-wrap;">' + cleanMarkdown + '</pre>';
+                        }} else {{
+                            renderedHtml = '<p style="color: #94a3b8;">分析結果がありません</p>';
+                        }}
+                        
+                        resultContent.innerHTML = badgeHtml + renderedHtml;
                         
                         // Success
                         btn.innerHTML = '✅ 分析完了';
@@ -2793,9 +2815,11 @@ async def api_ai_visual_analyze(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """📊 Visual dashboard analysis using Gemini multimodal with caching"""
+    """📊 Visual dashboard analysis using Gemini multimodal with caching - returns JSON"""
+    from fastapi.responses import JSONResponse
+    
     if not current_user:
-        return "<div class='text-red-400'>ログインが必要です</div>"
+        return JSONResponse({"error": "ログインが必要です", "markdown": ""})
     
     try:
         clean_code = ticker_code.replace(".T", "")
@@ -2813,38 +2837,41 @@ async def api_ai_visual_analyze(
             if cached:
                 logger.info(f"[Visual Cache HIT] {clean_code}")
                 cache_date = cached.created_at.strftime("%Y-%m-%d %H:%M") if cached.created_at else ""
-                return f"""
-                <div style='margin-bottom: 0.5rem;'>
-                    <span style='background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem;'>⚡ キャッシュ ({cache_date})</span>
-                    <button onclick="document.getElementById('visual-analyze-btn').click()" style="margin-left: 0.5rem; background: rgba(239,68,68,0.2); color: #fb7185; border: none; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; cursor: pointer;" formnovalidate>🔄 再生成</button>
-                </div>
-                <div>{cached.analysis_html}</div>
-                """
+                return JSONResponse({
+                    "markdown": cached.analysis_html,  # This now stores raw markdown
+                    "cached": True,
+                    "cache_date": cache_date,
+                    "error": ""
+                })
         
         logger.info(f"[Visual Cache MISS] {clean_code} - generating new analysis")
         
         # Validate image data exists
         if not image_data or len(image_data) < 100:
-            return "<div class='text-red-400'>画像データが無効です</div>"
+            return JSONResponse({"error": "画像データが無効です", "markdown": ""})
         
-        # Call the visual analysis function
-        result_html = analyze_dashboard_image(image_data, clean_code, company_name)
+        # Call the visual analysis function - returns raw markdown
+        result_markdown = analyze_dashboard_image(image_data, clean_code, company_name)
         
-        # Save to cache
+        # Check if result is an error
+        if result_markdown.startswith("<p class='error'"):
+            return JSONResponse({"error": result_markdown, "markdown": ""})
+        
+        # Save to cache (store raw markdown)
         existing = db.query(AIAnalysisCache).filter(
             AIAnalysisCache.ticker_code == clean_code,
             AIAnalysisCache.analysis_type == analysis_type
         ).first()
         
         if existing:
-            existing.analysis_html = result_html
+            existing.analysis_html = result_markdown  # Store raw markdown
             existing.created_at = datetime.utcnow()
             existing.expires_at = datetime.utcnow() + timedelta(days=cache_days)
         else:
             new_cache = AIAnalysisCache(
                 ticker_code=clean_code,
                 analysis_type=analysis_type,
-                analysis_html=result_html,
+                analysis_html=result_markdown,  # Store raw markdown
                 created_at=datetime.utcnow(),
                 expires_at=datetime.utcnow() + timedelta(days=cache_days)
             )
@@ -2853,18 +2880,18 @@ async def api_ai_visual_analyze(
         logger.info(f"[Visual Cache SAVED] {clean_code}")
         
         gen_date = datetime.now().strftime("%Y-%m-%d %H:%M")
-        return f"""
-        <div style='margin-bottom: 0.5rem;'>
-            <span style='background: rgba(99, 102, 241, 0.2); color: #818cf8; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem;'>🆕 新規生成 ({gen_date})</span>
-        </div>
-        <div>{result_html}</div>
-        """
+        return JSONResponse({
+            "markdown": result_markdown,
+            "cached": False,
+            "gen_date": gen_date,
+            "error": ""
+        })
         
     except Exception as e:
         logger.error(f"Visual analysis error: {e}")
         import traceback
         traceback.print_exc()
-        return f"<div class='text-red-400'>画像分析エラー: {str(e)}</div>"
+        return JSONResponse({"error": f"画像分析エラー: {str(e)}", "markdown": ""})
 
 
 
