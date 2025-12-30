@@ -1199,6 +1199,7 @@ async def lookup_yahoo_finance(
         # Get financial statements from yfinance
         fin = ticker.financials
         cf = ticker.cashflow
+        bs = ticker.balance_sheet
         
         # Prepare data arrays
         years_label = []
@@ -1210,6 +1211,10 @@ async def lookup_yahoo_finance(
         inv_cf_data = []
         fin_cf_data = []
         net_cf_data = []
+        fcf_data = []  # Free Cash Flow
+        debt_data = [] # Interest-bearing Debt
+        roe_data = []
+        roa_data = []
         table_rows = ""
         
         # Helper function to safely get DataFrame values
@@ -1247,15 +1252,37 @@ async def lookup_yahoo_finance(
                 op_margin_data.append(margin)
                 eps_data.append(round(eps, 1) if eps else 0)
                 
+                # Balance Sheet Items (Debt, Equity, Assets)
+                total_assets = get_val(bs, "Total Assets", date)
+                total_equity = get_val(bs, "Stockholders Equity", date) or get_val(bs, "Total Stockholder Equity", date)
+                
+                # Debt extraction (Try Total Debt, fallback to Long + Short)
+                total_debt = get_val(bs, "Total Debt", date)
+                if total_debt == 0:
+                     lt_debt = get_val(bs, "Long Term Debt", date)
+                     st_debt = get_val(bs, "Current Debt", date) or get_val(bs, "Short Long Term Debt", date)
+                     total_debt = lt_debt + st_debt
+
                 # Cash Flow
                 op_cf = get_val(cf, "Operating Cash Flow", date) or get_val(cf, "Total Cash From Operating Activities", date)
                 inv_cf = get_val(cf, "Investing Cash Flow", date) or get_val(cf, "Total Cashflows From Investing Activities", date)
-                fcf = get_val(cf, "Financing Cash Flow", date) or get_val(cf, "Total Cash From Financing Activities", date)
+                fin_cf_val = get_val(cf, "Financing Cash Flow", date) or get_val(cf, "Total Cash From Financing Activities", date)
+                
+                # Free Cash Flow = Operating CF + Investing CF (Investing is usually negative)
+                free_cf = op_cf + inv_cf
+                
+                # ROE / ROA
+                roe = (net_income / total_equity * 100) if total_equity else 0
+                roa = (net_income / total_assets * 100) if total_assets else 0
                 
                 op_cf_data.append(to_oku(op_cf))
                 inv_cf_data.append(to_oku(inv_cf))
-                fin_cf_data.append(to_oku(fcf))
-                net_cf_data.append(to_oku(op_cf + inv_cf + fcf))
+                fin_cf_data.append(to_oku(fin_cf_val))
+                net_cf_data.append(to_oku(op_cf + inv_cf + fin_cf_val))
+                fcf_data.append(to_oku(free_cf))
+                debt_data.append(to_oku(total_debt))
+                roe_data.append(round(roe, 1))
+                roa_data.append(round(roa, 1))
                 
                 # Table row
                 fmt = lambda x: f"{to_oku(x):,.1f}" if x else "-"
@@ -1304,6 +1331,10 @@ async def lookup_yahoo_finance(
         inv_cf_data_js = json.dumps(clean_list(inv_cf_data))
         fin_cf_data_js = json.dumps(clean_list(fin_cf_data))
         net_cf_data_js = json.dumps(clean_list(net_cf_data))
+        fcf_data_js = json.dumps(clean_list(fcf_data))
+        debt_data_js = json.dumps(clean_list(debt_data))
+        roe_data_js = json.dumps(clean_list(roe_data))
+        roa_data_js = json.dumps(clean_list(roa_data))
         growth_labels_js = json.dumps(growth_labels)
         growth_rev_actual_js = json.dumps(clean_list(growth_rev_actual))
         growth_rev_target_js = json.dumps(clean_list(growth_rev_target))
@@ -1312,6 +1343,7 @@ async def lookup_yahoo_finance(
         chart_id1 = f"perf_{code_input}_{int(time.time())}"
         chart_id2 = f"cf_{code_input}_{int(time.time())}"
         chart_id3 = f"growth_{code_input}_{int(time.time())}"
+        chart_id4 = f"fin_health_{code_input}_{int(time.time())}"
         
         # J-Quants Data Lookup
         code_str = symbol.replace(".T", "")
@@ -1504,9 +1536,10 @@ async def lookup_yahoo_finance(
                     📊 財務パフォーマンス
                 </h2>
                 
-                <!-- Two Column Charts (responsive) -->
+                <!-- Chart Grid (responsive) -->
                 <style>
                     .chart-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }}
+                    .chart-full-width {{ grid-column: 1 / -1; }}
                     @media (max-width: 768px) {{ .chart-grid {{ grid-template-columns: 1fr; }} }}
                 </style>
                 <div class="chart-grid">
@@ -1520,9 +1553,17 @@ async def lookup_yahoo_finance(
                     
                     <!-- Cash Flow Chart -->
                     <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem; max-width: 100%; overflow: hidden;">
-                        <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 0.75rem 0; text-align: center;">キャッシュフロー</h4>
+                        <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 0.75rem 0; text-align: center;">キャッシュフロー推移</h4>
                         <div style="height: 220px; position: relative; width: 100%;">
                             <canvas id="{chart_id2}"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Financial Health & Efficiency Chart (New) -->
+                    <div class="chart-full-width" style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem; max-width: 100%; overflow: hidden;">
+                        <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 0.75rem 0; text-align: center;">財務健全性・効率性 (ROE/ROA/有利子負債)</h4>
+                        <div style="height: 220px; position: relative; width: 100%;">
+                            <canvas id="{chart_id4}"></canvas>
                         </div>
                     </div>
                 </div>
@@ -1543,8 +1584,9 @@ async def lookup_yahoo_finance(
                         }},
                         options: {{
                             responsive: true, maintainAspectRatio: false,
+                            interaction: {{ mode: 'index', intersect: false }},
                             scales: {{
-                                y: {{ grid: {{ color: 'rgba(255,255,255,0.05)' }}, ticks: {{ color: '#64748b', font: {{ size: 10 }} }}, title: {{ display: true, text: '億円', color: '#64748b', font: {{ size: 10 }} }} }},
+                                y: {{ grid: {{ color: 'rgba(255,255,255,0.05)' }}, ticks: {{ color: '#64748b', font: {{ size: 10 }} }}, title: {{ display: true, text: '単位: 億円', color: '#64748b', font: {{ size: 10 }} }} }},
                                 y1: {{ position: 'right', grid: {{ display: false }}, ticks: {{ color: '#f59e0b', font: {{ size: 10 }} }}, min: 0 }},
                                 x: {{ grid: {{ display: false }}, ticks: {{ color: '#64748b', font: {{ size: 10 }} }} }}
                             }},
@@ -1552,7 +1594,7 @@ async def lookup_yahoo_finance(
                         }}
                     }});
                     
-                    // Cash Flow Chart
+                    // Cash Flow Chart (Updated)
                     new Chart(document.getElementById('{chart_id2}').getContext('2d'), {{
                         type: 'bar',
                         data: {{
@@ -1561,13 +1603,38 @@ async def lookup_yahoo_finance(
                                 {{ label: '営業CF', data: {op_cf_data_js}, backgroundColor: 'rgba(16,185,129,0.7)', borderColor: '#10b981', borderWidth: 1 }},
                                 {{ label: '投資CF', data: {inv_cf_data_js}, backgroundColor: 'rgba(244,63,94,0.7)', borderColor: '#f43f5e', borderWidth: 1 }},
                                 {{ label: '財務CF', data: {fin_cf_data_js}, backgroundColor: 'rgba(59,130,246,0.7)', borderColor: '#3b82f6', borderWidth: 1 }},
-                                {{ label: 'ネットCF', data: {net_cf_data_js}, type: 'line', borderColor: '#f59e0b', borderWidth: 2, tension: 0.3, pointRadius: 4 }}
+                                {{ label: 'フリーCF', data: {fcf_data_js}, type: 'line', borderColor: '#a855f7', borderWidth: 2, borderDash: [5, 5], tension: 0.3, pointRadius: 3, fill: false }},
+                                {{ label: 'ネットCF', data: {net_cf_data_js}, type: 'line', borderColor: '#f59e0b', borderWidth: 3, tension: 0.4, pointRadius: 4, fill: false }}
                             ]
                         }},
                         options: {{
                             responsive: true, maintainAspectRatio: false,
+                            interaction: {{ mode: 'index', intersect: false }},
                             scales: {{
-                                y: {{ grid: {{ color: 'rgba(255,255,255,0.05)' }}, ticks: {{ color: '#64748b', font: {{ size: 10 }} }}, title: {{ display: true, text: '億円', color: '#64748b', font: {{ size: 10 }} }} }},
+                                y: {{ grid: {{ color: 'rgba(255,255,255,0.05)' }}, ticks: {{ color: '#64748b', font: {{ size: 10 }} }}, title: {{ display: true, text: '単位: 億円', color: '#64748b', font: {{ size: 10 }} }} }},
+                                x: {{ grid: {{ display: false }}, ticks: {{ color: '#64748b', font: {{ size: 10 }} }} }}
+                            }},
+                            plugins: {{ legend: {{ labels: {{ color: '#94a3b8', font: {{ size: 10 }} }} }} }}
+                        }}
+                    }});
+
+                    // Financial Health & Efficiency Chart (New)
+                    new Chart(document.getElementById('{chart_id4}').getContext('2d'), {{
+                        type: 'bar',
+                        data: {{
+                            labels: {years_label_js},
+                            datasets: [
+                                {{ label: '有利子負債', data: {debt_data_js}, backgroundColor: 'rgba(251, 113, 133, 0.6)', borderColor: '#f43f5e', borderWidth: 1, yAxisID: 'y' }},
+                                {{ label: 'ROE', data: {roe_data_js}, type: 'line', borderColor: '#818cf8', borderWidth: 2, yAxisID: 'y1', tension: 0.3, pointRadius: 4 }},
+                                {{ label: 'ROA', data: {roa_data_js}, type: 'line', borderColor: '#2dd4bf', borderWidth: 2, yAxisID: 'y1', tension: 0.3, pointRadius: 4 }}
+                            ]
+                        }},
+                        options: {{
+                            responsive: true, maintainAspectRatio: false,
+                            interaction: {{ mode: 'index', intersect: false }},
+                            scales: {{
+                                y: {{ grid: {{ color: 'rgba(255,255,255,0.05)' }}, ticks: {{ color: '#64748b', font: {{ size: 10 }} }}, title: {{ display: true, text: '単位: 億円', color: '#64748b', font: {{ size: 10 }} }} }},
+                                y1: {{ position: 'right', grid: {{ display: false }}, ticks: {{ color: '#818cf8', font: {{ size: 10 }} }}, title: {{ display: true, text: '%', color: '#818cf8', font: {{ size: 10 }} }} }},
                                 x: {{ grid: {{ display: false }}, ticks: {{ color: '#64748b', font: {{ size: 10 }} }} }}
                             }},
                             plugins: {{ legend: {{ labels: {{ color: '#94a3b8', font: {{ size: 10 }} }} }} }}
@@ -1604,7 +1671,7 @@ async def lookup_yahoo_finance(
                                 {f'{growth_analysis["revenue_cagr_3y"]}%' if pd.notna(growth_analysis["revenue_cagr_3y"]) else '-'}
                             </div>
                             <div style="font-size: 0.7rem; color: {'#10b981' if growth_analysis['is_high_growth'] else '#64748b'}; margin-top: 0.25rem;">
-                                {'✅ 10%目標達成' if growth_analysis['is_high_growth'] else '基準未達 / データ不足'}
+                                {('✅ 10%目標達成' if growth_analysis['is_high_growth'] else '⚠️ 基準未達') if pd.notna(growth_analysis["revenue_cagr_3y"]) else 'データ不足'}
                             </div>
                         </div>
                         
