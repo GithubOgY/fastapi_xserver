@@ -3,7 +3,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
 from typing import Annotated, Optional
 from sqlalchemy.orm import Session
-from database import SessionLocal, CompanyFundamental, User, Company, UserFavorite, StockComment, UserProfile, UserFollow
+from database import SessionLocal, CompanyFundamental, User, Company, UserFavorite, StockComment, UserProfile, UserFollow, AIAnalysisCache
 from utils.mail_sender import send_email
 from passlib.context import CryptContext
 from jose import JWTError, jwt
@@ -2137,14 +2137,66 @@ async def search_edinet_company(
 @app.post("/api/ai/analyze", response_class=HTMLResponse)
 def api_ai_analyze(
     ticker_code: str = Form(...),
-    current_user: User = Depends(get_current_user)
+    force_refresh: str = Form(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
-    """AI Analysis Endpoint using Gemini 2.0 Flash"""
+    """AI Analysis Endpoint with caching - saves API costs"""
     if not current_user:
         return "<div class='text-red-400'>エラー: ログインが必要です</div>"
 
     try:
         clean_code = ticker_code.replace(".T", "")
+        analysis_type = "general"
+        cache_days = 7
+        
+        # Check cache first (unless force_refresh)
+        if force_refresh != "true":
+            cached = db.query(AIAnalysisCache).filter(
+                AIAnalysisCache.ticker_code == clean_code,
+                AIAnalysisCache.analysis_type == analysis_type,
+                AIAnalysisCache.expires_at > datetime.utcnow()
+            ).first()
+            
+            if cached:
+                logger.info(f"[AI Cache HIT] {clean_code} - returning cached result")
+                cache_date = cached.created_at.strftime("%Y-%m-%d %H:%M") if cached.created_at else "不明"
+                
+                # Return cached result with cache badge and copy button
+                return f"""
+                <div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                    <span style="background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 0.25rem 0.5rem; border-radius: 6px; font-size: 0.75rem;">
+                        ⚡ キャッシュから取得 ({cache_date})
+                    </span>
+                    <button onclick="copyAIAnalysis()" style="background: rgba(99, 102, 241, 0.2); color: #818cf8; border: none; padding: 0.25rem 0.75rem; border-radius: 6px; font-size: 0.75rem; cursor: pointer;">
+                        📋 コピー
+                    </button>
+                    <button hx-post="/api/ai/analyze" hx-vals='{{"ticker_code": "{clean_code}", "force_refresh": "true"}}' hx-target="#ai-analysis-content" hx-swap="innerHTML" hx-indicator="#ai-loading" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: none; padding: 0.25rem 0.75rem; border-radius: 6px; font-size: 0.75rem; cursor: pointer;">
+                        🔄 最新で再分析
+                    </button>
+                </div>
+                <div id="ai-analysis-text">{cached.analysis_html}</div>
+                <script>
+                    function copyAIAnalysis() {{
+                        const el = document.getElementById('ai-analysis-text');
+                        const text = el.innerText || el.textContent;
+                        navigator.clipboard.writeText(text).then(() => {{
+                            alert('コピーしました！');
+                        }}).catch(err => {{
+                            // Fallback for mobile
+                            const range = document.createRange();
+                            range.selectNodeContents(el);
+                            const selection = window.getSelection();
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                            alert('テキストを選択しました。手動でコピーしてください。');
+                        }});
+                    }}
+                </script>
+                """
+        
+        # Cache miss or force refresh - generate new analysis
+        logger.info(f"[AI Cache MISS] {clean_code} - generating new analysis")
         
         # Context data preparation
         financial_context = {}
@@ -2159,7 +2211,59 @@ def api_ai_analyze(
             company_name = meta.get("company_name", company_name)
         
         # Execute Analysis (returns HTML)
-        return analyze_stock_with_ai(clean_code, financial_context, company_name)
+        analysis_html = analyze_stock_with_ai(clean_code, financial_context, company_name)
+        
+        # Save to cache (upsert)
+        existing = db.query(AIAnalysisCache).filter(
+            AIAnalysisCache.ticker_code == clean_code,
+            AIAnalysisCache.analysis_type == analysis_type
+        ).first()
+        
+        if existing:
+            existing.analysis_html = analysis_html
+            existing.created_at = datetime.utcnow()
+            existing.expires_at = datetime.utcnow() + timedelta(days=cache_days)
+        else:
+            new_cache = AIAnalysisCache(
+                ticker_code=clean_code,
+                analysis_type=analysis_type,
+                analysis_html=analysis_html,
+                created_at=datetime.utcnow(),
+                expires_at=datetime.utcnow() + timedelta(days=cache_days)
+            )
+            db.add(new_cache)
+        db.commit()
+        logger.info(f"[AI Cache SAVED] {clean_code} - cached for {cache_days} days")
+        
+        # Return new result with copy button
+        gen_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+        return f"""
+        <div style="margin-bottom: 1rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <span style="background: rgba(99, 102, 241, 0.2); color: #818cf8; padding: 0.25rem 0.5rem; border-radius: 6px; font-size: 0.75rem;">
+                🆕 新規生成 ({gen_date})
+            </span>
+            <button onclick="copyAIAnalysis()" style="background: rgba(99, 102, 241, 0.2); color: #818cf8; border: none; padding: 0.25rem 0.75rem; border-radius: 6px; font-size: 0.75rem; cursor: pointer;">
+                📋 コピー
+            </button>
+        </div>
+        <div id="ai-analysis-text">{analysis_html}</div>
+        <script>
+            function copyAIAnalysis() {{
+                const el = document.getElementById('ai-analysis-text');
+                const text = el.innerText || el.textContent;
+                navigator.clipboard.writeText(text).then(() => {{
+                    alert('コピーしました！');
+                }}).catch(err => {{
+                    const range = document.createRange();
+                    range.selectNodeContents(el);
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    alert('テキストを選択しました。手動でコピーしてください。');
+                }});
+            }}
+        </script>
+        """
         
     except Exception as e:
         logger.error(f"AI Analysis error: {e}")

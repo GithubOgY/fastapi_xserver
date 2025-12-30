@@ -109,5 +109,16 @@ class UserFollow(Base):
     follower = relationship("User", foreign_keys=[follower_id])
     following = relationship("User", foreign_keys=[following_id])
 
+class AIAnalysisCache(Base):
+    """Cache for AI-generated analysis results - reduces API costs"""
+    __tablename__ = "ai_analysis_cache"
+    id = Column(Integer, primary_key=True, index=True)
+    ticker_code = Column(String, index=True, nullable=False)   # 銘柄コード (例: "7203")
+    analysis_type = Column(String, default="general")           # 分析タイプ (将来の拡張用)
+    analysis_html = Column(Text, nullable=False)                # 分析結果HTML
+    analysis_text = Column(Text, nullable=True)                 # プレーンテキスト版（コピー用）
+    created_at = Column(DateTime, default=datetime.utcnow)      # 生成日時
+    expires_at = Column(DateTime, nullable=False)               # 有効期限
+
 # DB initialization
 Base.metadata.create_all(bind=engine)
