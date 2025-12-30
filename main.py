@@ -9,7 +9,10 @@ from utils.mail_sender import send_email
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
-from dotenv import os
+from dotenv import load_dotenv
+import os
+import yfinance as yf
+import pandas as pd
 import sys
 import logging
 import time
@@ -946,7 +949,7 @@ async def list_comments(
     
     comments = db.query(StockComment).filter(StockComment.ticker == ticker).order_by(StockComment.created_at.desc()).all()
     
-    html = f"""
+    html_content = f"""
         <div id="discussion-board-{ticker}" style="background: rgba(15, 23, 42, 0.4); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); padding: 1.5rem;">
             <h3 style="color: #818cf8; font-family: 'Outfit', sans-serif; font-size: 1.1rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
                 💬 {ticker} 投資家掲示板
@@ -972,7 +975,7 @@ async def list_comments(
     if not comments:
         # Initial empty state (will be hidden if a comment is added via JS logic, or just appended to)
         # However, hx-swap="afterbegin" pre-pends. If we leave this message, it stays at bottom. That's fine.
-        html += f"<p id='no-comments-{ticker}' style='color: #475569; text-align: center; font-size: 0.85rem; padding: 2rem;'>まだ投稿がありません。最初の意見を投稿しましょう！</p>"
+        html_content += f"<p id='no-comments-{ticker}' style='color: #475569; text-align: center; font-size: 0.85rem; padding: 2rem;'>まだ投稿がありません。最初の意見を投稿しましょう！</p>"
     else:
         for comment in comments:
             is_owner = comment.user_id == current_user.id
@@ -983,7 +986,7 @@ async def list_comments(
                 </button>
             """ if is_owner else ""
             
-            html += f"""
+            html_content += f"""
                 <div class="comment-card" style="background: rgba(255,110,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 1rem; position: relative;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                         <a href="/u/{comment.user.username}" style="color: #94a3b8; font-size: 0.8rem; font-weight: 600; text-decoration: none;" onmouseover="this.style.color='#818cf8'" onmouseout="this.style.color='#94a3b8'">@{comment.user.username}</a>
@@ -996,8 +999,8 @@ async def list_comments(
                 </div>
             """
             
-    html += "</div></div>"
-    return html
+    html_content += "</div></div>"
+    return html_content
 
 @app.post("/api/comments/{ticker}", response_class=HTMLResponse)
 async def post_comment(
@@ -1025,7 +1028,7 @@ async def post_comment(
     # Return JUST the new comment card. 
     # HTMX swap="afterbegin" on #comments-list-{ticker} will insert this at the top.
     
-    html = f"""
+    html_content = f"""
         <div class="comment-card" style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 1rem; position: relative; animation: fadeIn 0.5s ease-out;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                 <a href="/u/{current_user.username}" style="color: #10b981; font-size: 0.8rem; font-weight: 600; text-decoration: none;" onmouseover="this.style.color='#34d399'" onmouseout="this.style.color='#10b981'">@{current_user.username}</a>
@@ -1045,7 +1048,7 @@ async def post_comment(
             </script>
         </div>
     """
-    return html
+    return html_content
 
 @app.delete("/api/comments/{comment_id}")
 async def delete_comment(
