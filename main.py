@@ -328,6 +328,7 @@ async def offline_page(request: Request):
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard(request: Request, 
                     ticker: str = Query("7203.T"),
+                    code: str = Query(None),
                     db: Session = Depends(get_db), 
                     current_user: User = Depends(get_current_user)):
     
@@ -336,6 +337,10 @@ async def dashboard(request: Request,
     
     # Read last searched ticker from cookie
     last_ticker = request.cookies.get("last_ticker", "")
+    
+    # Override from query param (e.g. from catalog)
+    if code:
+        last_ticker = code
     
     fundamentals = db.query(CompanyFundamental).filter(CompanyFundamental.ticker == ticker).order_by(CompanyFundamental.year.desc()).all()
     company = db.query(Company).filter(Company.ticker == ticker).first()
@@ -466,9 +471,9 @@ async def filter_companies(
             # Actually we use Tailwind classes normally available
             scale_badge = f'<span class="text-[10px] px-1.5 py-0.5 rounded bg-{color}-500/10 text-{color}-400 border border-{color}-500/20">{text}</span>'
 
-        # Link to EDINET analysis with auto-search params
-        # Use code query param which is handled by edinet.html JS and search API
-        link = f"/edinet?code={c.code_4digit}"
+        # Link to Dashboard with auto-fill params
+        # Use code query param which is handled by dashboard (index.html) JS
+        link = f"/dashboard?code={c.code_4digit}"
         
         html += f"""
         <a href="{link}" class="company-card group">
