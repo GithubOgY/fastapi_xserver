@@ -2328,6 +2328,41 @@ def api_ai_analyze(
         traceback.print_exc()
         return f"<div class='text-red-400'>AI分析中にエラーが発生しました: {str(e)}</div>"
 
+def _format_summary(normalized: dict) -> str:
+    """Format normalized financial data into readable summary text for AI"""
+    lines = []
+    
+    # Key metrics mapping
+    key_metrics = {
+        "売上高": "revenue",
+        "営業利益": "operating_income", 
+        "経常利益": "ordinary_income",
+        "当期純利益": "net_income",
+        "営業CF": "operating_cf",
+        "投資CF": "investing_cf",
+        "財務CF": "financing_cf",
+        "フリーCF": "free_cf",
+        "自己資本比率": "equity_ratio",
+        "ROE": "roe",
+        "ROA": "roa",
+        "EPS": "eps",
+    }
+    
+    for label, key in key_metrics.items():
+        val = normalized.get(key)
+        if val is not None:
+            if isinstance(val, (int, float)):
+                if abs(val) >= 100000000:  # 1億以上
+                    lines.append(f"{label}: {val/100000000:.1f}億円")
+                elif isinstance(val, float) and val < 100:  # 割合っぽい
+                    lines.append(f"{label}: {val:.1f}%")
+                else:
+                    lines.append(f"{label}: {val:,.0f}")
+            else:
+                lines.append(f"{label}: {val}")
+    
+    return "\n".join(lines) if lines else "財務データなし"
+
 # Helper function for specialized AI analysis with caching
 def _run_specialized_analysis(
     analysis_func, 
@@ -2361,12 +2396,25 @@ def _run_specialized_analysis(
     # Generate new
     logger.info(f"[AI Cache MISS] {clean_code}/{analysis_type} - generating")
     
-    # Get financial context
+    # Get financial context - include both numeric and text data
     financial_context = {}
     history = get_financial_history(company_code=clean_code, years=1)
     if history and len(history) > 0:
         data = history[0]
-        financial_context = data.get("normalized_data", {})
+        normalized = data.get("normalized_data", {})
+        text_data = data.get("text_data", {})
+        metadata = data.get("metadata", {})
+        
+        # Build comprehensive context for AI
+        financial_context = {
+            **normalized,  # Include all numeric data
+            "summary_text": _format_summary(normalized),  # Create summary text
+            "edinet_data": {
+                "text_data": text_data,
+                "metadata": metadata
+            }
+        }
+        logger.info(f"Financial context built with {len(normalized)} metrics and {len(text_data)} text blocks")
     
     # Call the specific analysis function
     result_html = analysis_func(clean_code, financial_context, name)
