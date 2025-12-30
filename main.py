@@ -1854,7 +1854,7 @@ async def search_edinet_company(
                         #ai-biz-{code_only}:hover {{ background: rgba(16, 185, 129, 0.2); }}
                         #ai-rsk-{code_only}:hover {{ background: rgba(239, 68, 68, 0.2); }}
                     </style>
-                    <div id="ai-result" style="margin-top: 1rem; padding: 1rem; background: rgba(30, 41, 59, 0.4); border-radius: 8px; border: 1px solid rgba(71, 85, 105, 0.3); color: #94a3b8; line-height: 1.6; font-size: 0.875rem; min-height: 60px; text-align: center;">
+                    <div id="ai-result" style="margin-top: 1rem; padding: 1rem; background: rgba(30, 41, 59, 0.4); border-radius: 8px; border: 1px solid rgba(71, 85, 105, 0.3); color: #94a3b8; line-height: 1.6; font-size: 0.875rem; min-height: 60px; text-align: left;">
                         分析したい視点を選択してください
                     </div>
                 </div>
