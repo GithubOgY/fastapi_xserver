@@ -1592,15 +1592,13 @@ async def lookup_yahoo_finance(
                             throw new Error('html2canvas not loaded');
                         }}
                         
-                        const chartSection = document.getElementById('chart-section');
+                        const chartSection = document.getElementById('charts-only');
                         const canvas = await html2canvas(chartSection, {{
                             backgroundColor: '#0f172a',
                             scale: 2,
                             useCORS: true,
                             allowTaint: false,
-                            logging: false,
-                            width: Math.min(chartSection.scrollWidth, 1280),
-                            windowWidth: 1280
+                            logging: false
                         }});
                         
                         canvas.toBlob(async function(blob) {{
@@ -1734,7 +1732,7 @@ async def lookup_yahoo_finance(
                     .chart-full-width {{ grid-column: 1 / -1; }}
                     @media (max-width: 768px) {{ .chart-grid {{ grid-template-columns: 1fr; }} }}
                 </style>
-                <div class="chart-grid">
+                <div id="charts-only" class="chart-grid">
                     <!-- Revenue/Profit Chart -->
                     <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem; max-width: 100%; overflow: hidden;">
                         <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 0.75rem 0; text-align: center;">売上 / 営業利益</h4>
