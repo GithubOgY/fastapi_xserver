@@ -165,6 +165,10 @@ CONCEPT_GROUPS = {
         "Revenue", 
         "OperatingRevenue",
         "RevenueFromContractsWithCustomers",
+        "OrdinaryRevenue",
+        "OrdinaryRevenues",
+        "OperatingRevenue1",
+        "OperatingRevenue2",
     ],
     # Operating Income
     "営業利益": [
@@ -676,6 +680,34 @@ def extract_financial_data(xbrl_dir: str) -> Dict[str, Any]:
             if concept and concept not in result["normalized_data"]:
                 result["normalized_data"][concept] = value
         
+        # Calculate derived metrics if missing
+        norm = result["normalized_data"]
+        
+        # Bank Fallback: Operating Income <- Ordinary Income
+        if "営業利益" not in norm and "経常利益" in norm:
+             norm["営業利益"] = norm["経常利益"]
+        
+        # Calculate FCF (Operating CF + Investing CF)
+        if "フリーCF" not in norm:
+             op_cf = norm.get("営業CF")
+             inv_cf = norm.get("投資CF")
+             if isinstance(op_cf, (int, float)) and isinstance(inv_cf, (int, float)):
+                 norm["フリーCF"] = op_cf + inv_cf
+                 
+        # Calculate Equity Ratio
+        if "自己資本比率" not in norm:
+             equity = norm.get("純資産")
+             assets = norm.get("総資産")
+             if isinstance(equity, (int, float)) and isinstance(assets, (int, float)) and assets != 0:
+                 norm["自己資本比率"] = (equity / assets) * 100
+                 
+        # Calculate ROE
+        if "ROE" not in norm:
+             net_income = norm.get("当期純利益")
+             equity = norm.get("純資産")
+             if isinstance(net_income, (int, float)) and isinstance(equity, (int, float)) and equity != 0:
+                 norm["ROE"] = (net_income / equity) * 100
+                 
         # Format large numbers
         result["formatted_data"] = format_financial_data(result["raw_data"])
         
