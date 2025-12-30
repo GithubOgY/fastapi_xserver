@@ -1742,6 +1742,7 @@ async def search_edinet_company(
             
         metadata = result.get("metadata", {})
         normalized = result.get("normalized_data", {})
+        
         text_data = result.get("text_data", {})
         website_url = result.get("website_url")
         formatted_normalized = format_financial_data(normalized)
@@ -1879,17 +1880,7 @@ async def search_edinet_company(
                     </div>
                 </div>
                 
-                <!-- Key Financials Summary -->
-                <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-700/50 mb-6 font-mono text-sm">
-                    <div class="grid grid-cols-2 gap-2">
-                        <div class="text-gray-300">売上高　<span class="text-gray-100">{formatted_normalized.get("売上高", "-")}</span></div>
-                        <div class="text-gray-300">営業利益　<span class="text-emerald-400">{formatted_normalized.get("営業利益", "-")}</span></div>
-                        <div class="text-gray-300">当期純利益　<span class="text-blue-400">{formatted_normalized.get("当期純利益", "-")}</span></div>
-                        <div class="text-gray-300">ROE　<span class="text-purple-400">{formatted_normalized.get("ROE", "-")}</span></div>
-                        <div class="text-gray-300">ROA　<span class="text-purple-400">{formatted_normalized.get("ROA", "-")}</span></div>
-                        <div class="text-gray-300">自己資本比率　<span class="text-yellow-400">{formatted_normalized.get("自己資本比率", "-")}</span></div>
-                    </div>
-                </div>
+                <!-- Key Financials Summary Removed by Request -->
                 
                 <h4 class="text-lg font-bold text-gray-200 mb-4 border-l-4 border-indigo-500 pl-3">
                     定性情報レポート
