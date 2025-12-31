@@ -656,7 +656,8 @@ async def login_page(request: Request, error: str = None):
 async def login(response: Response, username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == username).first()
     if not user or not verify_password(password, user.hashed_password):
-        return RedirectResponse(url="/login?error=ユーザー名またはパスワードが違います", status_code=status.HTTP_303_SEE_OTHER)
+        error_msg = urllib.parse.quote("ユーザー名またはパスワードが違います", safe='')
+        return RedirectResponse(url=f"/login?error={error_msg}", status_code=status.HTTP_303_SEE_OTHER)
     
     access_token = create_access_token(data={"sub": user.username})
     response = RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
@@ -676,13 +677,17 @@ async def register(request: Request, username: str = Form(...), password: str = 
     new_user = User(username=username, hashed_password=get_hashed_password(password))
     db.add(new_user)
     db.commit()
-    return RedirectResponse(url=f"/register/success?username={username}", status_code=status.HTTP_303_SEE_OTHER)
+    # URL encode username to handle special characters safely
+    encoded_username = urllib.parse.quote(username, safe='')
+    return RedirectResponse(url=f"/register/success?username={encoded_username}", status_code=status.HTTP_303_SEE_OTHER)
 
 @app.get("/register/success", response_class=HTMLResponse)
 async def register_success(request: Request, username: str = ""):
+    # URL decode username if it was encoded
+    decoded_username = urllib.parse.unquote(username) if username else ""
     return templates.TemplateResponse("register_success.html", {
         "request": request,
-        "username": username
+        "username": decoded_username
     })
 
 @app.get("/logout")
@@ -2193,7 +2198,7 @@ async def lookup_yahoo_finance(
 
             <!-- News Section (OOB Swap) - Restored for Sidebar -->
             <div id="news-section" hx-swap-oob="true" style="display: block; margin-top: 1rem;">
-                <div hx-get="/api/news/{code_only}?name={urllib.parse.quote(name)}" hx-trigger="load delay:500ms" hx-swap="innerHTML">
+                <div hx-get="/api/news/{code_only}?name={urllib.parse.quote(name, safe='')}" hx-trigger="load delay:500ms" hx-swap="innerHTML">
                     <div class="flex items-center justify-center p-8 space-x-3 text-gray-400">
                         <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-green-400"></div>
                         <span class="text-sm font-medium">最新ニュースを取得中...</span>
@@ -2208,17 +2213,26 @@ async def lookup_yahoo_finance(
         """
         
         # Create response and set cookie to remember last searched ticker
-        response = HTMLResponse(content=html_content)
-        response.set_cookie(key="last_ticker", value=code_input, max_age=86400*30)  # 30 days
+        # Always use code_only (4-digit code) to avoid encoding issues with company names
+        response = HTMLResponse(content=html_content, charset="utf-8")
+        # code_only is always a 4-digit string (ASCII), so it's safe for cookies
+        if code_only and code_only.isdigit() and len(code_only) == 4:
+            response.set_cookie(key="last_ticker", value=code_only, max_age=86400*30)  # 30 days
         return response
         
     except Exception as e:
-        logger.error(f"Yahoo Finance lookup error for {code_input}: {e}")
+        logger.error(f"Yahoo Finance lookup error for {code_input}: {e}", exc_info=True)
+        # Escape error message for HTML safety and handle encoding issues
+        try:
+            error_msg = html.escape(str(e))
+        except UnicodeEncodeError:
+            # Fallback if encoding fails
+            error_msg = "エンコーディングエラーが発生しました"
         return HTMLResponse(content=f"""
             <div style="color: #fb7185; padding: 1rem; text-align: center; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
-                ❌ データの取得に失敗しました: {str(e)}
+                ❌ データの取得に失敗しました: {error_msg}
             </div>
-        """)
+        """, charset="utf-8")
 
 
 @app.post("/api/ai/analyze-legacy")
@@ -2533,7 +2547,9 @@ async def search_edinet_company(
         ai_btn = ""
         if sec_code:
             code_only = sec_code[:4]
-            cname = metadata.get('company_name', '').replace('"', '&quot;')
+            # Escape company name for JSON in hx-vals (escape quotes and backslashes)
+            cname_raw = metadata.get('company_name', '')
+            cname = json.dumps(cname_raw)  # Properly escape for JSON
             ai_btn = f"""
             <div style="margin-top: 2rem; padding: 1.5rem; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border-radius: 16px; border: 1px solid rgba(99, 102, 241, 0.2);">
                 <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 0.5rem;">
