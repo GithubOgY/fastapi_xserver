@@ -1934,11 +1934,17 @@ async def lookup_yahoo_finance(
                             useCORS: true,
                             allowTaint: false,
                             logging: false,
+                            willReadFrequently: true,
                             onclone: (clonedDoc) => {{
                                 const el = clonedDoc.getElementById('charts-only');
                                 if (el) {{
                                     el.style.width = chartSection.offsetWidth + 'px';
                                     el.style.display = 'flex';
+                                }}
+                                // Set willReadFrequently for all canvas elements to suppress warnings
+                                const canvases = clonedDoc.getElementsByTagName('canvas');
+                                for (let i = 0; i < canvases.length; i++) {{
+                                    const ctx = canvases[i].getContext('2d', {{ willReadFrequently: true }});
                                 }}
                             }}
                         }});
@@ -2007,7 +2013,15 @@ async def lookup_yahoo_finance(
                             backgroundColor: '#0f172a',
                             scale: 1.2,
                             useCORS: true,
-                            logging: false
+                            logging: false,
+                            willReadFrequently: true,
+                            onclone: (clonedDoc) => {{
+                                // Set willReadFrequently for all canvas elements to suppress warnings
+                                const canvases = clonedDoc.getElementsByTagName('canvas');
+                                for (let i = 0; i < canvases.length; i++) {{
+                                    const ctx = canvases[i].getContext('2d', {{ willReadFrequently: true }});
+                                }}
+                            }}
                         }});
 
                         const imageData = canvas.toDataURL('image/png');
