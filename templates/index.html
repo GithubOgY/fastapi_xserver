@@ -517,8 +517,10 @@
             <form hx-post="/api/yahoo-finance/lookup" hx-target="#yf-lookup-result" hx-swap="innerHTML"
                 hx-indicator="#yf-lookup-spinner"
                 style="display: flex; gap: 0.5rem; justify-content: center; margin-bottom: 1rem;">
-                <input type="text" name="ticker_code" id="yf-ticker-input" placeholder="銘柄コードまたは企業名（例: 7203, トヨタ）"
-                    style="width: 200px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.8rem 1rem; color: white; outline: none; text-align: center;">
+                <input type="text" name="ticker_code" id="yf-ticker-input" placeholder="銘柄コード（例: 7203）"
+                    style="width: 140px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.8rem 1rem; color: white; outline: none; text-align: center;">
+                <input type="text" id="yf-company-name" placeholder="企業名"
+                    style="width: 160px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.8rem 1rem; color: var(--text-dim); outline: none; text-align: center;">
                 <button type="submit"
                     style="background: linear-gradient(135deg, #10b981, #059669); white-space: nowrap;">
                     <span>取得</span>
