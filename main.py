@@ -1,8 +1,7 @@
 ﻿from fastapi import FastAPI, Request, Form, Depends, HTTPException, status, Response, Query, BackgroundTasks
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
-from typing import Annotated, Optional
-from typing import List, Optional, Annotated
+from typing import Annotated, Optional, List
 from sqlalchemy.orm import Session
 from database import SessionLocal, CompanyFundamental, User, Company, UserFavorite, StockComment, UserProfile, UserFollow, AIAnalysisCache
 from utils.mail_sender import send_email
@@ -189,6 +188,8 @@ def fetch_edinet_background(ticker_code: str):
     except Exception as e:
         logger.error(f"[BG-TASK] Background fetch failed for {ticker_code}: {e}", exc_info=True)
 
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
@@ -215,7 +216,6 @@ async def get_current_user(request: Request, db: Session = Depends(get_db)):
     except JWTError:
         return None
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # --- Yahoo Finance Data Fetching ---
 def sync_stock_data(db: Session, target_ticker: Optional[str] = None):
