@@ -1083,22 +1083,101 @@ async def lookup_yahoo_finance(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Lookup any stock by code using Yahoo Finance API"""
+    """Lookup any stock by code or company name using Yahoo Finance API"""
     if not current_user:
         return HTMLResponse(content="<div class='text-red-400 p-4'>ログインが必要です</div>")
     
-    # Clean the ticker code
+    # Clean the input
     code_input = ticker_code.strip()
     if not code_input:
-        return HTMLResponse(content="<div class='text-yellow-400 p-4'>銘柄コードを入力してください</div>")
+        return HTMLResponse(content="<div class='text-yellow-400 p-4'>銘柄コードまたは企業名を入力してください</div>")
     
-    # For Japanese stocks, append .T for Tokyo Stock Exchange
+    # Check if input is 4-digit code
     if code_input.isdigit() and len(code_input) == 4:
+        # Direct code input - proceed with Yahoo Finance API
         symbol = f"{code_input}.T"
         # Trigger background EDINET fetch for Japanese stocks
         background_tasks.add_task(fetch_edinet_background, code_input)
     else:
-        symbol = code_input
+        # Not a 4-digit code - search by company name in database
+        search_query = code_input
+        
+        # First, try exact match
+        exact_match = db.query(Company).filter(Company.name == search_query).first()
+        
+        if exact_match:
+            # Found exact match - use it directly
+            if exact_match.code_4digit:
+                symbol = f"{exact_match.code_4digit}.T"
+                background_tasks.add_task(fetch_edinet_background, exact_match.code_4digit)
+            else:
+                return HTMLResponse(content=f"""
+                    <div style="color: #fb7185; padding: 1rem; text-align: center; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
+                        ❌ 「{search_query}」の銘柄コードが見つかりませんでした。
+                    </div>
+                """)
+        else:
+            # Try partial match
+            companies = db.query(Company).filter(
+                Company.name.ilike(f"%{search_query}%")
+            ).filter(
+                Company.code_4digit.isnot(None)
+            ).order_by(Company.code_4digit).limit(10).all()
+            
+            if not companies:
+                return HTMLResponse(content=f"""
+                    <div style="color: #fb7185; padding: 1rem; text-align: center; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
+                        ❌ 「{search_query}」に一致する企業が見つかりませんでした。<br>
+                        銘柄コード（4桁の数字）または企業名を入力してください。
+                    </div>
+                """)
+            elif len(companies) == 1:
+                # Single match - use it directly
+                company = companies[0]
+                symbol = f"{company.code_4digit}.T"
+                background_tasks.add_task(fetch_edinet_background, company.code_4digit)
+            else:
+                # Multiple matches - show selection list
+                html_content = """
+                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 16px; padding: 1.5rem;">
+                    <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.1rem; color: #818cf8; margin-bottom: 1rem; text-align: center;">
+                        🔍 複数の企業が見つかりました
+                    </h3>
+                    <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1rem; text-align: center;">
+                        該当する企業を選択してください：
+                    </p>
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 400px; overflow-y: auto;">
+                """
+                
+                for company in companies:
+                    if not company.code_4digit:
+                        continue
+                    # Escape company name for HTML safety
+                    company_name_escaped = html.escape(company.name)
+                    html_content += f"""
+                    <button 
+                        hx-post="/api/yahoo-finance/lookup" 
+                        hx-vals='{{"ticker_code": "{company.code_4digit}"}}'
+                        hx-target="#yf-lookup-result"
+                        hx-swap="innerHTML"
+                        style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 1rem; text-align: left; cursor: pointer; transition: all 0.2s; color: #f8fafc;"
+                        onmouseover="this.style.background='rgba(99, 102, 241, 0.2)'; this.style.borderColor='rgba(99, 102, 241, 0.5)';"
+                        onmouseout="this.style.background='rgba(99, 102, 241, 0.1)'; this.style.borderColor='rgba(99, 102, 241, 0.3)';">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-weight: 600; font-size: 1rem; margin-bottom: 0.25rem;">{company_name_escaped}</div>
+                                <div style="font-size: 0.8rem; color: var(--text-dim);">銘柄コード: {company.code_4digit}</div>
+                            </div>
+                            <span style="color: #818cf8; font-size: 1.2rem;">→</span>
+                        </div>
+                    </button>
+                    """
+                
+                html_content += """
+                    </div>
+                </div>
+                """
+                return HTMLResponse(content=html_content)
         
     # Ensure code_only is available for templates (e.g. News API, AI Analysis)
     code_only = symbol.replace(".T", "")
