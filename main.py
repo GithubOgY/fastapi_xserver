@@ -104,7 +104,59 @@ async def startup_event():
                 logger.info("[Migration] 'is_admin' column missing. Adding it...")
                 connection.execute(text("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0"))
                 logger.info("[Migration] Successfully added 'is_admin' column.")
-            
+
+            # Check ai_analysis_history table (Phase 2)
+            try:
+                connection.execute(text("SELECT id FROM ai_analysis_history LIMIT 1"))
+            except Exception:
+                logger.info("[Migration] 'ai_analysis_history' table missing. Creating it...")
+                # Create table with proper schema
+                if DATABASE_URL.startswith("sqlite"):
+                    connection.execute(text("""
+                        CREATE TABLE ai_analysis_history (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            ticker_code VARCHAR(20) NOT NULL,
+                            analysis_type VARCHAR(50) DEFAULT 'visual',
+                            analysis_json TEXT NOT NULL,
+                            overall_score INTEGER,
+                            investment_rating VARCHAR(20),
+                            score_profitability INTEGER,
+                            score_growth INTEGER,
+                            score_financial_health INTEGER,
+                            score_cash_generation INTEGER,
+                            score_capital_efficiency INTEGER,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        )
+                    """))
+                    # Create indexes
+                    connection.execute(text("CREATE INDEX idx_ah_ticker ON ai_analysis_history(ticker_code)"))
+                    connection.execute(text("CREATE INDEX idx_ah_type ON ai_analysis_history(analysis_type)"))
+                    connection.execute(text("CREATE INDEX idx_ah_created ON ai_analysis_history(created_at)"))
+                    connection.execute(text("CREATE INDEX idx_ah_score ON ai_analysis_history(overall_score)"))
+                else:  # PostgreSQL
+                    connection.execute(text("""
+                        CREATE TABLE ai_analysis_history (
+                            id SERIAL PRIMARY KEY,
+                            ticker_code VARCHAR(20) NOT NULL,
+                            analysis_type VARCHAR(50) DEFAULT 'visual',
+                            analysis_json TEXT NOT NULL,
+                            overall_score INTEGER,
+                            investment_rating VARCHAR(20),
+                            score_profitability INTEGER,
+                            score_growth INTEGER,
+                            score_financial_health INTEGER,
+                            score_cash_generation INTEGER,
+                            score_capital_efficiency INTEGER,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        )
+                    """))
+                    # Create indexes
+                    connection.execute(text("CREATE INDEX idx_ah_ticker ON ai_analysis_history(ticker_code)"))
+                    connection.execute(text("CREATE INDEX idx_ah_type ON ai_analysis_history(analysis_type)"))
+                    connection.execute(text("CREATE INDEX idx_ah_created ON ai_analysis_history(created_at)"))
+                    connection.execute(text("CREATE INDEX idx_ah_score ON ai_analysis_history(overall_score)"))
+                logger.info("[Migration] Successfully created 'ai_analysis_history' table with indexes.")
+
             # Commit changes if not autocommited
             connection.commit()
     except Exception as e:
@@ -3153,6 +3205,10 @@ async def api_ai_visual_analyze(
 
         # Call the visual analysis function - returns dict (StructuredAnalysisResult)
         analysis_data = analyze_dashboard_image(image_data, clean_code, company_name)
+
+        # Phase 2: Save to history table
+        from utils.ai_analysis import save_analysis_to_history
+        save_analysis_to_history(db, clean_code, analysis_type, analysis_data)
 
         # Save to cache (store JSON string)
         existing = db.query(AIAnalysisCache).filter(

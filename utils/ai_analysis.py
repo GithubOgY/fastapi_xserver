@@ -988,3 +988,121 @@ def render_visual_analysis_html(analysis_data: Dict, is_from_cache: bool = False
     """
 
     return html
+
+
+
+# ========================================
+# Phase 2.3: 履歴保存・取得関数
+# ========================================
+
+def save_analysis_to_history(db, ticker_code: str, analysis_type: str, analysis_data: Dict) -> None:
+    """
+    AI分析結果を履歴テーブルに保存
+
+    Args:
+        db: SQLAlchemy Session
+        ticker_code: 銘柄コード
+        analysis_type: 分析タイプ（例: "visual"）
+        analysis_data: StructuredAnalysisResult dict
+    """
+    from database import AIAnalysisHistory
+    import json
+
+    try:
+        # Extract scores for database columns
+        scores = analysis_data.get("scores", {})
+
+        new_history = AIAnalysisHistory(
+            ticker_code=ticker_code,
+            analysis_type=analysis_type,
+            analysis_json=json.dumps(analysis_data, ensure_ascii=False),
+            overall_score=analysis_data.get("overall_score"),
+            investment_rating=analysis_data.get("investment_rating"),
+            score_profitability=scores.get("profitability"),
+            score_growth=scores.get("growth"),
+            score_financial_health=scores.get("financial_health"),
+            score_cash_generation=scores.get("cash_generation"),
+            score_capital_efficiency=scores.get("capital_efficiency"),
+        )
+
+        db.add(new_history)
+        db.commit()
+        logger.info(f"[History] Saved analysis for {ticker_code} (type={analysis_type})")
+
+    except Exception as e:
+        logger.error(f"[History] Failed to save analysis for {ticker_code}: {e}")
+        db.rollback()
+
+
+def get_analysis_history(db, ticker_code: str, analysis_type: str = "visual", limit: int = 10) -> List[Dict]:
+    """
+    AI分析履歴を取得（最新N件）
+
+    Args:
+        db: SQLAlchemy Session
+        ticker_code: 銘柄コード
+        analysis_type: 分析タイプ
+        limit: 取得件数
+
+    Returns:
+        List of StructuredAnalysisResult dicts (新しい順)
+    """
+    from database import AIAnalysisHistory
+    import json
+
+    try:
+        histories = db.query(AIAnalysisHistory).filter(
+            AIAnalysisHistory.ticker_code == ticker_code,
+            AIAnalysisHistory.analysis_type == analysis_type
+        ).order_by(AIAnalysisHistory.created_at.desc()).limit(limit).all()
+
+        result = []
+        for h in histories:
+            try:
+                data = json.loads(h.analysis_json)
+                # Add metadata
+                data["_created_at"] = h.created_at.isoformat() if h.created_at else None
+                data["_id"] = h.id
+                result.append(data)
+            except json.JSONDecodeError as je:
+                logger.warning(f"[History] Failed to parse JSON for history ID {h.id}: {je}")
+                continue
+
+        logger.info(f"[History] Retrieved {len(result)} histories for {ticker_code}")
+        return result
+
+    except Exception as e:
+        logger.error(f"[History] Failed to get history for {ticker_code}: {e}")
+        return []
+
+
+def cleanup_old_history(db, days: int = 90) -> int:
+    """
+    古い履歴を削除（90日以上前）
+
+    Args:
+        db: SQLAlchemy Session
+        days: 保持日数（デフォルト: 90日）
+
+    Returns:
+        削除件数
+    """
+    from database import AIAnalysisHistory
+    from datetime import datetime, timedelta, timezone
+
+    try:
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
+
+        deleted_count = db.query(AIAnalysisHistory).filter(
+            AIAnalysisHistory.created_at < cutoff_date
+        ).delete()
+
+        db.commit()
+        logger.info(f"[History Cleanup] Deleted {deleted_count} old records (older than {days} days)")
+        return deleted_count
+
+    except Exception as e:
+        logger.error(f"[History Cleanup] Failed: {e}")
+        db.rollback()
+        return 0
+

@@ -5,7 +5,12 @@
       "Bash(python -m py_compile:*)",
       "Bash(timeout 10 python:*)",
       "Bash(pip install:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(dir:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(sqlite3:*)"
     ]
   }
 }

@@ -151,11 +151,38 @@ class AIAnalysisCache(Base):
     analysis_text = Column(Text, nullable=True)                 # プレーンテキスト版（コピー用）
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)      # 生成日時 - added index
     expires_at = Column(DateTime, nullable=False, index=True)               # 有効期限 - added index for cleanup queries
-    
+
     # Composite unique constraint to prevent duplicate cache entries
     __table_args__ = (
         UniqueConstraint('ticker_code', 'analysis_type', name='_ai_cache_uc'),
     )
+
+
+class AIAnalysisHistory(Base):
+    """AI分析結果の履歴保存（時系列分析用） - Phase 2"""
+    __tablename__ = "ai_analysis_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ticker_code = Column(String(20), index=True, nullable=False)
+    analysis_type = Column(String(50), default="visual", index=True)
+
+    # 構造化データ（JSON文字列）
+    analysis_json = Column(Text, nullable=False)
+
+    # スコアデータ（検索・集計用）
+    overall_score = Column(Integer, nullable=True, index=True)
+    investment_rating = Column(String(20), nullable=True)
+    score_profitability = Column(Integer, nullable=True)
+    score_growth = Column(Integer, nullable=True)
+    score_financial_health = Column(Integer, nullable=True)
+    score_cash_generation = Column(Integer, nullable=True)
+    score_capital_efficiency = Column(Integer, nullable=True)
+
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+
+    # 複合インデックス：ticker_code + created_at でソートクエリを高速化
+    # 注意: ユニーク制約なし（同じ銘柄の複数履歴を許可）
+
 
 # DB initialization
 Base.metadata.create_all(bind=engine)
