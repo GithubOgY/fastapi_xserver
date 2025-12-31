@@ -571,6 +571,64 @@ def analyze_risk_governance(ticker_code: str, financial_context: Dict[str, Any],
         return f"<p class='error' style='color: #fb7185;'>リスク分析エラー: {str(e)}</p>"
 
 
+def _validate_analysis_data(data: Dict) -> Dict:
+    """
+    Validate and sanitize AI analysis data to ensure correct ranges and types.
+
+    Args:
+        data: Raw analysis data from Gemini
+
+    Returns:
+        Validated and sanitized data
+    """
+    def clamp(value: int, min_val: int = 0, max_val: int = 100) -> int:
+        """Clamp value to range"""
+        try:
+            val = int(value)
+            return max(min_val, min(max_val, val))
+        except (ValueError, TypeError):
+            return 50  # Default to middle value
+
+    # Validate overall_score
+    data["overall_score"] = clamp(data.get("overall_score", 50))
+
+    # Validate investment_rating
+    valid_ratings = ["Strong Buy", "Buy", "Hold", "Sell", "Strong Sell"]
+    if data.get("investment_rating") not in valid_ratings:
+        # Auto-assign rating based on overall_score
+        score = data["overall_score"]
+        if score >= 85:
+            data["investment_rating"] = "Strong Buy"
+        elif score >= 70:
+            data["investment_rating"] = "Buy"
+        elif score >= 50:
+            data["investment_rating"] = "Hold"
+        elif score >= 30:
+            data["investment_rating"] = "Sell"
+        else:
+            data["investment_rating"] = "Strong Sell"
+
+    # Validate scores object
+    scores = data.get("scores", {})
+    for key in ["profitability", "growth", "financial_health", "cash_generation", "capital_efficiency"]:
+        scores[key] = clamp(scores.get(key, 50))
+    data["scores"] = scores
+
+    # Validate arrays (ensure they exist and limit length)
+    for key in ["strengths", "weaknesses", "recommendations"]:
+        arr = data.get(key, [])
+        if not isinstance(arr, list):
+            arr = []
+        # Limit to 3 items and ensure strings
+        data[key] = [str(item) for item in arr[:3]]
+
+    # Validate strings
+    data["summary"] = str(data.get("summary", "分析結果なし"))
+    data["one_liner"] = str(data.get("one_liner", "評価不明"))
+
+    return data
+
+
 def analyze_dashboard_image(image_base64: str, ticker_code: str, company_name: str = "") -> Dict:
     """
     Analyze dashboard image using Gemini multimodal API (JSON structured output).
@@ -598,30 +656,26 @@ def analyze_dashboard_image(image_base64: str, ticker_code: str, company_name: s
         logger.error(f"Invalid image data: {e}")
         raise ValueError(f"画像データが無効です: {str(e)}")
 
-    # JSON Schema for structured output
+    # JSON Schema for structured output (relaxed constraints for better compatibility)
     json_schema = {
         "type": "object",
         "properties": {
-            "overall_score": {"type": "integer", "minimum": 0, "maximum": 100},
-            "investment_rating": {
-                "type": "string",
-                "enum": ["Strong Buy", "Buy", "Hold", "Sell", "Strong Sell"]
-            },
+            "overall_score": {"type": "integer"},
+            "investment_rating": {"type": "string"},
             "scores": {
                 "type": "object",
                 "properties": {
-                    "profitability": {"type": "integer", "minimum": 0, "maximum": 100},
-                    "growth": {"type": "integer", "minimum": 0, "maximum": 100},
-                    "financial_health": {"type": "integer", "minimum": 0, "maximum": 100},
-                    "cash_generation": {"type": "integer", "minimum": 0, "maximum": 100},
-                    "capital_efficiency": {"type": "integer", "minimum": 0, "maximum": 100}
-                },
-                "required": ["profitability", "growth", "financial_health", "cash_generation", "capital_efficiency"]
+                    "profitability": {"type": "integer"},
+                    "growth": {"type": "integer"},
+                    "financial_health": {"type": "integer"},
+                    "cash_generation": {"type": "integer"},
+                    "capital_efficiency": {"type": "integer"}
+                }
             },
             "summary": {"type": "string"},
-            "strengths": {"type": "array", "items": {"type": "string"}, "maxItems": 3},
-            "weaknesses": {"type": "array", "items": {"type": "string"}, "maxItems": 3},
-            "recommendations": {"type": "array", "items": {"type": "string"}, "maxItems": 3},
+            "strengths": {"type": "array", "items": {"type": "string"}},
+            "weaknesses": {"type": "array", "items": {"type": "string"}},
+            "recommendations": {"type": "array", "items": {"type": "string"}},
             "one_liner": {"type": "string"}
         },
         "required": ["overall_score", "investment_rating", "scores", "summary", "strengths", "weaknesses", "recommendations", "one_liner"]
@@ -754,6 +808,10 @@ JSON形式で回答してください。
                 # Parse JSON response
                 try:
                     analysis_data = json.loads(response.text)
+
+                    # Validate and sanitize scores
+                    analysis_data = _validate_analysis_data(analysis_data)
+
                     logger.debug(f"Parsed JSON: overall_score={analysis_data.get('overall_score')}, rating={analysis_data.get('investment_rating')}")
                     return analysis_data
                 except json.JSONDecodeError as je:
@@ -802,6 +860,10 @@ JSON形式で回答してください。
                     clean_text = clean_text.strip()
 
                     analysis_data = json.loads(clean_text)
+
+                    # Validate and sanitize scores
+                    analysis_data = _validate_analysis_data(analysis_data)
+
                     logger.debug(f"Parsed JSON (legacy SDK): overall_score={analysis_data.get('overall_score')}")
                     return analysis_data
                 except json.JSONDecodeError as je:
