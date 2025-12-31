@@ -2180,8 +2180,8 @@ async def lookup_yahoo_finance(
             {earnings_html}
 
             <!-- Discussion Board (OOB Swap) -->
-            <div id="discussion-section" hx-swap-oob="true" style="display: block; margin-top: 1rem;">
-                <div hx-get="/api/comments/{code_input}" hx-trigger="load">
+            <div id="discussion-section" hx-swap-oob="outerHTML" style="display: block; margin-top: 1rem;">
+                <div id="discussion-board-content" hx-get="/api/comments/{code_input}" hx-trigger="load" hx-swap="outerHTML">
                     <p style="color: #64748b; text-align: center; font-size: 0.85rem; padding: 2rem;">
                         掲示板を読み込み中...
                     </p>
