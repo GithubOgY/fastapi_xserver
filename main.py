@@ -19,6 +19,8 @@ import asyncio
 import html
 import requests
 import urllib.parse
+import yfinance as yf
+import pandas as pd
 from utils.edinet_enhanced import get_financial_history, format_financial_data, search_company_reports, process_document
 from utils.growth_analysis import analyze_growth_quality
 from utils.ai_analysis import analyze_stock_with_ai, analyze_financial_health, analyze_business_competitiveness, analyze_risk_governance, analyze_dashboard_image
