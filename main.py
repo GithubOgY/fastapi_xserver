@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, Form, Depends, HTTPException, status, Response, Query, BackgroundTasks
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
-from typing import Annotated, Optional, List
+from typing import Annotated, Optional
 from sqlalchemy.orm import Session
 from database import SessionLocal, CompanyFundamental, User, Company, UserFavorite, StockComment, UserProfile, UserFollow, AIAnalysisCache
 from utils.mail_sender import send_email
@@ -12,13 +12,11 @@ from dotenv import load_dotenv
 import os
 import yfinance as yf
 import pandas as pd
-import sys
 import logging
 import time
 import json
 import asyncio
 import html
-import requests
 import urllib.parse
 from utils.edinet_enhanced import get_financial_history, format_financial_data, search_company_reports, process_document
 from utils.growth_analysis import analyze_growth_quality
@@ -60,9 +58,7 @@ logging.getLogger("uvicorn.access").addHandler(logging.FileHandler(f"{LOG_DIR}/a
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 from utils.jquants_api import sync_companies_to_db
-import asyncio
-
-app = FastAPI()
+from contextlib import asynccontextmanager
 
 async def background_sync_jquants():
     """Run J-Quants sync in background"""
@@ -74,11 +70,12 @@ async def background_sync_jquants():
     except Exception as e:
         logger.error(f"[Startup] J-Quants sync failed: {e}")
 
-@app.on_event("startup")
-async def startup_event():
-    """Unified startup tasks: migration, initial data, and initialization"""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan event handler for startup and shutdown"""
+    # Startup
     logger.info("Application starting up...")
-    
+
     # 1. DB Migration Check
     try:
         from database import engine
@@ -91,7 +88,7 @@ async def startup_event():
                 logger.info("[Migration] 'scale_category' column missing. Adding it...")
                 connection.execute(text("ALTER TABLE companies ADD COLUMN scale_category VARCHAR"))
                 logger.info("[Migration] Successfully added 'scale_category' column.")
-            
+
             # Check last_sync columns
             try:
                 connection.execute(text("SELECT last_sync_at FROM companies LIMIT 1"))
@@ -100,7 +97,7 @@ async def startup_event():
                 connection.execute(text("ALTER TABLE companies ADD COLUMN last_sync_at VARCHAR"))
                 connection.execute(text("ALTER TABLE companies ADD COLUMN last_sync_error VARCHAR"))
                 logger.info("[Migration] Successfully added last_sync columns.")
-            
+
             # Check is_admin column
             try:
                 connection.execute(text("SELECT is_admin FROM users LIMIT 1"))
@@ -108,12 +105,12 @@ async def startup_event():
                 logger.info("[Migration] 'is_admin' column missing. Adding it...")
                 connection.execute(text("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0"))
                 logger.info("[Migration] Successfully added 'is_admin' column.")
-            
+
             # Commit changes if not autocommited
             connection.commit()
     except Exception as e:
         logger.warning(f"[Migration] Startup migration check failed: {e}")
-    
+
     # 2. Initial Data Setup
     db = SessionLocal()
     try:
@@ -129,7 +126,7 @@ async def startup_event():
                 admin.is_admin = 1
                 db.commit()
                 logger.info(f"Ensured admin status for: {ADMIN_USERNAME}")
-        
+
         # Initial companies
         if db.query(Company).count() == 0:
             initial_companies = {
@@ -145,9 +142,16 @@ async def startup_event():
         logger.error(f"Initial data setup error: {e}")
     finally:
         db.close()
-    
+
     # 3. Background Tasks
     asyncio.create_task(background_sync_jquants())
+
+    yield  # Application runs here
+
+    # Shutdown
+    logger.info("Application shutting down...")
+
+app = FastAPI(lifespan=lifespan)
 
 # Mount static files for PWA support
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -211,7 +215,7 @@ async def get_current_user(request: Request, db: Session = Depends(get_db)):
         return None
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
+        username: Optional[str] = payload.get("sub")
         if username is None:
             return None
         user = db.query(User).filter(User.username == username).first()
@@ -372,10 +376,9 @@ async def dashboard(request: Request,
     
     # Get favorite companies with names for quick access
     favorite_companies = []
-    for fav in user_favorites:
-        comp = db.query(Company).filter(Company.ticker == fav.ticker).first()
-        if comp:
-            favorite_companies.append({"code": comp.ticker, "name": comp.name})
+    if favorite_tickers:
+        companies = db.query(Company).filter(Company.ticker.in_(favorite_tickers)).all()
+        favorite_companies = [{"code": comp.ticker, "name": comp.name} for comp in companies]
 
     return templates.TemplateResponse(
         "index.html", 
@@ -574,8 +577,7 @@ async def screener_results(
     keyword: str = Query(None),
     min_revenue: str = Query(None), # Receive as str to handle empty strings
     min_income: str = Query(None), # Receive as str to handle empty strings
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     # Convert empty strings to None and parse floats
     revenue_filter = float(min_revenue) if min_revenue and min_revenue.strip() else None
@@ -593,20 +595,39 @@ async def screener_results(
     
     companies = query.all()
     results = []
-    
+
+    # Optimize: Fetch all latest fundamentals in one query
+    company_tickers = [c.ticker for c in companies]
+    if company_tickers:
+        from sqlalchemy import func
+        # Subquery to get latest year for each ticker
+        latest_years = db.query(
+            CompanyFundamental.ticker,
+            func.max(CompanyFundamental.year).label('max_year')
+        ).filter(CompanyFundamental.ticker.in_(company_tickers)).group_by(CompanyFundamental.ticker).subquery()
+
+        # Join to get the actual records
+        latest_funds = db.query(CompanyFundamental).join(
+            latest_years,
+            (CompanyFundamental.ticker == latest_years.c.ticker) &
+            (CompanyFundamental.year == latest_years.c.max_year)
+        ).all()
+
+        # Create a lookup map
+        fund_map = {f.ticker: f for f in latest_funds}
+    else:
+        fund_map = {}
+
     for company in companies:
-        # Get latest fundamentals
-        latest_fund = db.query(CompanyFundamental).filter(
-            CompanyFundamental.ticker == company.ticker
-        ).order_by(CompanyFundamental.year.desc()).first()
-        
+        latest_fund = fund_map.get(company.ticker)
+
         # Apply financial filters
         if latest_fund:
             if revenue_filter is not None and latest_fund.revenue < revenue_filter:
                 continue
             if income_filter is not None and latest_fund.operating_income < income_filter:
                 continue
-                
+
             results.append({
                 "ticker": company.ticker,
                 "name": company.name,
@@ -637,7 +658,7 @@ async def screener_results(
     )
 
 @app.post("/admin/sync")
-async def manual_sync(request: Request, ticker: str = "7203.T", db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def manual_sync(request: Request, ticker: str = Form("7203.T"), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if not current_user:
         raise HTTPException(status_code=401, detail="Unauthorized")
     
@@ -653,7 +674,7 @@ async def login_page(request: Request, error: str = None):
     return templates.TemplateResponse("login.html", {"request": request, "error": error})
 
 @app.post("/login")
-async def login(response: Response, username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+async def login(request: Request, response: Response, username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == username).first()
     if not user or not verify_password(password, user.hashed_password):
         error_msg = urllib.parse.quote("ユーザー名またはパスワードが違います", safe='')
@@ -661,7 +682,8 @@ async def login(response: Response, username: str = Form(...), password: str = F
     
     access_token = create_access_token(data={"sub": user.username})
     response = RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
-    response.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="lax")
+    secure_cookie = request.url.scheme == "https"
+    response.set_cookie(key="access_token", value=access_token, httponly=True, secure=secure_cookie, samesite="lax")
     return response
 
 @app.get("/register", response_class=HTMLResponse)
@@ -669,7 +691,7 @@ async def register_page(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
 
 @app.post("/register")
-async def register(request: Request, username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+async def register(username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.username == username).first()
     if existing_user:
         return HTMLResponse(content="<p style='color:red;'>このユーザー名はお使いいただけません</p>", status_code=400)
@@ -873,7 +895,6 @@ async def get_upcoming_earnings(db: Session = Depends(get_db)):
 # --- Favorites API Endpoints ---
 @app.post("/api/favorites/add")
 async def add_favorite(
-    request: Request,
     ticker: str = Form(...),
     ticker_name: str = Form(None),
     current_user: User = Depends(get_current_user),
@@ -916,7 +937,6 @@ async def add_favorite(
 
 @app.post("/api/favorites/remove")
 async def remove_favorite(
-    request: Request,
     ticker: str = Form(...),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -946,7 +966,6 @@ async def remove_favorite(
 
 @app.get("/api/comments/{ticker}", response_class=HTMLResponse)
 async def list_comments(
-    request: Request,
     ticker: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -1261,13 +1280,10 @@ async def lookup_yahoo_finance(
         # Color for price change
         change_color = "#10b981" if change >= 0 else "#f43f5e"
         change_sign = "+" if change >= 0 else ""
-        
+
         # Extract Analyst Target Price
         target_mean_price = info.get("targetMeanPrice")
-        target_price_html = ""
-        if target_mean_price:
-            target_price_html = f"<div style='font-size: 0.85rem; color: #94a3b8; font-weight: normal; margin-top: 0.35rem;'>目標株価平均 {target_mean_price:,.0f}円</div>"
-        
+
         # Check if favorite (Check both with and without .T to be safe)
         possible_tickers = [symbol]
         if symbol.endswith(".T"):
@@ -2433,10 +2449,9 @@ async def search_edinet_company(
             
         metadata = result.get("metadata", {})
         normalized = result.get("normalized_data", {})
-        
+
         text_data = result.get("text_data", {})
         website_url = result.get("website_url")
-        formatted_normalized = format_financial_data(normalized)
 
         # Fetch Sector & Scale Tag Badges
         sector_badges_html = ""
@@ -2520,7 +2535,6 @@ async def search_edinet_company(
                 copy_btn_id = f"copy-btn-{idx}"
                 # HTML for expandable section with copy button
                 # Escape content for safe embedding in data attribute
-                import html
                 escaped_content = html.escape(content)
                 
                 sections_html += f"""
@@ -2540,7 +2554,7 @@ async def search_edinet_company(
                         </button>
                     </summary>
                     <div id="{section_id}" class="p-4 text-sm text-gray-200 leading-relaxed border-t border-gray-700/50 bg-gray-900/50" style="white-space: pre-wrap; max-height: 400px; overflow-y: auto;">
-                        {content}
+                        {escaped_content}
                     </div>
                 </details>
                 """
@@ -3332,11 +3346,6 @@ async def get_edinet_ratios(code: str, current_user: User = Depends(get_current_
     
     try:
         from utils.edinet_enhanced import get_financial_history, format_financial_data
-        from utils.growth_analysis import analyze_growth_quality
-        import pandas as pd
-        import numpy as np
-        import time
-        import yfinance as yf
         from utils.financial_analysis import analyze_company_performance
         
         # Fetch history (reuse the same function) - run in thread pool for async endpoint

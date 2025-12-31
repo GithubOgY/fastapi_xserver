@@ -3,7 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 import os
 from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime, timezone
 
 load_dotenv()
 
@@ -22,38 +22,43 @@ Base = declarative_base()
 class CompanyFundamental(Base):
     __tablename__ = "fundamentals"
     id = Column(Integer, primary_key=True, index=True)
-    ticker = Column(String)
-    year = Column(Integer)
+    ticker = Column(String(20), index=True)  # Added length limit and index
+    year = Column(Integer, index=True)  # Added index for faster queries
     revenue = Column(Float)
     operating_income = Column(Float)
     net_income = Column(Float)
     eps = Column(Float)
+    
+    # Composite index for common query pattern (ticker + year)
+    __table_args__ = (
+        {'sqlite_autoincrement': True} if DATABASE_URL.startswith("sqlite") else {},
+    )
 
 class Company(Base):
     __tablename__ = "companies"
-    ticker = Column(String, primary_key=True, index=True) # 5-digit code (e.g. 72030)
-    code_4digit = Column(String, index=True)              # 4-digit code (e.g. 7203)
-    name = Column(String, index=True)
-    sector_17 = Column(String, nullable=True)
-    sector_33 = Column(String, nullable=True)
-    scale_category = Column(String, nullable=True) # J-Quants ScaleCat (Create/Update needed in DB)
-    market = Column(String, nullable=True)
-    next_earnings_date = Column(Date, nullable=True)      # 次回決算発表予定日
+    ticker = Column(String(20), primary_key=True, index=True) # 5-digit code (e.g. 72030)
+    code_4digit = Column(String(10), index=True)              # 4-digit code (e.g. 7203)
+    name = Column(String(200), index=True)  # Added length limit
+    sector_17 = Column(String(100), nullable=True)
+    sector_33 = Column(String(100), nullable=True)
+    scale_category = Column(String(50), nullable=True) # J-Quants ScaleCat (Create/Update needed in DB)
+    market = Column(String(50), nullable=True)
+    next_earnings_date = Column(Date, nullable=True, index=True)      # 次回決算発表予定日 (indexed for faster queries)
     earnings_updated_at = Column(DateTime, nullable=True) # 決算日更新日時
     last_sync_at = Column(DateTime, nullable=True)
-    last_sync_error = Column(String, nullable=True)
-    updated_at = Column(DateTime, default=datetime.utcnow)
+    last_sync_error = Column(String(500), nullable=True)  # Added length limit
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True)
-    hashed_password = Column(String)
+    username = Column(String(50), unique=True, index=True)  # Added length limit
+    hashed_password = Column(String(255))  # bcrypt hashes are 60 chars, but allow extra space
     is_admin = Column(Integer, default=0)  # 0=normal user, 1=admin
     
-    # Relationships
-    comments = relationship("StockComment", back_populates="user")
-    profile = relationship("UserProfile", back_populates="user", uselist=False)
+    # Relationships with cascade delete for data integrity
+    comments = relationship("StockComment", back_populates="user", cascade="all, delete-orphan")
+    profile = relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
 
 class UserProfile(Base):
     __tablename__ = "user_profiles"
@@ -66,23 +71,28 @@ class UserProfile(Base):
     twitter_url = Column(String(200), nullable=True)
     is_public = Column(Integer, default=0) # 0=Private, 1=Public
     
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     user = relationship("User", back_populates="profile")
 
 class UserFavorite(Base):
     __tablename__ = "user_favorites"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, index=True)
-    ticker = Column(String, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)  # Added FK with cascade
+    ticker = Column(String(20), index=True)  # Added length limit
+    
+    # Composite unique constraint to prevent duplicate favorites
+    __table_args__ = (
+        UniqueConstraint('user_id', 'ticker', name='_user_ticker_uc'),
+    )
 
 class StockComment(Base):
     __tablename__ = "stock_comments"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), index=True)
-    ticker = Column(String, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)  # Added cascade delete
+    ticker = Column(String(20), index=True)  # Added length limit
     content = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)  # Added index for sorting
     
     # Relationships
     user = relationship("User", back_populates="comments")
@@ -91,18 +101,23 @@ class EdinetCache(Base):
     """Cache for EDINET financial data - expires after 7 days"""
     __tablename__ = "edinet_cache"
     id = Column(Integer, primary_key=True, index=True)
-    company_code = Column(String, index=True)  # 4-digit security code (e.g., "7203")
-    doc_id = Column(String, index=True)  # EDINET document ID
-    period_end = Column(String, index=True)  # Period end date (e.g., "2024-03-31")
+    company_code = Column(String(10), index=True)  # 4-digit security code (e.g., "7203")
+    doc_id = Column(String(50), index=True)  # EDINET document ID
+    period_end = Column(String(10), index=True)  # Period end date (e.g., "2024-03-31")
     data_json = Column(Text)  # JSON string of the parsed financial data
-    cached_at = Column(DateTime, default=datetime.utcnow)
+    cached_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)  # Added index for cleanup queries
+    
+    # Composite unique constraint to prevent duplicate cache entries
+    __table_args__ = (
+        UniqueConstraint('company_code', 'doc_id', 'period_end', name='_edinet_cache_uc'),
+    )
 
 class UserFollow(Base):
     __tablename__ = "user_follows"
     id = Column(Integer, primary_key=True, index=True)
-    follower_id = Column(Integer, ForeignKey("users.id"), index=True)
-    following_id = Column(Integer, ForeignKey("users.id"), index=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    follower_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)  # Added cascade delete
+    following_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)  # Added cascade delete
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     __table_args__ = (UniqueConstraint('follower_id', 'following_id', name='_follower_following_uc'),)
     
@@ -113,12 +128,17 @@ class AIAnalysisCache(Base):
     """Cache for AI-generated analysis results - reduces API costs"""
     __tablename__ = "ai_analysis_cache"
     id = Column(Integer, primary_key=True, index=True)
-    ticker_code = Column(String, index=True, nullable=False)   # 銘柄コード (例: "7203")
-    analysis_type = Column(String, default="general")           # 分析タイプ (将来の拡張用)
+    ticker_code = Column(String(20), index=True, nullable=False)   # 銘柄コード (例: "7203")
+    analysis_type = Column(String(50), default="general", index=True)           # 分析タイプ (将来の拡張用) - added index
     analysis_html = Column(Text, nullable=False)                # 分析結果HTML
     analysis_text = Column(Text, nullable=True)                 # プレーンテキスト版（コピー用）
-    created_at = Column(DateTime, default=datetime.utcnow)      # 生成日時
-    expires_at = Column(DateTime, nullable=False)               # 有効期限
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)      # 生成日時 - added index
+    expires_at = Column(DateTime, nullable=False, index=True)               # 有効期限 - added index for cleanup queries
+    
+    # Composite unique constraint to prevent duplicate cache entries
+    __table_args__ = (
+        UniqueConstraint('ticker_code', 'analysis_type', name='_ai_cache_uc'),
+    )
 
 # DB initialization
 Base.metadata.create_all(bind=engine)
