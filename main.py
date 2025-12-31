@@ -188,15 +188,18 @@ def fetch_edinet_background(ticker_code: str):
     except Exception as e:
         logger.error(f"[BG-TASK] Background fetch failed for {ticker_code}: {e}", exc_info=True)
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+import bcrypt
 
 def verify_password(plain_password, hashed_password):
     # bcrypt has a 72-byte limit
-    return pwd_context.verify(plain_password[:72], hashed_password)
+    password_bytes = plain_password[:72].encode('utf-8')
+    hashed_bytes = hashed_password.encode('utf-8') if isinstance(hashed_password, str) else hashed_password
+    return bcrypt.checkpw(password_bytes, hashed_bytes)
 
 def get_hashed_password(password):
     # bcrypt has a 72-byte limit
-    return pwd_context.hash(password[:72])
+    password_bytes = password[:72].encode('utf-8')
+    return bcrypt.hashpw(password_bytes, bcrypt.gensalt()).decode('utf-8')
 
 def create_access_token(data: dict):
     to_encode = data.copy()
