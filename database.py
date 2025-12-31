@@ -93,9 +93,26 @@ class StockComment(Base):
     ticker = Column(String(20), index=True)  # Added length limit
     content = Column(Text)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)  # Added index for sorting
-    
+
     # Relationships
     user = relationship("User", back_populates="comments")
+    likes = relationship("CommentLike", back_populates="comment", cascade="all, delete-orphan")
+
+class CommentLike(Base):
+    __tablename__ = "comment_likes"
+    id = Column(Integer, primary_key=True, index=True)
+    comment_id = Column(Integer, ForeignKey("stock_comments.id", ondelete="CASCADE"), index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # 複合ユニーク制約 - 同じユーザーが同じコメントに複数いいね不可
+    __table_args__ = (
+        UniqueConstraint('comment_id', 'user_id', name='_comment_user_like_uc'),
+    )
+
+    # Relationships
+    comment = relationship("StockComment", back_populates="likes")
+    user = relationship("User")
 
 class EdinetCache(Base):
     """Cache for EDINET financial data - expires after 7 days"""

@@ -4,7 +4,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from typing import Annotated, Optional, List
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, desc, func
-from database import SessionLocal, CompanyFundamental, User, Company, UserFavorite, StockComment, UserProfile, UserFollow, AIAnalysisCache
+from database import SessionLocal, CompanyFundamental, User, Company, UserFavorite, StockComment, UserProfile, UserFollow, AIAnalysisCache, CommentLike
 from utils.mail_sender import send_email
 from passlib.context import CryptContext
 from jose import JWTError, jwt
@@ -942,6 +942,30 @@ async def remove_favorite(
 
 # --- Discussion Board API Endpoints ---
 
+def render_like_button(comment_id: int, like_count: int, is_liked: bool, user_list: str):
+    """いいねボタンのHTML生成"""
+    if is_liked:
+        # いいね済み - 青色/太字
+        button_style = "color: #60a5fa; font-weight: 700; cursor: pointer; font-size: 0.85rem; background: transparent; border: none; padding: 0.3rem 0.6rem; border-radius: 6px; transition: all 0.2s;"
+    else:
+        # 未いいね - グレー
+        button_style = "color: #64748b; font-weight: 400; cursor: pointer; font-size: 0.85rem; background: transparent; border: none; padding: 0.3rem 0.6rem; border-radius: 6px; transition: all 0.2s;"
+
+    title_attr = f'title="{user_list}"' if user_list else ''
+
+    return f"""
+        <button
+            hx-post="/api/comments/{comment_id}/like"
+            hx-target="this"
+            hx-swap="outerHTML"
+            style="{button_style}"
+            {title_attr}
+            onmouseover="this.style.background='rgba(96, 165, 250, 0.1)'"
+            onmouseout="this.style.background='transparent'">
+            👍 {like_count}
+        </button>
+    """
+
 @app.get("/api/comments/{ticker}", response_class=HTMLResponse)
 async def list_comments(
     request: Request,
@@ -1008,6 +1032,26 @@ async def list_comments(
             # Safely get created_at timestamp
             created_at_str = comment.created_at.strftime('%Y-%m-%d %H:%M') if comment.created_at else "Unknown"
 
+            # いいね情報を取得
+            like_count = db.query(func.count(CommentLike.id)).filter(
+                CommentLike.comment_id == comment.id
+            ).scalar() or 0
+
+            is_liked = db.query(CommentLike).filter(
+                CommentLike.comment_id == comment.id,
+                CommentLike.user_id == current_user.id
+            ).first() is not None
+
+            liked_users = db.query(User).join(CommentLike).filter(
+                CommentLike.comment_id == comment.id
+            ).limit(10).all()
+
+            user_list = ", ".join([f"@{u.username}" for u in liked_users])
+            if like_count > 10:
+                user_list += f", 他{like_count - 10}名"
+
+            like_button_html = render_like_button(comment.id, like_count, is_liked, user_list)
+
             result_html += f"""
                 <div class="comment-card" style="background: rgba(255,110,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 1rem; position: relative;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
@@ -1015,8 +1059,13 @@ async def list_comments(
                         <span style="color: #475569; font-size: 0.75rem;">{created_at_str}</span>
                     </div>
                     <div style="color: #f8fafc; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap;">{html_module.escape(comment.content)}</div>
-                    <div style="text-align: right; margin-top: 0.5rem;">
-                        {delete_btn}
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
+                        <div>
+                            {like_button_html}
+                        </div>
+                        <div style="text-align: right;">
+                            {delete_btn}
+                        </div>
                     </div>
                 </div>
             """
@@ -1054,10 +1103,13 @@ async def post_comment(
         db.rollback()
         return f"<p class='text-red-400 p-2'>投稿エラー: {str(e)}</p>"
     
-    # Return JUST the new comment card. 
+    # Return JUST the new comment card.
     # HTMX swap="afterbegin" on #comments-list-{ticker} will insert this at the top.
     import html as html_module
-    
+
+    # 新規投稿時はいいね数0
+    like_button_html = render_like_button(comment.id, 0, False, "")
+
     result_html = f"""
         <div class="comment-card" style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 1rem; position: relative; animation: fadeIn 0.5s ease-out;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
@@ -1065,11 +1117,16 @@ async def post_comment(
                 <span style="color: #475569; font-size: 0.75rem;">Now</span>
             </div>
             <div style="color: #f8fafc; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap;">{html_module.escape(comment.content)}</div>
-            <div style="text-align: right; margin-top: 0.5rem;">
-                 <button hx-delete="/api/comments/{comment.id}" hx-confirm="この投稿を削除しますか？" hx-target="closest .comment-card" hx-swap="outerHTML"
-                    style="background: transparent; border: none; color: #f43f5e; cursor: pointer; font-size: 0.75rem; opacity: 0.6; padding: 0;">
-                    削除
-                </button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
+                <div>
+                    {like_button_html}
+                </div>
+                <div style="text-align: right;">
+                    <button hx-delete="/api/comments/{comment.id}" hx-confirm="この投稿を削除しますか？" hx-target="closest .comment-card" hx-swap="outerHTML"
+                        style="background: transparent; border: none; color: #f43f5e; cursor: pointer; font-size: 0.75rem; opacity: 0.6; padding: 0;">
+                        削除
+                    </button>
+                </div>
             </div>
             <script>
                 // Hide "no comments" message if exists
@@ -1100,6 +1157,55 @@ async def delete_comment(
     db.delete(comment)
     db.commit()
     return Response(status_code=status.HTTP_200_OK)
+
+@app.post("/api/comments/{comment_id}/like", response_class=HTMLResponse)
+async def toggle_comment_like(
+    comment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """コメントのいいねを追加/削除（トグル）"""
+    if not current_user:
+        return HTMLResponse(content="<p style='color:#f43f5e;'>ログインが必要です</p>", status_code=401)
+
+    # コメントの存在確認
+    comment = db.query(StockComment).filter(StockComment.id == comment_id).first()
+    if not comment:
+        raise HTTPException(status_code=404, detail="コメントが見つかりません")
+
+    # 既存のいいねをチェック
+    existing_like = db.query(CommentLike).filter(
+        CommentLike.comment_id == comment_id,
+        CommentLike.user_id == current_user.id
+    ).first()
+
+    if existing_like:
+        # いいね解除
+        db.delete(existing_like)
+        db.commit()
+        is_liked = False
+    else:
+        # いいね追加
+        new_like = CommentLike(comment_id=comment_id, user_id=current_user.id)
+        db.add(new_like)
+        db.commit()
+        is_liked = True
+
+    # いいね数とユーザー一覧を再計算
+    like_count = db.query(func.count(CommentLike.id)).filter(
+        CommentLike.comment_id == comment_id
+    ).scalar() or 0
+
+    # いいねしたユーザー一覧を取得（最大10名）
+    liked_users = db.query(User).join(CommentLike).filter(
+        CommentLike.comment_id == comment_id
+    ).limit(10).all()
+
+    user_list = ", ".join([f"@{u.username}" for u in liked_users])
+    if like_count > 10:
+        user_list += f", 他{like_count - 10}名"
+
+    return render_like_button(comment_id, like_count, is_liked, user_list)
 
 
 @app.get("/api/companies/search", response_class=HTMLResponse)
