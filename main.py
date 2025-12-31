@@ -950,12 +950,21 @@ async def list_comments(
     current_user: User = Depends(get_current_user)
 ):
     """List all comments for a specific ticker and provide a post form"""
-    if not current_user:
-        return "<p class='text-gray-400 text-center p-4'>掲示板を表示するにはログインが必要です。</p>"
-    
-    comments = db.query(StockComment).filter(StockComment.ticker == ticker).order_by(StockComment.created_at.desc()).all()
-    
-    html = f"""
+    try:
+        if not current_user:
+            return "<p class='text-gray-400 text-center p-4'>掲示板を表示するにはログインが必要です。</p>"
+
+        comments = db.query(StockComment).filter(StockComment.ticker == ticker).order_by(StockComment.created_at.desc()).all()
+    except Exception as e:
+        logger.error(f"Error loading comments for {ticker}: {e}")
+        import traceback
+        traceback.print_exc()
+        return f"<p class='text-red-400 text-center p-4'>掲示板の読み込みエラー: {str(e)}</p>"
+
+    # Import html module with alias to avoid name conflict
+    import html as html_module
+
+    result_html = f"""
         <div id="discussion-board-{ticker}" style="background: rgba(15, 23, 42, 0.4); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); padding: 1.5rem;">
             <h3 style="color: #818cf8; font-family: 'Outfit', sans-serif; font-size: 1.1rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
                 💬 {ticker} 投資家掲示板
@@ -981,7 +990,7 @@ async def list_comments(
     if not comments:
         # Initial empty state (will be hidden if a comment is added via JS logic, or just appended to)
         # However, hx-swap="afterbegin" pre-pends. If we leave this message, it stays at bottom. That's fine.
-        html += f"<p id='no-comments-{ticker}' style='color: #475569; text-align: center; font-size: 0.85rem; padding: 2rem;'>まだ投稿がありません。最初の意見を投稿しましょう！</p>"
+        result_html += f"<p id='no-comments-{ticker}' style='color: #475569; text-align: center; font-size: 0.85rem; padding: 2rem;'>まだ投稿がありません。最初の意見を投稿しましょう！</p>"
     else:
         for comment in comments:
             # Skip comments with deleted users
@@ -999,21 +1008,21 @@ async def list_comments(
             # Safely get created_at timestamp
             created_at_str = comment.created_at.strftime('%Y-%m-%d %H:%M') if comment.created_at else "Unknown"
 
-            html += f"""
+            result_html += f"""
                 <div class="comment-card" style="background: rgba(255,110,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 1rem; position: relative;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                         <a href="/u/{comment.user.username}" style="color: #94a3b8; font-size: 0.8rem; font-weight: 600; text-decoration: none;" onmouseover="this.style.color='#818cf8'" onmouseout="this.style.color='#94a3b8'">@{comment.user.username}</a>
                         <span style="color: #475569; font-size: 0.75rem;">{created_at_str}</span>
                     </div>
-                    <div style="color: #f8fafc; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap;">{html.escape(comment.content)}</div>
+                    <div style="color: #f8fafc; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap;">{html_module.escape(comment.content)}</div>
                     <div style="text-align: right; margin-top: 0.5rem;">
                         {delete_btn}
                     </div>
                 </div>
             """
-            
-    html += "</div></div>"
-    return html
+
+    result_html += "</div></div>"
+    return result_html
 
 @app.post("/api/comments/{ticker}", response_class=HTMLResponse)
 async def post_comment(
