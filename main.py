@@ -1677,8 +1677,8 @@ async def lookup_yahoo_finance(
                             style="background: rgba(239, 68, 68, 0.2); border: none; color: #fb7185; cursor: pointer; font-size: 0.8rem; padding: 0.25rem 0.5rem; border-radius: 4px;">✕ 閉じる</button>
                     </div>
                     
-                    <!-- markedライブラリの読み込み -->
-                    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+                    <!-- markedライブラリの読み込み（ローカル） -->
+                    <script src="/static/marked.min.js"></script>
                     
                     <style>
                         /* スクロール可能なコンテンツエリア */
