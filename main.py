@@ -1126,6 +1126,34 @@ async def search_companies(
     return html_content
 
 
+@app.get("/api/companies/get-name")
+async def get_company_name(
+    q: str = Query(..., min_length=1),
+    db: Session = Depends(get_db)
+):
+    """
+    Get company name by ticker or 4-digit code.
+    Returns JSON with name or empty string if not found.
+    """
+    if not q:
+        return {"name": ""}
+
+    # Exact match or prefix match logic
+    # Prioritize exact match on code_4digit or ticker
+    company = db.query(Company).filter(
+        or_(
+            Company.code_4digit == q,
+            Company.ticker == q,
+            Company.ticker == f"{q}.T"
+        )
+    ).first()
+
+    if company:
+        return {"name": company.name}
+    
+    return {"name": ""}
+
+
 
 @app.post("/api/yahoo-finance/lookup")
 async def lookup_yahoo_finance(

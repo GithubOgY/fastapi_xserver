@@ -726,6 +726,26 @@
 
         // Auto-search last ticker on page load
         document.addEventListener('DOMContentLoaded', function () {
+            // Auto-fetch company name from ticker input
+            const tickerInput = document.getElementById('yf-ticker-input');
+            if (tickerInput) {
+                tickerInput.addEventListener('input', function (e) {
+                    const val = (e.target.value.trim()).replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+                    const companyInput = document.getElementById('yf-company-name');
+
+                    if (val.length >= 4 && /^\d{4}/.test(val)) {
+                        fetch(`/api/companies/get-name?q=${val}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.name) {
+                                    companyInput.value = data.name;
+                                }
+                            })
+                            .catch(err => console.error('Error fetching company name:', err));
+                    }
+                });
+            }
+
             var lastTicker = '{{ last_ticker }}';
             if (lastTicker && lastTicker.trim() !== '') {
                 // Set the input value
