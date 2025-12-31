@@ -1090,12 +1090,15 @@ async def lookup_yahoo_finance(
 ):
     """Lookup any stock by code or company name using Yahoo Finance API"""
     if not current_user:
-        return HTMLResponse(content="<div class='text-red-400 p-4'>ログインが必要です</div>")
+        return HTMLResponse(content="<div class='text-red-400 p-4'>ログインが必要です</div>", charset="utf-8")
     
     # Clean the input
     code_input = ticker_code.strip()
     if not code_input:
-        return HTMLResponse(content="<div class='text-yellow-400 p-4'>銘柄コードまたは企業名を入力してください</div>")
+        return HTMLResponse(content="<div class='text-yellow-400 p-4'>銘柄コードまたは企業名を入力してください</div>", charset="utf-8")
+    
+    # Initialize symbol variable
+    symbol = None
     
     # Check if input is 4-digit code
     if code_input.isdigit() and len(code_input) == 4:
@@ -1118,9 +1121,9 @@ async def lookup_yahoo_finance(
             else:
                 return HTMLResponse(content=f"""
                     <div style="color: #fb7185; padding: 1rem; text-align: center; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
-                        ❌ 「{search_query}」の銘柄コードが見つかりませんでした。
+                        ❌ 「{html.escape(search_query)}」の銘柄コードが見つかりませんでした。
                     </div>
-                """)
+                """, charset="utf-8")
         else:
             # Try partial match
             companies = db.query(Company).filter(
@@ -1132,10 +1135,10 @@ async def lookup_yahoo_finance(
             if not companies:
                 return HTMLResponse(content=f"""
                     <div style="color: #fb7185; padding: 1rem; text-align: center; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
-                        ❌ 「{search_query}」に一致する企業が見つかりませんでした。<br>
+                        ❌ 「{html.escape(search_query)}」に一致する企業が見つかりませんでした。<br>
                         銘柄コード（4桁の数字）または企業名を入力してください。
                     </div>
-                """)
+                """, charset="utf-8")
             elif len(companies) == 1:
                 # Single match - use it directly
                 company = companies[0]
@@ -1182,8 +1185,17 @@ async def lookup_yahoo_finance(
                     </div>
                 </div>
                 """
-                return HTMLResponse(content=html_content)
+                return HTMLResponse(content=html_content, charset="utf-8")
         
+    # Ensure symbol is defined before proceeding
+    if symbol is None:
+        logger.error(f"Symbol is None for input: {code_input}")
+        return HTMLResponse(content="""
+            <div style="color: #fb7185; padding: 1rem; text-align: center; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
+                ❌ エラー: 銘柄シンボルが定義されていません。
+            </div>
+        """, charset="utf-8")
+    
     # Ensure code_only is available for templates (e.g. News API, AI Analysis)
     code_only = symbol.replace(".T", "")
     
