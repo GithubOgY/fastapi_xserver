@@ -984,6 +984,10 @@ async def list_comments(
         html += f"<p id='no-comments-{ticker}' style='color: #475569; text-align: center; font-size: 0.85rem; padding: 2rem;'>まだ投稿がありません。最初の意見を投稿しましょう！</p>"
     else:
         for comment in comments:
+            # Skip comments with deleted users
+            if not comment.user:
+                continue
+
             is_owner = comment.user_id == current_user.id
             delete_btn = f"""
                 <button hx-delete="/api/comments/{comment.id}" hx-confirm="この投稿を削除しますか？" hx-target="closest .comment-card" hx-swap="outerHTML"
@@ -991,12 +995,15 @@ async def list_comments(
                     削除
                 </button>
             """ if is_owner else ""
-            
+
+            # Safely get created_at timestamp
+            created_at_str = comment.created_at.strftime('%Y-%m-%d %H:%M') if comment.created_at else "Unknown"
+
             html += f"""
                 <div class="comment-card" style="background: rgba(255,110,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 1rem; position: relative;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                         <a href="/u/{comment.user.username}" style="color: #94a3b8; font-size: 0.8rem; font-weight: 600; text-decoration: none;" onmouseover="this.style.color='#818cf8'" onmouseout="this.style.color='#94a3b8'">@{comment.user.username}</a>
-                        <span style="color: #475569; font-size: 0.75rem;">{comment.created_at.strftime('%Y-%m-%d %H:%M')}</span>
+                        <span style="color: #475569; font-size: 0.75rem;">{created_at_str}</span>
                     </div>
                     <div style="color: #f8fafc; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap;">{html.escape(comment.content)}</div>
                     <div style="text-align: right; margin-top: 0.5rem;">
