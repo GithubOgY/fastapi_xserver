@@ -519,8 +519,15 @@
                 style="display: flex; gap: 0.5rem; justify-content: center; margin-bottom: 1rem;">
                 <input type="text" name="ticker_code" id="yf-ticker-input" placeholder="銘柄コード（例: 7203）"
                     style="width: 140px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.8rem 1rem; color: white; outline: none; text-align: center;">
-                <input type="text" id="yf-company-name" placeholder="企業名"
-                    style="width: 160px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.8rem 1rem; color: var(--text-dim); outline: none; text-align: center;">
+                <div style="position: relative;">
+                    <input type="search" id="yf-company-name" name="q" placeholder="企業名" autocomplete="off"
+                        hx-get="/api/companies/search" hx-trigger="keyup changed delay:500ms, search"
+                        hx-target="#company-search-results"
+                        style="width: 160px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.8rem 1rem; color: var(--text-dim); outline: none; text-align: center;">
+                    <ul id="company-search-results"
+                        style="position: absolute; top: 100%; left: 0; right: 0; background: rgba(15, 23, 42, 0.95); border: 1px solid var(--glass-border); border-radius: 8px; max-height: 300px; overflow-y: auto; z-index: 50; list-style: none; padding: 0; margin-top: 4px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);">
+                    </ul>
+                </div>
                 <button type="submit"
                     style="background: linear-gradient(135deg, #10b981, #059669); white-space: nowrap;">
                     <span>取得</span>
