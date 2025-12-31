@@ -1080,7 +1080,7 @@ async def delete_comment(
 
 @app.get("/api/companies/search", response_class=HTMLResponse)
 async def search_companies(
-    q: str = Query(..., min_length=1),
+    q: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
     """
@@ -1128,7 +1128,7 @@ async def search_companies(
 
 @app.get("/api/companies/get-name")
 async def get_company_name(
-    q: str = Query(..., min_length=1),
+    q: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
     """
