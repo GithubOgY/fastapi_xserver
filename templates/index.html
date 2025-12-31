@@ -570,16 +570,7 @@
                     <!-- Populated by HTMX OOB after stock search -->
                 </div>
 
-                <!-- 直近の決算一覧 (HTMX load on init) -->
-                <div id="upcoming-earnings-list" hx-get="/api/market/upcoming-earnings" hx-trigger="load delay:500ms"
-                    hx-swap="innerHTML">
-                    <div
-                        style="background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.5rem; text-align: center;">
-                        <span class="htmx-indicator"
-                            style="display: inline-block; width: 20px; height: 20px; border: 2px solid white; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></span>
-                        <p style="font-size: 0.8rem; color: var(--text-dim); margin-top: 0.5rem;">決算スケジュール読み込み中...</p>
-                    </div>
-                </div>
+
 
                 <!-- ニュースセクション (サイドバー) -->
                 <div id="news-section" style="display: none;">
