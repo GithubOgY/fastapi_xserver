@@ -1,4 +1,4 @@
-﻿from fastapi import FastAPI, Request, Form, Depends, HTTPException, status, Response, Query, BackgroundTasks
+from fastapi import FastAPI, Request, Form, Depends, HTTPException, status, Response, Query, BackgroundTasks
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
 from typing import Annotated, Optional, List
@@ -1032,31 +1032,39 @@ async def post_comment(
     current_user: User = Depends(get_current_user)
 ):
     """Create a new comment for a ticker"""
-    if not current_user:
-        raise HTTPException(status_code=401)
-    
-    if not content.strip():
-        return "" 
-        
-    comment = StockComment(
-        user_id=current_user.id,
-        ticker=ticker,
-        content=content
-    )
-    db.add(comment)
-    db.commit()
-    db.refresh(comment)
+    try:
+        if not current_user:
+            raise HTTPException(status_code=401)
+
+        if not content.strip():
+            return ""
+
+        comment = StockComment(
+            user_id=current_user.id,
+            ticker=ticker,
+            content=content
+        )
+        db.add(comment)
+        db.commit()
+        db.refresh(comment)
+    except Exception as e:
+        logger.error(f"Error posting comment for {ticker}: {e}")
+        import traceback
+        traceback.print_exc()
+        db.rollback()
+        return f"<p class='text-red-400 p-2'>投稿エラー: {str(e)}</p>"
     
     # Return JUST the new comment card. 
     # HTMX swap="afterbegin" on #comments-list-{ticker} will insert this at the top.
+    import html as html_module
     
-    html = f"""
+    result_html = f"""
         <div class="comment-card" style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 1rem; position: relative; animation: fadeIn 0.5s ease-out;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                 <a href="/u/{current_user.username}" style="color: #10b981; font-size: 0.8rem; font-weight: 600; text-decoration: none;" onmouseover="this.style.color='#34d399'" onmouseout="this.style.color='#10b981'">@{current_user.username}</a>
                 <span style="color: #475569; font-size: 0.75rem;">Now</span>
             </div>
-            <div style="color: #f8fafc; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap;">{html.escape(comment.content)}</div>
+            <div style="color: #f8fafc; font-size: 0.9rem; line-height: 1.5; white-space: pre-wrap;">{html_module.escape(comment.content)}</div>
             <div style="text-align: right; margin-top: 0.5rem;">
                  <button hx-delete="/api/comments/{comment.id}" hx-confirm="この投稿を削除しますか？" hx-target="closest .comment-card" hx-swap="outerHTML"
                     style="background: transparent; border: none; color: #f43f5e; cursor: pointer; font-size: 0.75rem; opacity: 0.6; padding: 0;">
@@ -1070,7 +1078,7 @@ async def post_comment(
             </script>
         </div>
     """
-    return html
+    return result_html
 
 @app.delete("/api/comments/{comment_id}")
 async def delete_comment(
