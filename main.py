@@ -2,21 +2,21 @@ from fastapi import FastAPI, Request, Form, Depends, HTTPException, status, Resp
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
 from typing import Annotated, Optional
+from typing import List, Optional, Annotated
 from sqlalchemy.orm import Session
 from database import SessionLocal, CompanyFundamental, User, Company, UserFavorite, StockComment, UserProfile, UserFollow, AIAnalysisCache
 from utils.mail_sender import send_email
 from passlib.context import CryptContext
 from jose import JWTError, jwt
-from datetime import datetime, timedelta, timezone
-from dotenv import load_dotenv
-import os
-import yfinance as yf
-import pandas as pd
+from datetime import datetime, timedelta
+from dotenv import os
+import sys
 import logging
 import time
 import json
 import asyncio
 import html
+import requests
 import urllib.parse
 from utils.edinet_enhanced import get_financial_history, format_financial_data, search_company_reports, process_document
 from utils.growth_analysis import analyze_growth_quality
@@ -25,16 +25,11 @@ from utils.ai_analysis import analyze_stock_with_ai, analyze_financial_health, a
 # Load environment variables
 load_dotenv()
 
-SECRET_KEY = os.getenv("SECRET_KEY")
-if not SECRET_KEY:
-    raise ValueError("SECRET_KEY environment variable must be set")
-
+SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-keep-it-secret")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
-if not ADMIN_PASSWORD:
-    raise ValueError("ADMIN_PASSWORD environment variable must be set")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "password")
 LOG_DIR = os.getenv("LOG_DIR", "logs")
 
 # --- Logging Configuration ---
@@ -58,7 +53,9 @@ logging.getLogger("uvicorn.access").addHandler(logging.FileHandler(f"{LOG_DIR}/a
 from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 from utils.jquants_api import sync_companies_to_db
-from contextlib import asynccontextmanager
+import asyncio
+
+app = FastAPI()
 
 async def background_sync_jquants():
     """Run J-Quants sync in background"""
@@ -70,12 +67,11 @@ async def background_sync_jquants():
     except Exception as e:
         logger.error(f"[Startup] J-Quants sync failed: {e}")
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Lifespan event handler for startup and shutdown"""
-    # Startup
+@app.on_event("startup")
+async def startup_event():
+    """Unified startup tasks: migration, initial data, and initialization"""
     logger.info("Application starting up...")
-
+    
     # 1. DB Migration Check
     try:
         from database import engine
@@ -88,7 +84,7 @@ async def lifespan(app: FastAPI):
                 logger.info("[Migration] 'scale_category' column missing. Adding it...")
                 connection.execute(text("ALTER TABLE companies ADD COLUMN scale_category VARCHAR"))
                 logger.info("[Migration] Successfully added 'scale_category' column.")
-
+            
             # Check last_sync columns
             try:
                 connection.execute(text("SELECT last_sync_at FROM companies LIMIT 1"))
@@ -97,7 +93,7 @@ async def lifespan(app: FastAPI):
                 connection.execute(text("ALTER TABLE companies ADD COLUMN last_sync_at VARCHAR"))
                 connection.execute(text("ALTER TABLE companies ADD COLUMN last_sync_error VARCHAR"))
                 logger.info("[Migration] Successfully added last_sync columns.")
-
+            
             # Check is_admin column
             try:
                 connection.execute(text("SELECT is_admin FROM users LIMIT 1"))
@@ -105,12 +101,12 @@ async def lifespan(app: FastAPI):
                 logger.info("[Migration] 'is_admin' column missing. Adding it...")
                 connection.execute(text("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0"))
                 logger.info("[Migration] Successfully added 'is_admin' column.")
-
+            
             # Commit changes if not autocommited
             connection.commit()
     except Exception as e:
         logger.warning(f"[Migration] Startup migration check failed: {e}")
-
+    
     # 2. Initial Data Setup
     db = SessionLocal()
     try:
@@ -126,7 +122,7 @@ async def lifespan(app: FastAPI):
                 admin.is_admin = 1
                 db.commit()
                 logger.info(f"Ensured admin status for: {ADMIN_USERNAME}")
-
+        
         # Initial companies
         if db.query(Company).count() == 0:
             initial_companies = {
@@ -142,16 +138,9 @@ async def lifespan(app: FastAPI):
         logger.error(f"Initial data setup error: {e}")
     finally:
         db.close()
-
+    
     # 3. Background Tasks
     asyncio.create_task(background_sync_jquants())
-
-    yield  # Application runs here
-
-    # Shutdown
-    logger.info("Application shutting down...")
-
-app = FastAPI(lifespan=lifespan)
 
 # Mount static files for PWA support
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -205,7 +194,7 @@ def get_hashed_password(password):
 
 def create_access_token(data: dict):
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -215,7 +204,7 @@ async def get_current_user(request: Request, db: Session = Depends(get_db)):
         return None
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: Optional[str] = payload.get("sub")
+        username: str = payload.get("sub")
         if username is None:
             return None
         user = db.query(User).filter(User.username == username).first()
@@ -376,9 +365,10 @@ async def dashboard(request: Request,
     
     # Get favorite companies with names for quick access
     favorite_companies = []
-    if favorite_tickers:
-        companies = db.query(Company).filter(Company.ticker.in_(favorite_tickers)).all()
-        favorite_companies = [{"code": comp.ticker, "name": comp.name} for comp in companies]
+    for fav in user_favorites:
+        comp = db.query(Company).filter(Company.ticker == fav.ticker).first()
+        if comp:
+            favorite_companies.append({"code": comp.ticker, "name": comp.name})
 
     return templates.TemplateResponse(
         "index.html", 
@@ -439,9 +429,7 @@ async def edinet_page(request: Request,
         }
     )
 
-from datetime import datetime, timezone
 from sqlalchemy import func
-from sqlalchemy.orm import joinedload
 
 @app.get("/catalog", response_class=HTMLResponse)
 async def catalog_page(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -577,7 +565,8 @@ async def screener_results(
     keyword: str = Query(None),
     min_revenue: str = Query(None), # Receive as str to handle empty strings
     min_income: str = Query(None), # Receive as str to handle empty strings
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     # Convert empty strings to None and parse floats
     revenue_filter = float(min_revenue) if min_revenue and min_revenue.strip() else None
@@ -595,39 +584,20 @@ async def screener_results(
     
     companies = query.all()
     results = []
-
-    # Optimize: Fetch all latest fundamentals in one query
-    company_tickers = [c.ticker for c in companies]
-    if company_tickers:
-        from sqlalchemy import func
-        # Subquery to get latest year for each ticker
-        latest_years = db.query(
-            CompanyFundamental.ticker,
-            func.max(CompanyFundamental.year).label('max_year')
-        ).filter(CompanyFundamental.ticker.in_(company_tickers)).group_by(CompanyFundamental.ticker).subquery()
-
-        # Join to get the actual records
-        latest_funds = db.query(CompanyFundamental).join(
-            latest_years,
-            (CompanyFundamental.ticker == latest_years.c.ticker) &
-            (CompanyFundamental.year == latest_years.c.max_year)
-        ).all()
-
-        # Create a lookup map
-        fund_map = {f.ticker: f for f in latest_funds}
-    else:
-        fund_map = {}
-
+    
     for company in companies:
-        latest_fund = fund_map.get(company.ticker)
-
+        # Get latest fundamentals
+        latest_fund = db.query(CompanyFundamental).filter(
+            CompanyFundamental.ticker == company.ticker
+        ).order_by(CompanyFundamental.year.desc()).first()
+        
         # Apply financial filters
         if latest_fund:
             if revenue_filter is not None and latest_fund.revenue < revenue_filter:
                 continue
             if income_filter is not None and latest_fund.operating_income < income_filter:
                 continue
-
+                
             results.append({
                 "ticker": company.ticker,
                 "name": company.name,
@@ -658,7 +628,7 @@ async def screener_results(
     )
 
 @app.post("/admin/sync")
-async def manual_sync(request: Request, ticker: str = Form("7203.T"), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def manual_sync(request: Request, ticker: str = "7203.T", db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if not current_user:
         raise HTTPException(status_code=401, detail="Unauthorized")
     
@@ -674,16 +644,14 @@ async def login_page(request: Request, error: str = None):
     return templates.TemplateResponse("login.html", {"request": request, "error": error})
 
 @app.post("/login")
-async def login(request: Request, response: Response, username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+async def login(response: Response, username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == username).first()
     if not user or not verify_password(password, user.hashed_password):
-        error_msg = urllib.parse.quote("ユーザー名またはパスワードが違います", safe='')
-        return RedirectResponse(url=f"/login?error={error_msg}", status_code=status.HTTP_303_SEE_OTHER)
+        return RedirectResponse(url="/login?error=ユーザー名またはパスワードが違います", status_code=status.HTTP_303_SEE_OTHER)
     
     access_token = create_access_token(data={"sub": user.username})
     response = RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
-    secure_cookie = request.url.scheme == "https"
-    response.set_cookie(key="access_token", value=access_token, httponly=True, secure=secure_cookie, samesite="lax")
+    response.set_cookie(key="access_token", value=access_token, httponly=True)
     return response
 
 @app.get("/register", response_class=HTMLResponse)
@@ -691,7 +659,7 @@ async def register_page(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
 
 @app.post("/register")
-async def register(username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+async def register(request: Request, username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.username == username).first()
     if existing_user:
         return HTMLResponse(content="<p style='color:red;'>このユーザー名はお使いいただけません</p>", status_code=400)
@@ -699,17 +667,13 @@ async def register(username: str = Form(...), password: str = Form(...), db: Ses
     new_user = User(username=username, hashed_password=get_hashed_password(password))
     db.add(new_user)
     db.commit()
-    # URL encode username to handle special characters safely
-    encoded_username = urllib.parse.quote(username, safe='')
-    return RedirectResponse(url=f"/register/success?username={encoded_username}", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url=f"/register/success?username={username}", status_code=status.HTTP_303_SEE_OTHER)
 
 @app.get("/register/success", response_class=HTMLResponse)
 async def register_success(request: Request, username: str = ""):
-    # URL decode username if it was encoded
-    decoded_username = urllib.parse.unquote(username) if username else ""
     return templates.TemplateResponse("register_success.html", {
         "request": request,
-        "username": decoded_username
+        "username": username
     })
 
 @app.get("/logout")
@@ -814,15 +778,15 @@ async def send_test_email(email: str = Form(...), current_user: User = Depends(g
         """, status_code=500)
 
 @app.get("/api/market/upcoming-earnings")
-async def get_upcoming_earnings(db: Session = Depends(get_db)):
+async def get_upcoming_earnings():
     """
     Get list of companies with upcoming earnings announcements (from DB).
     """
+    db = SessionLocal()
     try:
         today = datetime.now().date()
-        # Get earnings from today onwards, limit 10 - filter out None dates
+        # Get earnings from today onwards, limit 10
         upcoming = db.query(Company).filter(
-            Company.next_earnings_date.isnot(None),
             Company.next_earnings_date >= today
         ).order_by(Company.next_earnings_date.asc()).limit(15).all()
         
@@ -844,8 +808,6 @@ async def get_upcoming_earnings(db: Session = Depends(get_db)):
         """
         
         for company in upcoming:
-            if not company.next_earnings_date:
-                continue
             delta = (company.next_earnings_date - today).days
             date_str = company.next_earnings_date.strftime("%m/%d")
             
@@ -888,13 +850,19 @@ async def get_upcoming_earnings(db: Session = Depends(get_db)):
         return HTMLResponse(content=html)
         
     except Exception as e:
-        logger.error(f"Upcoming earnings error: {e}", exc_info=True)
+        # Assuming logger is defined elsewhere, otherwise this would be an error
+        # import logging
+        # logger = logging.getLogger(__name__)
+        # logger.error(f"Upcoming earnings error: {e}")
         return HTMLResponse(content=f"<div class='alert alert-error'>Error: {str(e)}</div>", status_code=500)
+    finally:
+        db.close()
 
 
 # --- Favorites API Endpoints ---
 @app.post("/api/favorites/add")
 async def add_favorite(
+    request: Request,
     ticker: str = Form(...),
     ticker_name: str = Form(None),
     current_user: User = Depends(get_current_user),
@@ -937,6 +905,7 @@ async def add_favorite(
 
 @app.post("/api/favorites/remove")
 async def remove_favorite(
+    request: Request,
     ticker: str = Form(...),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -966,6 +935,7 @@ async def remove_favorite(
 
 @app.get("/api/comments/{ticker}", response_class=HTMLResponse)
 async def list_comments(
+    request: Request,
     ticker: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -974,9 +944,9 @@ async def list_comments(
     if not current_user:
         return "<p class='text-gray-400 text-center p-4'>掲示板を表示するにはログインが必要です。</p>"
     
-    comments = db.query(StockComment).options(joinedload(StockComment.user)).filter(StockComment.ticker == ticker).order_by(StockComment.created_at.desc()).all()
+    comments = db.query(StockComment).filter(StockComment.ticker == ticker).order_by(StockComment.created_at.desc()).all()
     
-    html_content = f"""
+    html = f"""
         <div id="discussion-board-{ticker}" style="background: rgba(15, 23, 42, 0.4); border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); padding: 1.5rem;">
             <h3 style="color: #818cf8; font-family: 'Outfit', sans-serif; font-size: 1.1rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
                 💬 {ticker} 投資家掲示板
@@ -1002,7 +972,7 @@ async def list_comments(
     if not comments:
         # Initial empty state (will be hidden if a comment is added via JS logic, or just appended to)
         # However, hx-swap="afterbegin" pre-pends. If we leave this message, it stays at bottom. That's fine.
-        html_content += f"<p id='no-comments-{ticker}' style='color: #475569; text-align: center; font-size: 0.85rem; padding: 2rem;'>まだ投稿がありません。最初の意見を投稿しましょう！</p>"
+        html += f"<p id='no-comments-{ticker}' style='color: #475569; text-align: center; font-size: 0.85rem; padding: 2rem;'>まだ投稿がありません。最初の意見を投稿しましょう！</p>"
     else:
         for comment in comments:
             is_owner = comment.user_id == current_user.id
@@ -1013,7 +983,7 @@ async def list_comments(
                 </button>
             """ if is_owner else ""
             
-            html_content += f"""
+            html += f"""
                 <div class="comment-card" style="background: rgba(255,110,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 1rem; position: relative;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                         <a href="/u/{comment.user.username}" style="color: #94a3b8; font-size: 0.8rem; font-weight: 600; text-decoration: none;" onmouseover="this.style.color='#818cf8'" onmouseout="this.style.color='#94a3b8'">@{comment.user.username}</a>
@@ -1026,8 +996,8 @@ async def list_comments(
                 </div>
             """
             
-    html_content += "</div></div>"
-    return html_content
+    html += "</div></div>"
+    return html
 
 @app.post("/api/comments/{ticker}", response_class=HTMLResponse)
 async def post_comment(
@@ -1055,7 +1025,7 @@ async def post_comment(
     # Return JUST the new comment card. 
     # HTMX swap="afterbegin" on #comments-list-{ticker} will insert this at the top.
     
-    html_content = f"""
+    html = f"""
         <div class="comment-card" style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 1rem; position: relative; animation: fadeIn 0.5s ease-out;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                 <a href="/u/{current_user.username}" style="color: #10b981; font-size: 0.8rem; font-weight: 600; text-decoration: none;" onmouseover="this.style.color='#34d399'" onmouseout="this.style.color='#10b981'">@{current_user.username}</a>
@@ -1075,7 +1045,7 @@ async def post_comment(
             </script>
         </div>
     """
-    return html_content
+    return html
 
 @app.delete("/api/comments/{comment_id}")
 async def delete_comment(
@@ -1107,128 +1077,29 @@ async def lookup_yahoo_finance(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Lookup any stock by code or company name using Yahoo Finance API"""
+    """Lookup any stock by code using Yahoo Finance API"""
     if not current_user:
-        return HTMLResponse(content="<div class='text-red-400 p-4'>ログインが必要です</div>", charset="utf-8")
+        return HTMLResponse(content="<div class='text-red-400 p-4'>ログインが必要です</div>")
     
-    # Clean the input
+    # Clean the ticker code
     code_input = ticker_code.strip()
     if not code_input:
-        return HTMLResponse(content="<div class='text-yellow-400 p-4'>銘柄コードまたは企業名を入力してください</div>", charset="utf-8")
+        return HTMLResponse(content="<div class='text-yellow-400 p-4'>銘柄コードを入力してください</div>")
     
-    # Initialize symbol variable
-    symbol = None
-    
-    # Check if input is 4-digit code
+    # For Japanese stocks, append .T for Tokyo Stock Exchange
     if code_input.isdigit() and len(code_input) == 4:
-        # Direct code input - proceed with Yahoo Finance API
         symbol = f"{code_input}.T"
         # Trigger background EDINET fetch for Japanese stocks
         background_tasks.add_task(fetch_edinet_background, code_input)
     else:
-        # Not a 4-digit code - search by company name in database
-        search_query = code_input
+        symbol = code_input
         
-        # First, try exact match
-        exact_match = db.query(Company).filter(Company.name == search_query).first()
-        
-        if exact_match:
-            # Found exact match - use it directly
-            if exact_match.code_4digit:
-                symbol = f"{exact_match.code_4digit}.T"
-                background_tasks.add_task(fetch_edinet_background, exact_match.code_4digit)
-            else:
-                return HTMLResponse(content=f"""
-                    <div style="color: #fb7185; padding: 1rem; text-align: center; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
-                        ❌ 「{html.escape(search_query)}」の銘柄コードが見つかりませんでした。
-                    </div>
-                """, charset="utf-8")
-        else:
-            # Try partial match
-            companies = db.query(Company).filter(
-                Company.name.ilike(f"%{search_query}%")
-            ).filter(
-                Company.code_4digit.isnot(None)
-            ).order_by(Company.code_4digit).limit(10).all()
-            
-            if not companies:
-                return HTMLResponse(content=f"""
-                    <div style="color: #fb7185; padding: 1rem; text-align: center; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
-                        ❌ 「{html.escape(search_query)}」に一致する企業が見つかりませんでした。<br>
-                        銘柄コード（4桁の数字）または企業名を入力してください。
-                    </div>
-                """, charset="utf-8")
-            elif len(companies) == 1:
-                # Single match - use it directly
-                company = companies[0]
-                symbol = f"{company.code_4digit}.T"
-                background_tasks.add_task(fetch_edinet_background, company.code_4digit)
-            else:
-                # Multiple matches - show selection list
-                html_content = """
-                <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 16px; padding: 1.5rem;">
-                    <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.1rem; color: #818cf8; margin-bottom: 1rem; text-align: center;">
-                        🔍 複数の企業が見つかりました
-                    </h3>
-                    <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1rem; text-align: center;">
-                        該当する企業を選択してください：
-                    </p>
-                    <div style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 400px; overflow-y: auto;">
-                """
-                
-                for company in companies:
-                    if not company.code_4digit:
-                        continue
-                    # Escape company name for HTML safety
-                    company_name_escaped = html.escape(company.name)
-                    html_content += f"""
-                    <button 
-                        hx-post="/api/yahoo-finance/lookup" 
-                        hx-vals='{{"ticker_code": "{company.code_4digit}"}}'
-                        hx-target="#yf-lookup-result"
-                        hx-swap="innerHTML"
-                        style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 1rem; text-align: left; cursor: pointer; transition: all 0.2s; color: #f8fafc;"
-                        onmouseover="this.style.background='rgba(99, 102, 241, 0.2)'; this.style.borderColor='rgba(99, 102, 241, 0.5)';"
-                        onmouseout="this.style.background='rgba(99, 102, 241, 0.1)'; this.style.borderColor='rgba(99, 102, 241, 0.3)';">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <div style="font-weight: 600; font-size: 1rem; margin-bottom: 0.25rem;">{company_name_escaped}</div>
-                                <div style="font-size: 0.8rem; color: var(--text-dim);">銘柄コード: {company.code_4digit}</div>
-                            </div>
-                            <span style="color: #818cf8; font-size: 1.2rem;">→</span>
-                        </div>
-                    </button>
-                    """
-                
-                html_content += """
-                    </div>
-                </div>
-                """
-                return HTMLResponse(content=html_content, charset="utf-8")
-        
-    # Ensure symbol is defined before proceeding
-    if symbol is None:
-        logger.error(f"Symbol is None for input: {code_input}")
-        return HTMLResponse(content="""
-            <div style="color: #fb7185; padding: 1rem; text-align: center; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
-                ❌ エラー: 銘柄シンボルが定義されていません。
-            </div>
-        """, charset="utf-8")
-    
     # Ensure code_only is available for templates (e.g. News API, AI Analysis)
     code_only = symbol.replace(".T", "")
     
     try:
         ticker = yf.Ticker(symbol)
-        try:
-            info = ticker.info
-        except Exception as info_error:
-            logger.error(f"Yahoo Finance info lookup failed for {symbol}: {info_error}", exc_info=True)
-            return HTMLResponse(content=f"""
-                <div style="color: #fb7185; padding: 1rem; text-align: center; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
-                    ❌ Yahoo Finance からのデータ取得に失敗しました。しばらくしてから再試行してください。
-                </div>
-            """, charset="utf-8", status_code=502)
+        info = ticker.info
         
         # Check if valid
         if not info or info.get("regularMarketPrice") is None:
@@ -1261,23 +1132,21 @@ async def lookup_yahoo_finance(
         # yfinance の dividendYield は小数形式 (0.0217 = 2.17%)
         yf_yield = info.get("dividendYield") or info.get("trailingAnnualDividendYield")
         
-        if yf_yield is not None:
-            if yf_yield < 1: # Decimal (0.02) -> 2.0%
-                dividend_yield = yf_yield * 100
-            elif yf_yield > 100: # Too big -> Divide
-                 dividend_yield = yf_yield / 100
-            else: # Already percent (2.5) -> 2.5%
-                dividend_yield = yf_yield
-
-        # Fallback if None
-        if dividend_yield is None and price and price > 0:
-             div_rate = info.get("dividendRate") or info.get("trailingAnnualDividendRate")
-             if div_rate and div_rate > 0:
-                 dividend_yield = (div_rate / price) * 100
-
-        # Final sanity check (Double correction prevention)
-        # If > 50%, it's likely wrong (unless special case), but keeping user heuristic
-        if dividend_yield and dividend_yield > 50.0:
+        if yf_yield is not None and yf_yield > 0:
+            # yfinance usually returns decimal (0.0217 = 2.17%) -> *100 = 2.17
+            dividend_yield = yf_yield * 100
+        else:
+            # Fallback: Calculate manually
+            if price and price > 0:
+                div_rate = info.get("dividendRate") or info.get("trailingAnnualDividendRate")
+                if div_rate and div_rate > 0:
+                    dividend_yield = (div_rate / price) * 100
+        
+        # [HEURISTIC FIX]
+        # Calculate yield is abnormally high (e.g. > 20%), it's likely a scaling issue.
+        # User reported 0.62% showing as 62.000%, implying input was 0.62.
+        # If yield > 20%, we assume it should be divided by 100.
+        if dividend_yield is not None and dividend_yield > 20.0:
             dividend_yield /= 100.0
 
         dividend_str = f"{dividend_yield:.2f}%" if dividend_yield is not None else "-"
@@ -1288,10 +1157,13 @@ async def lookup_yahoo_finance(
         # Color for price change
         change_color = "#10b981" if change >= 0 else "#f43f5e"
         change_sign = "+" if change >= 0 else ""
-
+        
         # Extract Analyst Target Price
         target_mean_price = info.get("targetMeanPrice")
-
+        target_price_html = ""
+        if target_mean_price:
+            target_price_html = f"<div style='font-size: 0.85rem; color: #94a3b8; font-weight: normal; margin-top: 0.35rem;'>目標株価平均 {target_mean_price:,.0f}円</div>"
+        
         # Check if favorite (Check both with and without .T to be safe)
         possible_tickers = [symbol]
         if symbol.endswith(".T"):
@@ -1329,22 +1201,10 @@ async def lookup_yahoo_finance(
         # -------------------------------------------------------------------------
         import time
         
-        # Get financial statements from yfinance (guard against API errors)
-        try:
-            fin = ticker.financials
-        except Exception as fin_error:
-            logger.error(f"Yahoo Finance financials failed for {symbol}: {fin_error}", exc_info=True)
-            fin = pd.DataFrame()
-        try:
-            cf = ticker.cashflow
-        except Exception as cf_error:
-            logger.error(f"Yahoo Finance cashflow failed for {symbol}: {cf_error}", exc_info=True)
-            cf = pd.DataFrame()
-        try:
-            bs = ticker.balance_sheet
-        except Exception as bs_error:
-            logger.error(f"Yahoo Finance balance_sheet failed for {symbol}: {bs_error}", exc_info=True)
-            bs = pd.DataFrame()
+        # Get financial statements from yfinance
+        fin = ticker.financials
+        cf = ticker.cashflow
+        bs = ticker.balance_sheet
         
         # Prepare data arrays
         years_label = []
@@ -1368,8 +1228,7 @@ async def lookup_yahoo_finance(
                 if not df.empty and key in df.index:
                     val = df.loc[key, date_col]
                     return float(val) if pd.notna(val) else 0
-            except (KeyError, IndexError, ValueError, TypeError) as e:
-                logger.debug(f"Error extracting value for {key} at {date_col}: {e}")
+            except:
                 pass
             return 0
         
@@ -2246,7 +2105,7 @@ async def lookup_yahoo_finance(
 
             <!-- News Section (OOB Swap) - Restored for Sidebar -->
             <div id="news-section" hx-swap-oob="true" style="display: block; margin-top: 1rem;">
-                <div hx-get="/api/news/{code_only}?name={urllib.parse.quote(name, safe='')}" hx-trigger="load delay:500ms" hx-swap="innerHTML">
+                <div hx-get="/api/news/{code_only}?name={urllib.parse.quote(name)}" hx-trigger="load delay:500ms" hx-swap="innerHTML">
                     <div class="flex items-center justify-center p-8 space-x-3 text-gray-400">
                         <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-green-400"></div>
                         <span class="text-sm font-medium">最新ニュースを取得中...</span>
@@ -2261,29 +2120,20 @@ async def lookup_yahoo_finance(
         """
         
         # Create response and set cookie to remember last searched ticker
-        # Always use code_only (4-digit code) to avoid encoding issues with company names
-        response = HTMLResponse(content=html_content, charset="utf-8")
-        # code_only is always a 4-digit string (ASCII), so it's safe for cookies
-        if code_only and code_only.isdigit() and len(code_only) == 4:
-            response.set_cookie(key="last_ticker", value=code_only, max_age=86400*30)  # 30 days
+        response = HTMLResponse(content=html_content)
+        response.set_cookie(key="last_ticker", value=code_input, max_age=86400*30)  # 30 days
         return response
         
     except Exception as e:
-        logger.error(f"Yahoo Finance lookup error for {code_input}: {e}", exc_info=True)
-        # Escape error message for HTML safety and handle encoding issues
-        try:
-            error_msg = html.escape(str(e))
-        except UnicodeEncodeError:
-            # Fallback if encoding fails
-            error_msg = "エンコーディングエラーが発生しました"
+        logger.error(f"Yahoo Finance lookup error for {code_input}: {e}")
         return HTMLResponse(content=f"""
             <div style="color: #fb7185; padding: 1rem; text-align: center; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
-                ❌ データの取得に失敗しました: {error_msg}
+                ❌ データの取得に失敗しました: {str(e)}
             </div>
-        """, charset="utf-8")
+        """)
 
 
-@app.post("/api/ai/analyze-legacy")
+@app.post("/api/ai/analyze")
 async def ai_analyze_stock(ticker_code: Annotated[str, Form()]):
     try:
         # 1. データの再取得（コンテキスト構築用）
@@ -2469,9 +2319,10 @@ async def search_edinet_company(
             
         metadata = result.get("metadata", {})
         normalized = result.get("normalized_data", {})
-
+        
         text_data = result.get("text_data", {})
         website_url = result.get("website_url")
+        formatted_normalized = format_financial_data(normalized)
 
         # Fetch Sector & Scale Tag Badges
         sector_badges_html = ""
@@ -2555,6 +2406,7 @@ async def search_edinet_company(
                 copy_btn_id = f"copy-btn-{idx}"
                 # HTML for expandable section with copy button
                 # Escape content for safe embedding in data attribute
+                import html
                 escaped_content = html.escape(content)
                 
                 sections_html += f"""
@@ -2574,7 +2426,7 @@ async def search_edinet_company(
                         </button>
                     </summary>
                     <div id="{section_id}" class="p-4 text-sm text-gray-200 leading-relaxed border-t border-gray-700/50 bg-gray-900/50" style="white-space: pre-wrap; max-height: 400px; overflow-y: auto;">
-                        {escaped_content}
+                        {content}
                     </div>
                 </details>
                 """
@@ -2593,9 +2445,7 @@ async def search_edinet_company(
         ai_btn = ""
         if sec_code:
             code_only = sec_code[:4]
-            # Escape company name for JSON in hx-vals (escape quotes and backslashes)
-            cname_raw = metadata.get('company_name', '')
-            cname = json.dumps(cname_raw)  # Properly escape for JSON
+            cname = metadata.get('company_name', '').replace('"', '&quot;')
             ai_btn = f"""
             <div style="margin-top: 2rem; padding: 1.5rem; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border-radius: 16px; border: 1px solid rgba(99, 102, 241, 0.2);">
                 <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 0.5rem;">
@@ -2737,7 +2587,7 @@ async def search_edinet_company(
         """, status_code=500)
 
 @app.post("/api/ai/analyze", response_class=HTMLResponse)
-async def api_ai_analyze(
+def api_ai_analyze(
     ticker_code: str = Form(...),
     force_refresh: str = Form(None),
     current_user: User = Depends(get_current_user),
@@ -2757,7 +2607,7 @@ async def api_ai_analyze(
             cached = db.query(AIAnalysisCache).filter(
                 AIAnalysisCache.ticker_code == clean_code,
                 AIAnalysisCache.analysis_type == analysis_type,
-                AIAnalysisCache.expires_at > datetime.now(timezone.utc)
+                AIAnalysisCache.expires_at > datetime.utcnow()
             ).first()
             
             if cached:
@@ -2805,7 +2655,7 @@ async def api_ai_analyze(
         company_name = f"Code: {clean_code}"
         
         # Fetch latest financial data for context
-        history = await run_in_threadpool(get_financial_history, company_code=clean_code, years=1)
+        history = get_financial_history(company_code=clean_code, years=1)
         if history and len(history) > 0:
             data = history[0]
             # Generate summary text using the fixed formatter
@@ -2831,15 +2681,15 @@ async def api_ai_analyze(
         
         if existing:
             existing.analysis_html = analysis_html
-            existing.created_at = datetime.now(timezone.utc)
-            existing.expires_at = datetime.now(timezone.utc) + timedelta(days=cache_days)
+            existing.created_at = datetime.utcnow()
+            existing.expires_at = datetime.utcnow() + timedelta(days=cache_days)
         else:
             new_cache = AIAnalysisCache(
                 ticker_code=clean_code,
                 analysis_type=analysis_type,
                 analysis_html=analysis_html,
-                created_at=datetime.now(timezone.utc),
-                expires_at=datetime.now(timezone.utc) + timedelta(days=cache_days)
+                created_at=datetime.utcnow(),
+                expires_at=datetime.utcnow() + timedelta(days=cache_days)
             )
             db.add(new_cache)
         db.commit()
@@ -2944,7 +2794,7 @@ def _run_specialized_analysis(
     cached = db.query(AIAnalysisCache).filter(
         AIAnalysisCache.ticker_code == clean_code,
         AIAnalysisCache.analysis_type == analysis_type,
-        AIAnalysisCache.expires_at > datetime.now(timezone.utc)
+        AIAnalysisCache.expires_at > datetime.utcnow()
     ).first()
     
     if cached:
@@ -2963,9 +2813,6 @@ def _run_specialized_analysis(
     
     # Get financial context - include both numeric and text data
     financial_context = {}
-    # Note: get_financial_history is synchronous, but this function is called from async context
-    # The caller should use run_in_threadpool if needed, but since this is a helper function
-    # called from sync endpoints, it's acceptable here
     history = get_financial_history(company_code=clean_code, years=1)
     if history and len(history) > 0:
         data = history[0]
@@ -2995,15 +2842,15 @@ def _run_specialized_analysis(
     
     if existing:
         existing.analysis_html = result_html
-        existing.created_at = datetime.now(timezone.utc)
-        existing.expires_at = datetime.now(timezone.utc) + timedelta(days=cache_days)
+        existing.created_at = datetime.utcnow()
+        existing.expires_at = datetime.utcnow() + timedelta(days=cache_days)
     else:
         new_cache = AIAnalysisCache(
             ticker_code=clean_code,
             analysis_type=analysis_type,
             analysis_html=result_html,
-            created_at=datetime.now(timezone.utc),
-            expires_at=datetime.now(timezone.utc) + timedelta(days=cache_days)
+            created_at=datetime.utcnow(),
+            expires_at=datetime.utcnow() + timedelta(days=cache_days)
         )
         db.add(new_cache)
     db.commit()
@@ -3092,7 +2939,7 @@ async def api_ai_visual_analyze(
             cached = db.query(AIAnalysisCache).filter(
                 AIAnalysisCache.ticker_code == clean_code,
                 AIAnalysisCache.analysis_type == analysis_type,
-                AIAnalysisCache.expires_at > datetime.now(timezone.utc)
+                AIAnalysisCache.expires_at > datetime.utcnow()
             ).first()
             
             if cached:
@@ -3126,15 +2973,15 @@ async def api_ai_visual_analyze(
         
         if existing:
             existing.analysis_html = result_markdown  # Store raw markdown
-            existing.created_at = datetime.now(timezone.utc)
-            existing.expires_at = datetime.now(timezone.utc) + timedelta(days=cache_days)
+            existing.created_at = datetime.utcnow()
+            existing.expires_at = datetime.utcnow() + timedelta(days=cache_days)
         else:
             new_cache = AIAnalysisCache(
                 ticker_code=clean_code,
                 analysis_type=analysis_type,
                 analysis_html=result_markdown,  # Store raw markdown
-                created_at=datetime.now(timezone.utc),
-                expires_at=datetime.now(timezone.utc) + timedelta(days=cache_days)
+                created_at=datetime.utcnow(),
+                expires_at=datetime.utcnow() + timedelta(days=cache_days)
             )
             db.add(new_cache)
         db.commit()
@@ -3163,8 +3010,10 @@ async def get_edinet_history(code: str, current_user: User = Depends(get_current
          return HTMLResponse(content="<div class='text-red-400'>Login required</div>")
     
     try:
-        # Fetch history (heavy operation) - run in thread pool to avoid blocking
-        history = await run_in_threadpool(get_financial_history, company_code=code, years=5)
+
+        
+        # Fetch history (heavy operation)
+        history = get_financial_history(company_code=code, years=5)
         
         if not history:
             return HTMLResponse(content="<div class='text-gray-400 p-4 text-center'>履歴データが見つかりませんでした</div>")
@@ -3316,8 +3165,7 @@ async def get_edinet_history(code: str, current_user: User = Depends(get_current
             if not company and code.endswith('.T'):
                  company = db.query(Company).filter(Company.ticker == code[:-2]).first()
             company_name = company.name if company else code
-        except Exception as db_error:
-             logger.warning(f"Error querying company name for {code}: {db_error}")
+        except:
              company_name = code
         finally:
             db.close()
@@ -3366,10 +3214,15 @@ async def get_edinet_ratios(code: str, current_user: User = Depends(get_current_
     
     try:
         from utils.edinet_enhanced import get_financial_history, format_financial_data
+        from utils.growth_analysis import analyze_growth_quality
+        import pandas as pd
+        import numpy as np
+        import time
+        import yfinance as yf
         from utils.financial_analysis import analyze_company_performance
         
-        # Fetch history (reuse the same function) - run in thread pool for async endpoint
-        history = await run_in_threadpool(get_financial_history, company_code=code, years=5)
+        # Fetch history (reuse the same function)
+        history = get_financial_history(company_code=code, years=5)
         
         if not history:
             return HTMLResponse(content="<div class='text-gray-400 p-4 text-center'>財務指標データが見つかりませんでした</div>")
