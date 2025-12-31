@@ -1220,7 +1220,15 @@ async def lookup_yahoo_finance(
     
     try:
         ticker = yf.Ticker(symbol)
-        info = ticker.info
+        try:
+            info = ticker.info
+        except Exception as info_error:
+            logger.error(f"Yahoo Finance info lookup failed for {symbol}: {info_error}", exc_info=True)
+            return HTMLResponse(content=f"""
+                <div style="color: #fb7185; padding: 1rem; text-align: center; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
+                    ❌ Yahoo Finance からのデータ取得に失敗しました。しばらくしてから再試行してください。
+                </div>
+            """, charset="utf-8", status_code=502)
         
         # Check if valid
         if not info or info.get("regularMarketPrice") is None:
@@ -1321,10 +1329,22 @@ async def lookup_yahoo_finance(
         # -------------------------------------------------------------------------
         import time
         
-        # Get financial statements from yfinance
-        fin = ticker.financials
-        cf = ticker.cashflow
-        bs = ticker.balance_sheet
+        # Get financial statements from yfinance (guard against API errors)
+        try:
+            fin = ticker.financials
+        except Exception as fin_error:
+            logger.error(f"Yahoo Finance financials failed for {symbol}: {fin_error}", exc_info=True)
+            fin = pd.DataFrame()
+        try:
+            cf = ticker.cashflow
+        except Exception as cf_error:
+            logger.error(f"Yahoo Finance cashflow failed for {symbol}: {cf_error}", exc_info=True)
+            cf = pd.DataFrame()
+        try:
+            bs = ticker.balance_sheet
+        except Exception as bs_error:
+            logger.error(f"Yahoo Finance balance_sheet failed for {symbol}: {bs_error}", exc_info=True)
+            bs = pd.DataFrame()
         
         # Prepare data arrays
         years_label = []
