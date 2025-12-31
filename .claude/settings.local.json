@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "mcp__ide__getDiagnostics",
-      "Bash(python -m py_compile:*)"
+      "Bash(python -m py_compile:*)",
+      "Bash(timeout 10 python:*)",
+      "Bash(pip install:*)",
+      "Bash(python:*)"
     ]
   }
 }
