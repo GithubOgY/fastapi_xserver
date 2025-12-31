@@ -1,6 +1,7 @@
-const CACHE_NAME = 'xstock-v1';
+const CACHE_NAME = 'xstock-v2';
 const STATIC_ASSETS = [
   '/static/manifest.json',
+  '/static/marked.min.js',
   '/static/icons/icon-192.png',
   '/static/icons/icon-512.png',
   '/offline'
