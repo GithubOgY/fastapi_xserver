@@ -3180,7 +3180,13 @@ async def api_ai_visual_analyze(
 ):
     """📊 Visual dashboard analysis using Gemini multimodal with caching - returns HTML"""
     from fastapi.responses import HTMLResponse
-    from utils.ai_analysis import analyze_dashboard_image, render_visual_analysis_html
+    from utils.ai_analysis import (
+        analyze_dashboard_image,
+        render_visual_analysis_html,
+        get_analysis_history,
+        analyze_trend,
+        render_trend_comparison_html
+    )
     import json
 
     if not current_user:
@@ -3204,8 +3210,19 @@ async def api_ai_visual_analyze(
                 try:
                     # Parse stored JSON
                     analysis_data = json.loads(cached.analysis_html)
+
+                    # Phase 3: Get history and analyze trend
+                    history = get_analysis_history(db, clean_code, analysis_type, limit=10)
+                    trend_data = analyze_trend(history)
+
                     # Render HTML from cached JSON
                     html = render_visual_analysis_html(analysis_data, is_from_cache=True)
+
+                    # Add trend comparison if available
+                    if trend_data.get("has_trend"):
+                        trend_html = render_trend_comparison_html(trend_data)
+                        html = trend_html + html
+
                     return HTMLResponse(content=html)
                 except json.JSONDecodeError:
                     # Fallback: if cached data is old markdown format, regenerate
@@ -3248,8 +3265,18 @@ async def api_ai_visual_analyze(
         db.commit()
         logger.info(f"[Visual Cache SAVED] {clean_code}")
 
+        # Phase 3: Get history and analyze trend
+        history = get_analysis_history(db, clean_code, analysis_type, limit=10)
+        trend_data = analyze_trend(history)
+
         # Render HTML from analysis data
         html = render_visual_analysis_html(analysis_data, is_from_cache=False)
+
+        # Add trend comparison if available
+        if trend_data.get("has_trend"):
+            trend_html = render_trend_comparison_html(trend_data)
+            html = trend_html + html
+
         return HTMLResponse(content=html)
 
     except ValueError as ve:

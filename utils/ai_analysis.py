@@ -1106,3 +1106,246 @@ def cleanup_old_history(db, days: int = 90) -> int:
         db.rollback()
         return 0
 
+
+# ============================================================
+# Phase 3: トレンド分析・比較表示
+# ============================================================
+
+def analyze_trend(history: List[Dict]) -> Dict:
+    """
+    履歴データから前回との比較分析を行う
+
+    Args:
+        history: get_analysis_history()から取得した履歴リスト
+                 (最新が先頭、古い順に並ぶ)
+
+    Returns:
+        トレンド分析結果:
+        {
+            "has_trend": bool,              # 比較データがあるか
+            "analysis_count": int,          # 分析回数
+            "score_change": int,            # 総合スコアの変化
+            "trend": str,                   # "improving" | "worsening" | "stable"
+            "rating_change": {              # 投資判定の変化
+                "previous": str,
+                "current": str,
+                "changed": bool
+            },
+            "score_changes": {              # 各指標の変化
+                "profitability": {"previous": int, "current": int, "change": int},
+                "growth": {"previous": int, "current": int, "change": int},
+                "financial_health": {"previous": int, "current": int, "change": int},
+                "cash_generation": {"previous": int, "current": int, "change": int},
+                "capital_efficiency": {"previous": int, "current": int, "change": int}
+            }
+        }
+    """
+    try:
+        # 履歴が2件未満の場合、比較できない
+        if len(history) < 2:
+            return {
+                "has_trend": False,
+                "analysis_count": len(history)
+            }
+
+        # 最新と1つ前のデータを取得
+        current = history[0]
+        previous = history[1]
+
+        # 総合スコアの変化を計算
+        current_score = current.get("overall_score", 0)
+        previous_score = previous.get("overall_score", 0)
+        score_change = current_score - previous_score
+
+        # トレンド判定 (±5ポイント以内はstable)
+        if score_change > 5:
+            trend = "improving"
+        elif score_change < -5:
+            trend = "worsening"
+        else:
+            trend = "stable"
+
+        # 投資判定の変化
+        current_rating = current.get("investment_rating", "")
+        previous_rating = previous.get("investment_rating", "")
+        rating_changed = current_rating != previous_rating
+
+        # 各指標の変化を計算
+        score_changes = {}
+        current_scores = current.get("scores", {})
+        previous_scores = previous.get("scores", {})
+
+        for key in ["profitability", "growth", "financial_health", "cash_generation", "capital_efficiency"]:
+            current_val = current_scores.get(key, 0)
+            previous_val = previous_scores.get(key, 0)
+            change = current_val - previous_val
+
+            score_changes[key] = {
+                "previous": previous_val,
+                "current": current_val,
+                "change": change
+            }
+
+        return {
+            "has_trend": True,
+            "analysis_count": len(history),
+            "score_change": score_change,
+            "trend": trend,
+            "rating_change": {
+                "previous": previous_rating,
+                "current": current_rating,
+                "changed": rating_changed
+            },
+            "score_changes": score_changes
+        }
+
+    except Exception as e:
+        logger.error(f"[Trend Analysis] Failed: {e}")
+        return {
+            "has_trend": False,
+            "analysis_count": 0
+        }
+
+
+def render_trend_comparison_html(trend_data: Dict) -> str:
+    """
+    トレンド比較結果をHTMLで表示
+
+    Args:
+        trend_data: analyze_trend()の返り値
+
+    Returns:
+        トレンド比較のHTML文字列
+    """
+    if not trend_data.get("has_trend"):
+        return ""
+
+    score_change = trend_data["score_change"]
+    trend = trend_data["trend"]
+    analysis_count = trend_data["analysis_count"]
+    rating_change = trend_data["rating_change"]
+    score_changes = trend_data["score_changes"]
+
+    # トレンドバッジのアイコンと色
+    if trend == "improving":
+        trend_icon = "📈"
+        trend_color = "#10b981"  # green
+        trend_text = "改善"
+    elif trend == "worsening":
+        trend_icon = "📉"
+        trend_color = "#ef4444"  # red
+        trend_text = "悪化"
+    else:
+        trend_icon = "➡️"
+        trend_color = "#6b7280"  # gray
+        trend_text = "横ばい"
+
+    # スコア変化の表示
+    if score_change > 0:
+        score_change_text = f"+{score_change}"
+        score_change_color = "#10b981"
+    elif score_change < 0:
+        score_change_text = f"{score_change}"
+        score_change_color = "#ef4444"
+    else:
+        score_change_text = "±0"
+        score_change_color = "#6b7280"
+
+    # 投資判定の変更表示
+    rating_change_html = ""
+    if rating_change["changed"]:
+        rating_change_html = f"""
+        <div style="margin-top: 12px; padding: 12px; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); border-radius: 8px; border-left: 4px solid #3b82f6;">
+            <div style="font-size: 13px; color: #94a3b8; margin-bottom: 4px;">投資判定の変更</div>
+            <div style="font-size: 15px; font-weight: 600;">
+                <span style="color: #94a3b8;">{rating_change['previous']}</span>
+                <span style="margin: 0 8px; color: #64748b;">→</span>
+                <span style="color: #60a5fa;">{rating_change['current']}</span>
+            </div>
+        </div>
+        """
+
+    # 各指標の変化表示
+    score_labels = {
+        "profitability": "収益性",
+        "growth": "成長性",
+        "financial_health": "財務健全性",
+        "cash_generation": "キャッシュ創出力",
+        "capital_efficiency": "資本効率"
+    }
+
+    score_rows_html = ""
+    for key, label in score_labels.items():
+        data = score_changes.get(key, {})
+        prev = data.get("previous", 0)
+        curr = data.get("current", 0)
+        change = data.get("change", 0)
+
+        # 変化の矢印と色
+        if change > 0:
+            change_arrow = "↑"
+            change_color = "#10b981"
+            change_text = f"+{change}"
+        elif change < 0:
+            change_arrow = "↓"
+            change_color = "#ef4444"
+            change_text = f"{change}"
+        else:
+            change_arrow = "→"
+            change_color = "#6b7280"
+            change_text = "±0"
+
+        score_rows_html += f"""
+        <tr>
+            <td style="padding: 8px 12px; color: #cbd5e1; font-size: 14px;">{label}</td>
+            <td style="padding: 8px 12px; text-align: center; color: #94a3b8; font-size: 14px;">{prev}</td>
+            <td style="padding: 8px 12px; text-align: center; color: #e2e8f0; font-weight: 600; font-size: 14px;">{curr}</td>
+            <td style="padding: 8px 12px; text-align: center; color: {change_color}; font-weight: 600; font-size: 14px;">
+                {change_arrow} {change_text}
+            </td>
+        </tr>
+        """
+
+    # HTMLテンプレート
+    html = f"""
+    <div style="margin-bottom: 24px; padding: 20px; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); border-radius: 12px; border: 1px solid #334155; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+        <!-- トレンドヘッダー -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="font-size: 32px;">{trend_icon}</div>
+                <div>
+                    <div style="font-size: 18px; font-weight: 700; color: #f1f5f9; margin-bottom: 4px;">
+                        前回比較: <span style="color: {trend_color};">{trend_text}</span>
+                    </div>
+                    <div style="font-size: 13px; color: #94a3b8;">
+                        総合スコア: <span style="color: {score_change_color}; font-weight: 600; font-size: 14px;">{score_change_text}pt</span>
+                        <span style="margin-left: 12px;">（{analysis_count}回目の分析）</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {rating_change_html}
+
+        <!-- 各指標の比較表 -->
+        <div style="margin-top: 16px;">
+            <div style="font-size: 14px; font-weight: 600; color: #cbd5e1; margin-bottom: 8px;">各指標の変化</div>
+            <table style="width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 8px; overflow: hidden;">
+                <thead>
+                    <tr style="background: #334155;">
+                        <th style="padding: 10px 12px; text-align: left; color: #94a3b8; font-size: 13px; font-weight: 600;">指標</th>
+                        <th style="padding: 10px 12px; text-align: center; color: #94a3b8; font-size: 13px; font-weight: 600;">前回</th>
+                        <th style="padding: 10px 12px; text-align: center; color: #94a3b8; font-size: 13px; font-weight: 600;">今回</th>
+                        <th style="padding: 10px 12px; text-align: center; color: #94a3b8; font-size: 13px; font-weight: 600;">変化</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {score_rows_html}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    """
+
+    return html
+
