@@ -1927,105 +1927,79 @@ async def lookup_yahoo_finance(
                 }}
                 window.captureDashboard = captureDashboard;
                 
-                // AI Visual Analysis function
+                // AI Visual Analysis function (Phase 1: HTML direct response)
                 async function visualAnalyzeDashboard() {{
                     console.log('AI Visual analysis started');
                     const btn = document.getElementById('visual-analyze-btn');
                     const resultContainer = document.getElementById('visual-analysis-result');
                     const resultContent = document.getElementById('visual-analysis-content');
                     if (!btn || !resultContainer || !resultContent) return;
-                    
+
                     const originalText = btn.innerHTML;
-                    
+
                     try {{
                         btn.disabled = true;
                         btn.innerHTML = '⏳ 分析中...';
                         btn.style.opacity = '0.7';
                         resultContainer.style.display = 'block';
                         resultContent.innerHTML = '<div style="text-align: center; padding: 2rem;"><p style="color: #94a3b8;">🤖 AIがグラフを分析中...</p></div>';
-                        
+
                         if (typeof html2canvas === 'undefined') {{
                             throw new Error('html2canvas not loaded');
                         }}
-                        
+
                         const chartSection = document.getElementById('charts-only');
                         if (!chartSection) throw new Error('Chart section not found');
-                        
+
                         const canvas = await html2canvas(chartSection, {{
                             backgroundColor: '#0f172a',
                             scale: 1.2,
                             useCORS: true,
                             logging: false
                         }});
-                        
+
                         const imageData = canvas.toDataURL('image/png');
                         const tickerCode = '{code_only}';
                         const h3 = document.querySelector('h3');
                         const companyName = h3 ? h3.innerText : '';
-                        
+
                         const formData = new FormData();
                         formData.append('image_data', imageData);
                         formData.append('ticker_code', tickerCode);
                         formData.append('company_name', companyName);
-                        
+
                         const response = await fetch('/api/ai/visual-analyze', {{
                             method: 'POST',
                             body: formData
                         }});
-                        
-                        if (!response.ok) throw new Error('API request failed');
-                        const data = await response.json();
-                        if (data.error) throw new Error(data.error);
-                        
-                        let markdown = data.markdown || '';
-                        
-                        // 改行コードの正規化（エスケープされた改行を実際の改行に変換）
-                        markdown = markdown.replace(/\\\\n/g, '\\n').replace(/\\\\t/g, '\\t');
-                        
-                        let html = '';
-                        if (data.cached) {{
-                            html += '<div style="margin-bottom:0.5rem;"><span style="background:rgba(16,185,129,0.2);color:#10b981;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.7rem;">⚡ キャッシュ</span></div>';
-                        }} else {{
-                            html += '<div style="margin-bottom:0.5rem;"><span style="background:rgba(99,102,241,0.2);color:#818cf8;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.7rem;">🆕 新規生成</span></div>';
+
+                        if (!response.ok) {{
+                            const errorText = await response.text();
+                            throw new Error(errorText || 'API request failed');
                         }}
-                        
-                        // markedライブラリでMarkdownをパース
-                        if (typeof marked !== 'undefined' && typeof marked.parse === 'function') {{
-                            try {{
-                                // markedの設定
-                                marked.setOptions({{
-                                    breaks: true,
-                                    gfm: true
-                                }});
-                                
-                                html += marked.parse(markdown);
-                                console.log('Markdown parsed successfully with marked');
-                            }} catch (parseError) {{
-                                console.error('Marked parse error:', parseError);
-                                html += '<pre style="white-space: pre-wrap; word-break: break-word; color: #e2e8f0; line-height: 1.8;">' + markdown + '</pre>';
-                            }}
-                        }} else {{
-                            console.warn('marked library not available, using pre tag');
-                            // markedがない場合は簡易的なHTMLエスケープと改行処理
-                            const escaped = markdown
-                                .replace(/&/g, '&amp;')
-                                .replace(/</g, '&lt;')
-                                .replace(/>/g, '&gt;')
-                                .replace(/\\n/g, '<br>');
-                            html += '<div style="white-space: pre-wrap; word-break: break-word; color: #e2e8f0; line-height: 1.8;">' + escaped + '</div>';
+
+                        // Phase 1: Receive HTML directly from server
+                        const html = await response.text();
+
+                        // Check if response is error HTML
+                        if (html.includes("class='error'") || html.includes('style=\\'color: #fb7185;\\'')) {{
+                            throw new Error(html.replace(/<[^>]*>/g, '')); // Strip HTML tags for error message
                         }}
-                        
+
+                        // Directly insert server-rendered HTML
                         resultContent.innerHTML = html;
+                        console.log('HTML analysis result rendered successfully');
+
                         btn.innerHTML = '✅ 完了';
                         btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
-                        
+
                         setTimeout(function() {{
                             btn.innerHTML = originalText;
                             btn.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)';
                             btn.disabled = false;
                             btn.style.opacity = '1';
                         }}, 2000);
-                        
+
                     }} catch (error) {{
                         console.error('Error in visualAnalyzeDashboard:', error);
                         resultContent.innerHTML = '<p style="color:#fb7185; padding: 1rem; border: 1px solid rgba(251,113,133,0.3); border-radius: 8px;">❌ エラー: ' + error.message + '</p>';
@@ -3138,17 +3112,19 @@ async def api_ai_visual_analyze(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """📊 Visual dashboard analysis using Gemini multimodal with caching - returns JSON"""
-    from fastapi.responses import JSONResponse
-    
+    """📊 Visual dashboard analysis using Gemini multimodal with caching - returns HTML"""
+    from fastapi.responses import HTMLResponse
+    from utils.ai_analysis import analyze_dashboard_image, render_visual_analysis_html
+    import json
+
     if not current_user:
-        return JSONResponse({"error": "ログインが必要です", "markdown": ""})
-    
+        return HTMLResponse(content="<p class='error' style='color: #fb7185;'>ログインが必要です</p>", status_code=401)
+
     try:
         clean_code = ticker_code.replace(".T", "")
         analysis_type = "visual"
         cache_days = 7
-        
+
         # Check cache first (unless force refresh requested)
         if not force_refresh:
             cached = db.query(AIAnalysisCache).filter(
@@ -3156,65 +3132,64 @@ async def api_ai_visual_analyze(
                 AIAnalysisCache.analysis_type == analysis_type,
                 AIAnalysisCache.expires_at > datetime.utcnow()
             ).first()
-            
+
             if cached:
                 logger.info(f"[Visual Cache HIT] {clean_code}")
-                cache_date = cached.created_at.strftime("%Y-%m-%d %H:%M") if cached.created_at else ""
-                return JSONResponse({
-                    "markdown": cached.analysis_html,  # This now stores raw markdown
-                    "cached": True,
-                    "cache_date": cache_date,
-                    "error": ""
-                })
-        
+                try:
+                    # Parse stored JSON
+                    analysis_data = json.loads(cached.analysis_html)
+                    # Render HTML from cached JSON
+                    html = render_visual_analysis_html(analysis_data, is_from_cache=True)
+                    return HTMLResponse(content=html)
+                except json.JSONDecodeError:
+                    # Fallback: if cached data is old markdown format, regenerate
+                    logger.warning(f"[Visual Cache] Invalid JSON for {clean_code}, regenerating")
+
         logger.info(f"[Visual Cache MISS] {clean_code} - generating new analysis")
-        
+
         # Validate image data exists
         if not image_data or len(image_data) < 100:
-            return JSONResponse({"error": "画像データが無効です", "markdown": ""})
-        
-        # Call the visual analysis function - returns raw markdown
-        result_markdown = analyze_dashboard_image(image_data, clean_code, company_name)
-        
-        # Check if result is an error
-        if result_markdown.startswith("<p class='error'"):
-            return JSONResponse({"error": result_markdown, "markdown": ""})
-        
-        # Save to cache (store raw markdown)
+            return HTMLResponse(content="<p class='error' style='color: #fb7185;'>画像データが無効です</p>", status_code=400)
+
+        # Call the visual analysis function - returns dict (StructuredAnalysisResult)
+        analysis_data = analyze_dashboard_image(image_data, clean_code, company_name)
+
+        # Save to cache (store JSON string)
         existing = db.query(AIAnalysisCache).filter(
             AIAnalysisCache.ticker_code == clean_code,
             AIAnalysisCache.analysis_type == analysis_type
         ).first()
-        
+
+        json_string = json.dumps(analysis_data, ensure_ascii=False)
+
         if existing:
-            existing.analysis_html = result_markdown  # Store raw markdown
+            existing.analysis_html = json_string  # Store JSON string
             existing.created_at = datetime.utcnow()
             existing.expires_at = datetime.utcnow() + timedelta(days=cache_days)
         else:
             new_cache = AIAnalysisCache(
                 ticker_code=clean_code,
                 analysis_type=analysis_type,
-                analysis_html=result_markdown,  # Store raw markdown
+                analysis_html=json_string,  # Store JSON string
                 created_at=datetime.utcnow(),
                 expires_at=datetime.utcnow() + timedelta(days=cache_days)
             )
             db.add(new_cache)
         db.commit()
         logger.info(f"[Visual Cache SAVED] {clean_code}")
-        
-        gen_date = datetime.now().strftime("%Y-%m-%d %H:%M")
-        return JSONResponse({
-            "markdown": result_markdown,
-            "cached": False,
-            "gen_date": gen_date,
-            "error": ""
-        })
-        
+
+        # Render HTML from analysis data
+        html = render_visual_analysis_html(analysis_data, is_from_cache=False)
+        return HTMLResponse(content=html)
+
+    except ValueError as ve:
+        logger.error(f"Visual analysis validation error: {ve}")
+        return HTMLResponse(content=f"<p class='error' style='color: #fb7185;'>{str(ve)}</p>", status_code=400)
     except Exception as e:
         logger.error(f"Visual analysis error: {e}")
         import traceback
         traceback.print_exc()
-        return JSONResponse({"error": f"画像分析エラー: {str(e)}", "markdown": ""})
+        return HTMLResponse(content=f"<p class='error' style='color: #fb7185;'>画像分析エラー: {str(e)}</p>", status_code=500)
 
 
 

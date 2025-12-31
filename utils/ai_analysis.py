@@ -2,11 +2,37 @@ import os
 import logging
 import google.generativeai as genai
 import markdown
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, TypedDict, List
 from utils.edinet_enhanced import extract_financial_data, download_xbrl_package, get_document_list
 from datetime import datetime, timedelta
+import json
 
 logger = logging.getLogger(__name__)
+
+
+# ========================================
+# Phase 1: JSON構造定義
+# ========================================
+
+class AnalysisScores(TypedDict):
+    """AI分析の5軸スコア"""
+    profitability: int          # 収益性 (0-100)
+    growth: int                 # 成長性 (0-100)
+    financial_health: int       # 財務健全性 (0-100)
+    cash_generation: int        # キャッシュ創出力 (0-100)
+    capital_efficiency: int     # 資本効率 (0-100)
+
+
+class StructuredAnalysisResult(TypedDict):
+    """AI分析の構造化結果"""
+    overall_score: int          # 総合スコア (0-100)
+    investment_rating: str      # Strong Buy | Buy | Hold | Sell | Strong Sell
+    scores: AnalysisScores      # 5軸スコア
+    summary: str                # 総合評価コメント
+    strengths: List[str]        # 強み（最大3つ）
+    weaknesses: List[str]       # 弱み（最大3つ）
+    recommendations: List[str]  # 投資判断の根拠（最大3つ）
+    one_liner: str             # この銘柄を一言で表現
 
 def setup_gemini():
     api_key = os.getenv("GEMINI_API_KEY")
@@ -545,24 +571,24 @@ def analyze_risk_governance(ticker_code: str, financial_context: Dict[str, Any],
         return f"<p class='error' style='color: #fb7185;'>リスク分析エラー: {str(e)}</p>"
 
 
-def analyze_dashboard_image(image_base64: str, ticker_code: str, company_name: str = "") -> str:
+def analyze_dashboard_image(image_base64: str, ticker_code: str, company_name: str = "") -> Dict:
     """
-    Analyze dashboard image using Gemini multimodal API.
-    
+    Analyze dashboard image using Gemini multimodal API (JSON structured output).
+
     Args:
         image_base64: Base64 encoded PNG image of the dashboard
         ticker_code: Stock ticker code
         company_name: Company name for context
-        
+
     Returns:
-        HTML formatted analysis result
+        StructuredAnalysisResult dict with scores, ratings, and insights
     """
     import base64
-    
+
     # Clean base64 string (remove data URL prefix if present)
     if "," in image_base64:
         image_base64 = image_base64.split(",")[1]
-    
+
     # Validate base64 data
     try:
         image_bytes = base64.b64decode(image_base64)
@@ -570,15 +596,44 @@ def analyze_dashboard_image(image_base64: str, ticker_code: str, company_name: s
             raise ValueError("Image data too small")
     except Exception as e:
         logger.error(f"Invalid image data: {e}")
-        return f"<p class='error' style='color: #fb7185;'>画像データが無効です: {str(e)}</p>"
-    
+        raise ValueError(f"画像データが無効です: {str(e)}")
+
+    # JSON Schema for structured output
+    json_schema = {
+        "type": "object",
+        "properties": {
+            "overall_score": {"type": "integer", "minimum": 0, "maximum": 100},
+            "investment_rating": {
+                "type": "string",
+                "enum": ["Strong Buy", "Buy", "Hold", "Sell", "Strong Sell"]
+            },
+            "scores": {
+                "type": "object",
+                "properties": {
+                    "profitability": {"type": "integer", "minimum": 0, "maximum": 100},
+                    "growth": {"type": "integer", "minimum": 0, "maximum": 100},
+                    "financial_health": {"type": "integer", "minimum": 0, "maximum": 100},
+                    "cash_generation": {"type": "integer", "minimum": 0, "maximum": 100},
+                    "capital_efficiency": {"type": "integer", "minimum": 0, "maximum": 100}
+                },
+                "required": ["profitability", "growth", "financial_health", "cash_generation", "capital_efficiency"]
+            },
+            "summary": {"type": "string"},
+            "strengths": {"type": "array", "items": {"type": "string"}, "maxItems": 3},
+            "weaknesses": {"type": "array", "items": {"type": "string"}, "maxItems": 3},
+            "recommendations": {"type": "array", "items": {"type": "string"}, "maxItems": 3},
+            "one_liner": {"type": "string"}
+        },
+        "required": ["overall_score", "investment_rating", "scores", "summary", "strengths", "weaknesses", "recommendations", "one_liner"]
+    }
+
     prompt = f"""あなたは機関投資家向けの株式アナリストです。20年以上の経験を持ち、率直で辛辣な分析で知られています。「買ってはいけない銘柄」を見抜くことに定評があります。
 
 ## 分析対象
 銘柄コード: {ticker_code}
 企業名: {company_name if company_name else '不明'}
 
-添付された財務ダッシュボード画像を分析してください。
+添付された財務ダッシュボード画像を分析し、JSON形式で構造化された評価を返してください。
 
 ## ダッシュボードの構成
 1. 売上/営業利益グラフ（棒グラフ）+ 営業利益率（折れ線）
@@ -586,64 +641,92 @@ def analyze_dashboard_image(image_base64: str, ticker_code: str, company_name: s
 3. 財務健全性（有利子負債/ROE/ROA）
 4. 成長性分析（売上CAGR/EPS CAGR/10%目標ライン比較）
 
-## 評価してほしい項目
+## スコアリング基準（0-100点）
 
-### 1. 総合スコア（100点満点）
-- 点数と一言評価
+### overall_score（総合スコア）
+- 90-100: 優良企業。成長性・収益性・財務健全性すべてに優れる
+- 75-89: 良好。一部に懸念あるが投資価値あり
+- 50-74: 平凡。インデックス投資の方が無難
+- 25-49: 問題あり。投資は慎重に
+- 0-24: 危険。投資不適格
 
-### 2. 5つの重要指標の診断
-| 指標 | 状態 | 判定（◎/○/△/✗） |
-|------|------|------------------|
-| 収益性 | | |
-| 成長性 | | |
-| 財務健全性 | | |
-| キャッシュ創出力 | | |
-| 資本効率 | | |
+### 5軸スコア（scores）
+各指標を0-100点で評価：
 
-### 3. 最大のリスク（1つ）
-最も致命的な問題点を指摘
+**profitability（収益性）**
+- 営業利益率15%以上: 80-100点
+- 営業利益率10-15%: 60-79点
+- 営業利益率5-10%: 40-59点
+- 営業利益率5%未満: 0-39点
 
-### 4. 最大の強み（1つ）
-もしあれば
+**growth（成長性）**
+- 売上CAGR 10%以上: 80-100点
+- 売上CAGR 5-10%: 60-79点
+- 売上CAGR 0-5%: 40-59点
+- マイナス成長: 0-39点
 
-### 5. 投資判断
-Strong Buy / Buy / Hold / Sell / Strong Sell から選択し、根拠を3つ
+**financial_health（財務健全性）**
+- 自己資本比率50%以上 & 有利子負債ゼロ: 90-100点
+- 自己資本比率40%以上: 70-89点
+- 自己資本比率20-40%: 50-69点
+- 自己資本比率20%未満: 0-49点
 
-### 6. この銘柄を一言で表現すると？
-例：「借金漬けの成長幻想」「優待だけが取り柄の老舗」など
+**cash_generation（キャッシュ創出力）**
+- 営業CF安定プラス & フリーCF潤沢: 80-100点
+- 営業CFプラス & フリーCFプラス: 60-79点
+- 営業CFプラス & フリーCFマイナス: 40-59点
+- 営業CFマイナス: 0-39点
+
+**capital_efficiency（資本効率）**
+- ROE 15%以上: 80-100点
+- ROE 10-15%: 60-79点
+- ROE 5-10%: 40-59点
+- ROE 5%未満: 0-39点
+
+## 投資判定基準（investment_rating）
+- **Strong Buy**: 総合85点以上。成長性・収益性・財務健全性すべてに優れ、リスクも限定的
+- **Buy**: 総合70-84点。良好だが一部に懸念。タイミング次第で検討可
+- **Hold**: 総合50-69点。悪くはないが積極推奨はできない
+- **Sell**: 総合30-49点。リスクが目立つ、成長性に疑問
+- **Strong Sell**: 総合29点以下。財務・成長性・リスクに重大な問題あり
 
 ## 注意事項
 - お世辞は不要。問題点は遠慮なく指摘すること
 - 数字の読み取りは正確に
-- 業界特有の事情は考慮しつつも、投資家視点で評価
+- 業界特有の事情は考慮しつつも、投資家視点で厳格に評価
 - 曖昧な表現は避け、明確な判断を示すこと
+- strengthsとweaknessesは各最大3項目まで、簡潔に
+- recommendationsは投資判断の具体的根拠を3つ
+- one_linerはこの銘柄の本質を的確に表現する一言
+
+JSON形式で回答してください。
 """
 
     try:
         api_key = os.getenv("GEMINI_API_KEY")
         model_name = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
-        
+
         if not api_key or "your-gemini-api-key" in api_key:
-            return "<p class='error' style='color: #fb7185;'>GEMINI_API_KEYが設定されていません</p>"
-        
+            raise ValueError("GEMINI_API_KEYが設定されていません")
+
         logger.info(f"Visual analysis for {ticker_code} using model: {model_name}")
-        
-        # Use the new google-genai SDK for multimodal
+
+        # Use the new google-genai SDK for multimodal with JSON output
         try:
             from google import genai
             from google.genai import types
-            
+
             client = genai.Client(api_key=api_key)
-            
+
             # Create image part from bytes
             image_part = types.Part.from_bytes(
                 data=image_bytes,
                 mime_type="image/png"
             )
-            
+
             # Create text part
             text_part = types.Part.from_text(text=prompt)
-            
+
             # Combine into content
             contents = [
                 types.Content(
@@ -651,57 +734,257 @@ Strong Buy / Buy / Hold / Sell / Strong Sell から選択し、根拠を3つ
                     parts=[image_part, text_part],
                 ),
             ]
-            
-            # Generate with config - use vision-capable model
+
+            # Generate with config - use vision-capable model with JSON response
             vision_model = "gemini-2.5-flash-lite"  # Fixed vision model for image analysis
-            logger.info(f"Using vision model: {vision_model}")
+            logger.info(f"Using vision model: {vision_model} with JSON output")
             response = client.models.generate_content(
                 model=vision_model,
                 contents=contents,
                 config=types.GenerateContentConfig(
-                    temperature=0.7,
-                    max_output_tokens=4000,
+                    temperature=0.5,  # Lower temperature for more consistent JSON
+                    max_output_tokens=2000,
+                    response_mime_type="application/json",
+                    response_schema=json_schema,
                 ),
             )
-            
+
             if response.text:
                 logger.info(f"Visual analysis completed for {ticker_code}")
-                # Return raw markdown - let frontend render with marked.js
-                # Just do basic cleanup
-                clean_text = response.text
-                # Log first 200 chars for debugging
-                logger.debug(f"Raw response preview: {repr(clean_text[:200])}")
-                return clean_text  # Return raw markdown, not HTML
+                # Parse JSON response
+                try:
+                    analysis_data = json.loads(response.text)
+                    logger.debug(f"Parsed JSON: overall_score={analysis_data.get('overall_score')}, rating={analysis_data.get('investment_rating')}")
+                    return analysis_data
+                except json.JSONDecodeError as je:
+                    logger.error(f"Failed to parse JSON response: {je}")
+                    logger.debug(f"Raw response: {response.text}")
+                    raise ValueError(f"JSON解析エラー: {str(je)}")
             else:
                 raise ValueError("Empty response from Gemini")
-                
+
         except ImportError:
-            # Fallback to legacy SDK
-            logger.warning("New google-genai SDK not available, using legacy SDK")
+            # Fallback to legacy SDK (may not support JSON schema)
+            logger.warning("New google-genai SDK not available, using legacy SDK with manual JSON parsing")
             import google.generativeai as genai_legacy
-            
+
             genai_legacy.configure(api_key=api_key)
             # Use vision-capable model for image analysis
             vision_model = "gemini-2.5-flash-lite"  # Force vision-capable model
             logger.info(f"Using vision model: {vision_model}")
             model = genai_legacy.GenerativeModel(vision_model)
-            
+
             # Create image object using PIL
             import io
             from PIL import Image
             image = Image.open(io.BytesIO(image_bytes))
-            
-            response = model.generate_content([prompt, image])
-            
+
+            # Add JSON format instruction to prompt
+            json_prompt = prompt + "\n\nMUST return valid JSON matching this schema:\n" + json.dumps(json_schema, indent=2)
+            response = model.generate_content(
+                [json_prompt, image],
+                generation_config=genai_legacy.types.GenerationConfig(
+                    temperature=0.5,
+                    max_output_tokens=2000,
+                )
+            )
+
             if response.text:
-                # Return raw markdown - let frontend render with marked.js
-                return response.text
+                try:
+                    # Clean response (remove markdown code blocks if present)
+                    clean_text = response.text.strip()
+                    if clean_text.startswith("```json"):
+                        clean_text = clean_text[7:]
+                    if clean_text.startswith("```"):
+                        clean_text = clean_text[3:]
+                    if clean_text.endswith("```"):
+                        clean_text = clean_text[:-3]
+                    clean_text = clean_text.strip()
+
+                    analysis_data = json.loads(clean_text)
+                    logger.debug(f"Parsed JSON (legacy SDK): overall_score={analysis_data.get('overall_score')}")
+                    return analysis_data
+                except json.JSONDecodeError as je:
+                    logger.error(f"Failed to parse JSON response (legacy SDK): {je}")
+                    logger.debug(f"Raw response: {response.text}")
+                    raise ValueError(f"JSON解析エラー: {str(je)}")
             else:
                 raise ValueError("Empty response from Gemini")
-        
+
     except Exception as e:
         logger.error(f"Visual analysis failed: {e}")
         import traceback
         traceback.print_exc()
-        return f"<p class='error' style='color: #fb7185;'>画像分析エラー: {str(e)}</p>"
+        raise  # Re-raise to be handled by endpoint
 
+
+# ========================================
+# Phase 1.3: HTMLレンダリング関数
+# ========================================
+
+def _render_score_bar(score: int, label: str) -> str:
+    """
+    プログレスバーのHTML生成
+
+    Args:
+        score: スコア (0-100)
+        label: ラベル（例: "収益性"）
+
+    Returns:
+        HTML string
+    """
+    # Color mapping
+    if score >= 80:
+        color = "#10b981"  # Green
+        bg_color = "#d1fae5"
+    elif score >= 60:
+        color = "#3b82f6"  # Blue
+        bg_color = "#dbeafe"
+    elif score >= 40:
+        color = "#f59e0b"  # Orange
+        bg_color = "#fed7aa"
+    else:
+        color = "#ef4444"  # Red
+        bg_color = "#fee2e2"
+
+    return f"""
+    <div style="margin-bottom: 1rem;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+            <span style="font-size: 0.875rem; font-weight: 500; color: #374151;">{label}</span>
+            <span style="font-size: 0.875rem; font-weight: 700; color: {color};">{score}点</span>
+        </div>
+        <div style="width: 100%; background-color: {bg_color}; border-radius: 9999px; height: 0.5rem; overflow: hidden;">
+            <div style="background-color: {color}; height: 100%; width: {score}%; transition: width 0.5s ease;"></div>
+        </div>
+    </div>
+    """
+
+
+def render_visual_analysis_html(analysis_data: Dict, is_from_cache: bool = False) -> str:
+    """
+    AI分析結果をHTML形式でレンダリング
+
+    Args:
+        analysis_data: StructuredAnalysisResult dict
+        is_from_cache: キャッシュからの取得かどうか
+
+    Returns:
+        HTML string
+    """
+    overall_score = analysis_data.get("overall_score", 0)
+    investment_rating = analysis_data.get("investment_rating", "Hold")
+    scores = analysis_data.get("scores", {})
+    summary = analysis_data.get("summary", "")
+    strengths = analysis_data.get("strengths", [])
+    weaknesses = analysis_data.get("weaknesses", [])
+    recommendations = analysis_data.get("recommendations", [])
+    one_liner = analysis_data.get("one_liner", "")
+
+    # Rating color and badge
+    rating_colors = {
+        "Strong Buy": ("#10b981", "#d1fae5", "💎"),
+        "Buy": ("#3b82f6", "#dbeafe", "👍"),
+        "Hold": ("#f59e0b", "#fed7aa", "⏸️"),
+        "Sell": ("#f97316", "#fed7aa", "⚠️"),
+        "Strong Sell": ("#ef4444", "#fee2e2", "🚫")
+    }
+    rating_color, rating_bg, rating_emoji = rating_colors.get(investment_rating, ("#6b7280", "#f3f4f6", "❓"))
+
+    # Cache badge
+    cache_badge = ""
+    if is_from_cache:
+        cache_badge = """
+        <div style="display: inline-block; background-color: #fef3c7; color: #92400e; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; margin-bottom: 1rem;">
+            ⚡ キャッシュ (7日以内)
+        </div>
+        """
+    else:
+        cache_badge = """
+        <div style="display: inline-block; background-color: #d1fae5; color: #065f46; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; margin-bottom: 1rem;">
+            🆕 最新分析
+        </div>
+        """
+
+    # Score board
+    score_board = f"""
+    <div style="background: linear-gradient(135deg, {rating_bg} 0%, #ffffff 100%); border: 2px solid {rating_color}; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; text-align: center;">
+        <div style="font-size: 3rem; font-weight: 800; color: {rating_color}; margin-bottom: 0.5rem;">
+            {overall_score}<span style="font-size: 1.5rem; color: #6b7280;">/100</span>
+        </div>
+        <div style="display: inline-block; background-color: {rating_color}; color: #ffffff; padding: 0.5rem 1.5rem; border-radius: 9999px; font-size: 1rem; font-weight: 700; margin-top: 0.5rem;">
+            {rating_emoji} {investment_rating}
+        </div>
+        <div style="margin-top: 1rem; font-size: 1rem; color: #374151; font-style: italic;">
+            "{one_liner}"
+        </div>
+    </div>
+    """
+
+    # Progress bars for 5 axes
+    progress_bars = f"""
+    <div style="background-color: #f9fafb; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
+        <h3 style="font-size: 1.125rem; font-weight: 700; color: #111827; margin-bottom: 1rem;">📊 5軸分析</h3>
+        {_render_score_bar(scores.get('profitability', 0), '収益性')}
+        {_render_score_bar(scores.get('growth', 0), '成長性')}
+        {_render_score_bar(scores.get('financial_health', 0), '財務健全性')}
+        {_render_score_bar(scores.get('cash_generation', 0), 'キャッシュ創出力')}
+        {_render_score_bar(scores.get('capital_efficiency', 0), '資本効率')}
+    </div>
+    """
+
+    # Summary
+    summary_section = f"""
+    <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+        <h3 style="font-size: 1rem; font-weight: 700; color: #1e40af; margin-bottom: 0.5rem;">💡 総合評価</h3>
+        <p style="font-size: 0.875rem; color: #374151; line-height: 1.6; margin: 0;">{summary}</p>
+    </div>
+    """
+
+    # Strengths and Weaknesses (2-column layout)
+    strengths_html = "".join([f"<li style='margin-bottom: 0.5rem;'>{s}</li>" for s in strengths])
+    weaknesses_html = "".join([f"<li style='margin-bottom: 0.5rem;'>{w}</li>" for w in weaknesses])
+
+    strengths_weaknesses = f"""
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+        <div style="background-color: #d1fae5; border-radius: 12px; padding: 1rem;">
+            <h3 style="font-size: 1rem; font-weight: 700; color: #065f46; margin-bottom: 0.75rem;">✅ 強み</h3>
+            <ul style="font-size: 0.875rem; color: #374151; line-height: 1.6; margin: 0; padding-left: 1.25rem;">
+                {strengths_html if strengths_html else '<li>特筆すべき強みなし</li>'}
+            </ul>
+        </div>
+        <div style="background-color: #fee2e2; border-radius: 12px; padding: 1rem;">
+            <h3 style="font-size: 1rem; font-weight: 700; color: #991b1b; margin-bottom: 0.75rem;">⚠️ 弱み</h3>
+            <ul style="font-size: 0.875rem; color: #374151; line-height: 1.6; margin: 0; padding-left: 1.25rem;">
+                {weaknesses_html if weaknesses_html else '<li>特筆すべき弱みなし</li>'}
+            </ul>
+        </div>
+    </div>
+    """
+
+    # Recommendations
+    recommendations_html = "".join([f"<li style='margin-bottom: 0.5rem;'>{r}</li>" for r in recommendations])
+    recommendations_section = f"""
+    <div style="background-color: #fef3c7; border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+        <h3 style="font-size: 1rem; font-weight: 700; color: #92400e; margin-bottom: 0.75rem;">🎯 投資判断の根拠</h3>
+        <ol style="font-size: 0.875rem; color: #374151; line-height: 1.6; margin: 0; padding-left: 1.25rem;">
+            {recommendations_html if recommendations_html else '<li>根拠情報なし</li>'}
+        </ol>
+    </div>
+    """
+
+    # Combine all sections
+    html = f"""
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto;">
+        {cache_badge}
+        {score_board}
+        {progress_bars}
+        {summary_section}
+        {strengths_weaknesses}
+        {recommendations_section}
+        <div style="text-align: center; font-size: 0.75rem; color: #9ca3af; margin-top: 2rem;">
+            ⚠️ 本分析は参考情報であり、投資を保証するものではありません。投資判断は自己責任で行ってください。
+        </div>
+    </div>
+    """
+
+    return html
