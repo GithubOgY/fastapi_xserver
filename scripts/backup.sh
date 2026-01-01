@@ -19,7 +19,7 @@ set -e  # エラーが発生したら即座に終了
 # ======================
 PROJECT_ROOT="/var/www/fastapi_xserver"
 BACKUP_ROOT="/var/www/backups"
-DB_FILE="${PROJECT_ROOT}/xstock.db"
+DB_FILE="${PROJECT_ROOT}/sql_app.db"
 UPLOADS_DIR="${PROJECT_ROOT}/uploads"
 
 # バックアップ保存先（日付ごと）
@@ -52,10 +52,10 @@ mkdir -p "${BACKUP_DIR}"
 # 1. データベースのバックアップ
 if [ -f "${DB_FILE}" ]; then
     log "データベースをバックアップ中: ${DB_FILE}"
-    cp "${DB_FILE}" "${BACKUP_DIR}/xstock.db"
+    cp "${DB_FILE}" "${BACKUP_DIR}/sql_app.db"
 
     # SHA256チェックサムを生成（整合性確認用）
-    sha256sum "${BACKUP_DIR}/xstock.db" > "${BACKUP_DIR}/xstock.db.sha256"
+    sha256sum "${BACKUP_DIR}/sql_app.db" > "${BACKUP_DIR}/sql_app.db.sha256"
 
     log "データベースバックアップ完了"
 else
@@ -85,21 +85,21 @@ cat > "${BACKUP_DIR}/metadata.txt" <<EOF
 アップロードディレクトリ: ${UPLOADS_DIR}
 
 バックアップ内容:
-- xstock.db (データベース)
-- xstock.db.sha256 (データベースのチェックサム)
+- sql_app.db (データベース)
+- sql_app.db.sha256 (データベースのチェックサム)
 - uploads.tar.gz (アップロード画像の圧縮ファイル)
 - uploads.tar.gz.sha256 (画像圧縮ファイルのチェックサム)
 - metadata.txt (このファイル)
 
 リストア方法:
   1. データベースをリストア:
-     cp xstock.db ${DB_FILE}
+     cp sql_app.db ${DB_FILE}
 
   2. アップロード画像をリストア:
      tar -xzf uploads.tar.gz -C ${PROJECT_ROOT}
 
   3. チェックサムで整合性を確認:
-     sha256sum -c xstock.db.sha256
+     sha256sum -c sql_app.db.sha256
      sha256sum -c uploads.tar.gz.sha256
 EOF
 

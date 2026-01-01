@@ -17,7 +17,7 @@ set -e  # エラーが発生したら即座に終了
 # 設定
 # ======================
 PROJECT_ROOT="/var/www/fastapi_xserver"
-DB_FILE="${PROJECT_ROOT}/xstock.db"
+DB_FILE="${PROJECT_ROOT}/sql_app.db"
 UPLOADS_DIR="${PROJECT_ROOT}/uploads"
 
 # ======================
@@ -69,9 +69,9 @@ fi
 # 1. チェックサムで整合性を確認
 log "バックアップファイルの整合性を確認中..."
 
-if [ -f "${BACKUP_DIR}/xstock.db.sha256" ]; then
+if [ -f "${BACKUP_DIR}/sql_app.db.sha256" ]; then
     cd "${BACKUP_DIR}"
-    if sha256sum -c xstock.db.sha256 > /dev/null 2>&1; then
+    if sha256sum -c sql_app.db.sha256 > /dev/null 2>&1; then
         log "✓ データベースファイルの整合性確認OK"
     else
         log "エラー: データベースファイルのチェックサムが一致しません"
@@ -106,7 +106,7 @@ log "現在のデータをバックアップ中: ${RESTORE_BACKUP_DIR}"
 mkdir -p "${RESTORE_BACKUP_DIR}"
 
 if [ -f "${DB_FILE}" ]; then
-    cp "${DB_FILE}" "${RESTORE_BACKUP_DIR}/xstock.db"
+    cp "${DB_FILE}" "${RESTORE_BACKUP_DIR}/sql_app.db"
 fi
 
 if [ -d "${UPLOADS_DIR}" ]; then
@@ -116,9 +116,9 @@ fi
 log "リストア前のバックアップ完了: ${RESTORE_BACKUP_DIR}"
 
 # 4. データベースをリストア
-if [ -f "${BACKUP_DIR}/xstock.db" ]; then
+if [ -f "${BACKUP_DIR}/sql_app.db" ]; then
     log "データベースをリストア中: ${DB_FILE}"
-    cp "${BACKUP_DIR}/xstock.db" "${DB_FILE}"
+    cp "${BACKUP_DIR}/sql_app.db" "${DB_FILE}"
     log "✓ データベースリストア完了"
 else
     log "警告: バックアップにデータベースファイルがありません"
