@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プレミアムプラン | XStock</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        body {
+            background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
+            color: #f8fafc;
+            font-family: 'Inter', system-ui, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #fff, #f59e0b);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            color: #94a3b8;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .pricing-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .pricing-card.premium {
+            border: 2px solid #f59e0b;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.05));
+        }
+
+        .pricing-card.enterprise {
+            border: 2px solid #8b5cf6;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(109, 40, 217, 0.05));
+        }
+
+        .tier-badge {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .tier-badge.free {
+            background: #64748b;
+            color: white;
+        }
+
+        .tier-badge.premium {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+
+        .tier-badge.enterprise {
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            color: white;
+        }
+
+        .price {
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 1rem 0;
+        }
+
+        .price span {
+            font-size: 1.2rem;
+            color: #94a3b8;
+        }
+
+        .features {
+            list-style: none;
+            padding: 0;
+            margin: 2rem 0;
+        }
+
+        .features li {
+            padding: 0.8rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .features li:last-child {
+            border-bottom: none;
+        }
+
+        .check {
+            color: #10b981;
+        }
+
+        .cross {
+            color: #64748b;
+        }
+
+        .cta-button {
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            text-align: center;
+        }
+
+        .cta-button.free {
+            background: #64748b;
+            color: white;
+        }
+
+        .cta-button.premium {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+
+        .cta-button.enterprise {
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            color: white;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .current-plan {
+            background: #10b981;
+            color: white;
+            pointer-events: none;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 2rem;
+            color: #818cf8;
+            text-decoration: none;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← ダッシュボードに戻る</a>
+
+        <div class="header">
+            <h1>プレミアムプラン</h1>
+            <p>より高度な分析機能で投資判断をサポート</p>
+        </div>
+
+        <div class="pricing-grid">
+            <!-- Free Plan -->
+            <div class="pricing-card">
+                <span class="tier-badge free">FREE</span>
+                <h2>無料プラン</h2>
+                <div class="price">¥0<span>/月</span></div>
+                <ul class="features">
+                    <li><span class="check">✓</span> AI分析: 3回/日</li>
+                    <li><span class="check">✓</span> お気に入り: 5銘柄まで</li>
+                    <li><span class="check">✓</span> 銘柄比較: 2銘柄まで</li>
+                    <li><span class="cross">✗</span> 高度なチャート</li>
+                    <li><span class="cross">✗</span> データエクスポート</li>
+                    <li><span class="cross">✗</span> 広告非表示</li>
+                </ul>
+                {% if current_tier == "free" %}
+                <button class="cta-button current-plan">現在のプラン</button>
+                {% else %}
+                <a href="/" class="cta-button free">無料で始める</a>
+                {% endif %}
+            </div>
+
+            <!-- Premium Plan -->
+            <div class="pricing-card premium">
+                <span class="tier-badge premium">⭐ PREMIUM</span>
+                <h2>プレミアムプラン</h2>
+                <div class="price">¥980<span>/月</span></div>
+                <ul class="features">
+                    <li><span class="check">✓</span> AI分析: 50回/日</li>
+                    <li><span class="check">✓</span> お気に入り: 100銘柄まで</li>
+                    <li><span class="check">✓</span> 銘柄比較: 10銘柄まで</li>
+                    <li><span class="check">✓</span> 高度なチャート</li>
+                    <li><span class="check">✓</span> データエクスポート</li>
+                    <li><span class="check">✓</span> 広告非表示</li>
+                    <li><span class="check">✓</span> 優先サポート</li>
+                </ul>
+                {% if current_tier == "premium" %}
+                <button class="cta-button current-plan">現在のプラン</button>
+                {% else %}
+                <a href="/premium/subscribe?tier=premium" class="cta-button premium">プレミアムにアップグレード</a>
+                {% endif %}
+            </div>
+
+            <!-- Enterprise Plan -->
+            <div class="pricing-card enterprise">
+                <span class="tier-badge enterprise">💎 ENTERPRISE</span>
+                <h2>エンタープライズプラン</h2>
+                <div class="price">お問い合わせ</div>
+                <ul class="features">
+                    <li><span class="check">✓</span> AI分析: 無制限</li>
+                    <li><span class="check">✓</span> お気に入り: 無制限</li>
+                    <li><span class="check">✓</span> 銘柄比較: 無制限</li>
+                    <li><span class="check">✓</span> 高度なチャート</li>
+                    <li><span class="check">✓</span> データエクスポート</li>
+                    <li><span class="check">✓</span> 広告非表示</li>
+                    <li><span class="check">✓</span> 専任サポート</li>
+                    <li><span class="check">✓</span> API アクセス</li>
+                </ul>
+                {% if current_tier == "enterprise" %}
+                <button class="cta-button current-plan">現在のプラン</button>
+                {% else %}
+                <a href="mailto:support@example.com?subject=Enterprise Plan Inquiry" class="cta-button enterprise">お問い合わせ</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

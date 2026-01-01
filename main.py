@@ -24,6 +24,7 @@ import pandas as pd
 from utils.edinet_enhanced import get_financial_history, format_financial_data, search_company_reports, process_document
 from utils.growth_analysis import analyze_growth_quality
 from utils.ai_analysis import analyze_stock_with_ai, analyze_financial_health, analyze_business_competitiveness, analyze_risk_governance, analyze_dashboard_image
+from utils.premium import get_user_tier, get_tier_display_name, get_tier_badge_html, has_feature_access, get_feature_limit, is_premium_active
 
 # Load environment variables
 load_dotenv()
@@ -793,13 +794,27 @@ async def account_page(request: Request, db: Session = Depends(get_db), current_
 async def delete_own_account(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if not current_user:
         raise HTTPException(status_code=401, detail="ログインが必要です")
-    
+
     db.delete(current_user)
     db.commit()
-    
+
     response = RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
     response.delete_cookie("access_token")
     return response
+
+# --- Premium Plan Pages ---
+
+@app.get("/premium", response_class=HTMLResponse)
+async def premium_page(request: Request, current_user: Optional[User] = Depends(get_current_user_optional)):
+    """Premium plan pricing page"""
+    current_tier = get_user_tier(current_user)
+
+    return templates.TemplateResponse("premium.html", {
+        "request": request,
+        "user": current_user,
+        "current_tier": current_tier,
+        "tier_display_name": get_tier_display_name(current_tier)
+    })
 
 @app.post("/api/test-email")
 async def send_test_email(email: str = Form(...), current_user: User = Depends(get_current_user)):

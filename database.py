@@ -55,7 +55,13 @@ class User(Base):
     username = Column(String(50), unique=True, index=True)  # Added length limit
     hashed_password = Column(String(255))  # bcrypt hashes are 60 chars, but allow extra space
     is_admin = Column(Integer, default=0)  # 0=normal user, 1=admin
-    
+
+    # Premium plan fields
+    premium_tier = Column(String(20), default="free", index=True)  # free, premium, enterprise
+    premium_until = Column(DateTime, nullable=True, index=True)  # Premium expiration date
+    stripe_customer_id = Column(String(100), nullable=True, unique=True)  # Stripe customer ID
+    stripe_subscription_id = Column(String(100), nullable=True)  # Stripe subscription ID
+
     # Relationships with cascade delete for data integrity
     comments = relationship("StockComment", back_populates="user", cascade="all, delete-orphan")
     profile = relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
