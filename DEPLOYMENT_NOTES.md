@@ -390,3 +390,245 @@ ROE = (当期純利益 / ((期首純資産 + 期末純資産) / 2)) × 100
 1. トヨタ自動車 (7203) のROEが有価証券報告書と一致するか
 2. ソフトバンクグループ (9984) のような赤字/黒字変動がある企業で適切な備考が表示されるか
 3. 既存ユーザーの銘柄分析が正常に動作するか
+
+---
+
+## 自動バックアップ機能の実装 (2026-01-01)
+
+### 概要
+
+データベース（SQLite）とアップロード画像を定期的にバックアップする自動バックアップシステムを実装しました。
+
+### 実装内容
+
+#### 1. バックアップスクリプト (`scripts/backup.sh`)
+
+**機能**:
+- SQLiteデータベース (`xstock.db`) のバックアップ
+- アップロード画像ディレクトリ (`uploads/`) のバックアップ（tar.gz圧縮）
+- SHA256チェックサムによる整合性検証
+- バックアップメタデータの記録
+- 古いバックアップの自動削除（保存期間: 30日）
+- ディスク使用率の監視（90%超過時に警告）
+
+**バックアップ先**:
+```
+/var/www/backups/
+├── 20260101_030000/
+│   ├── xstock.db
+│   ├── xstock.db.sha256
+│   ├── uploads.tar.gz
+│   ├── uploads.tar.gz.sha256
+│   └── metadata.txt
+├── 20260102_030000/
+└── 20260103_030000/
+```
+
+**実行方法**:
+```bash
+cd /var/www/fastapi_xserver
+bash scripts/backup.sh
+```
+
+#### 2. リストアスクリプト (`scripts/restore.sh`)
+
+**機能**:
+- バックアップファイルの整合性確認（SHA256チェックサム検証）
+- Dockerコンテナの安全な停止
+- リストア前の現在データの自動バックアップ
+- データベースとアップロード画像の復元
+- ファイル権限の自動修正
+- Dockerコンテナの自動起動
+
+**使用方法**:
+```bash
+cd /var/www/fastapi_xserver
+bash scripts/restore.sh /var/www/backups/20260101_030000
+```
+
+#### 3. Cron設定手順書 (`scripts/cron_setup.md`)
+
+cronによる定期実行の設定方法を詳細に記載:
+- セットアップ手順
+- スケジュール例
+- ログ確認方法
+- トラブルシューティング
+- セキュリティ推奨事項
+
+### デプロイ手順
+
+```bash
+# 1. 最新コードの取得
+cd /var/www/fastapi_xserver
+git pull
+
+# 2. バックアップディレクトリの作成
+sudo mkdir -p /var/www/backups
+sudo chown -R yukayohei:yukayohei /var/www/backups
+sudo chmod 755 /var/www/backups
+
+# 3. スクリプトに実行権限を付与
+chmod +x scripts/backup.sh
+chmod +x scripts/restore.sh
+
+# 4. ログディレクトリの作成
+mkdir -p logs
+
+# 5. バックアップのテスト実行
+bash scripts/backup.sh
+
+# 6. バックアップが正常に作成されたか確認
+ls -lh /var/www/backups/$(ls -t /var/www/backups/ | head -1)/
+
+# 7. cronジョブの設定
+crontab -e
+# 以下を追加（毎日午前3時に実行）:
+# 0 3 * * * cd /var/www/fastapi_xserver && bash scripts/backup.sh >> logs/backup.log 2>&1
+
+# 8. cron設定の確認
+crontab -l
+```
+
+### バックアップの確認
+
+```bash
+# ログの確認
+tail -f logs/backup.log
+
+# バックアップ一覧
+ls -lht /var/www/backups/
+
+# 最新バックアップの内容
+ls -lh /var/www/backups/$(ls -t /var/www/backups/ | head -1)/
+
+# チェックサムの検証
+cd /var/www/backups/$(ls -t /var/www/backups/ | head -1)/
+sha256sum -c xstock.db.sha256
+sha256sum -c uploads.tar.gz.sha256
+```
+
+### バックアップからのリストア
+
+```bash
+# 1. 利用可能なバックアップを確認
+ls -lht /var/www/backups/
+
+# 2. リストア実行（確認プロンプトで "yes" を入力）
+cd /var/www/fastapi_xserver
+bash scripts/restore.sh /var/www/backups/20260101_030000
+
+# 3. アプリケーションの起動確認
+docker logs -f fastapi-app
+```
+
+### 保存期間とディスク管理
+
+- **保存期間**: 30日（`backup.sh` の `RETENTION_DAYS` で変更可能）
+- **自動削除**: バックアップ実行時に30日以上古いバックアップを自動削除
+- **ディスク監視**: 使用率が90%を超えた場合にログに警告を出力
+
+**手動で古いバックアップを削除**:
+```bash
+# 30日以上古いバックアップを削除
+find /var/www/backups/ -maxdepth 1 -type d -name "20*" -mtime +30 -exec rm -rf {} \;
+
+# 7日以上古いバックアップを削除（ディスク容量が逼迫している場合）
+find /var/www/backups/ -maxdepth 1 -type d -name "20*" -mtime +7 -exec rm -rf {} \;
+```
+
+### セキュリティ機能
+
+1. **SHA256チェックサム**:
+   - バックアップ作成時に自動生成
+   - リストア時に自動検証
+   - ファイル改ざんの検出
+
+2. **リストア前の自動バックアップ**:
+   - リストア実行時に現在のデータを自動的にバックアップ
+   - 保存先: `backup_before_restore_YYYYMMDD_HHMMSS/`
+
+3. **確認プロンプト**:
+   - リストア実行時に上書き確認を要求
+   - 誤操作を防止
+
+### トラブルシューティング
+
+#### cronが実行されない場合
+
+```bash
+# cronサービスの確認
+sudo systemctl status cron
+
+# cronログの確認
+sudo journalctl -u cron -n 50
+
+# スクリプトの実行権限を確認
+ls -l scripts/backup.sh
+```
+
+#### バックアップが失敗する場合
+
+```bash
+# ログを確認
+tail -100 logs/backup.log
+
+# 権限エラーの場合
+sudo chown -R yukayohei:yukayohei /var/www/backups
+sudo chown -R yukayohei:yukayohei /var/www/fastapi_xserver
+
+# ディスク容量を確認
+df -h
+```
+
+### 外部ストレージへのバックアップ（推奨）
+
+本番環境では、バックアップを外部ストレージにも保存することを強く推奨します。
+
+**AWS S3への転送例**:
+```bash
+# AWS CLIのインストール
+sudo apt-get install awscli
+
+# S3へのアップロード（cronの最後に追加）
+aws s3 sync /var/www/backups/ s3://your-bucket/xstock-backups/ --exclude "*" --include "20*/*"
+```
+
+**rsyncで別サーバーへ転送**:
+```bash
+rsync -avz /var/www/backups/ backup-server:/backup/xstock/
+```
+
+### ファイル一覧
+
+1. `scripts/backup.sh` - バックアップ実行スクリプト
+2. `scripts/restore.sh` - リストア実行スクリプト
+3. `scripts/cron_setup.md` - Cron設定手順書
+
+### 注意事項
+
+1. **ディスク容量**:
+   - バックアップサイズはデータベースとアップロード画像の合計
+   - 定期的にディスク使用量を確認してください
+
+2. **バックアップの暗号化**:
+   - 機密データを含む場合は暗号化を推奨
+   - GPGやAES256での暗号化を検討してください
+
+3. **オフサイトバックアップ**:
+   - 同じサーバー内のバックアップのみではリスクがある
+   - 外部ストレージ（S3, GCS等）への転送を強く推奨
+
+4. **リストアテスト**:
+   - 定期的にリストアテストを実施することを推奨
+   - バックアップが実際に使用可能か確認してください
+
+### 動作確認項目
+
+- [x] バックアップスクリプトが正常に実行される
+- [x] SHA256チェックサムが生成される
+- [x] 古いバックアップが自動削除される
+- [x] リストアスクリプトが正常に動作する
+- [x] リストア前の自動バックアップが作成される
+- [ ] cronジョブが定期実行される（VPSで設定後に確認）
+- [ ] ログが正常に記録される（VPSで設定後に確認）
+- [ ] ディスク容量が十分にある（VPSで確認）
