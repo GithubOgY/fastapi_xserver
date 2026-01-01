@@ -25,6 +25,8 @@ from utils.edinet_enhanced import get_financial_history, format_financial_data, 
 from utils.growth_analysis import analyze_growth_quality
 from utils.ai_analysis import analyze_stock_with_ai, analyze_financial_health, analyze_business_competitiveness, analyze_risk_governance, analyze_dashboard_image
 from utils.premium import get_user_tier, get_tier_display_name, get_tier_badge_html, has_feature_access, get_feature_limit, is_premium_active, get_ai_usage_today, increment_ai_usage, check_ai_usage_limit
+from utils.technical_analysis import calculate_all_indicators, get_latest_values
+from utils.chart_data import format_chartjs_data, calculate_period_days
 
 # Load environment variables
 load_dotenv()
@@ -855,6 +857,14 @@ async def premium_page(request: Request, current_user: Optional[User] = Depends(
         "user": current_user,
         "current_tier": current_tier,
         "tier_display_name": get_tier_display_name(current_tier)
+    })
+
+@app.get("/technical-chart", response_class=HTMLResponse)
+async def technical_chart_demo(request: Request, current_user: Optional[User] = Depends(get_current_user_optional)):
+    """Technical Analysis Chart Demo Page - Premium Feature Showcase"""
+    return templates.TemplateResponse("technical_chart_demo.html", {
+        "request": request,
+        "user": current_user
     })
 
 @app.post("/api/test-email")
@@ -3877,6 +3887,93 @@ async def get_edinet_ratios(code: str, current_user: User = Depends(get_current_
         import traceback
         traceback.print_exc()
         return HTMLResponse(content=f"<div class='text-red-400 p-4'>Error: {str(e)}</div>", status_code=500)
+
+
+# ==========================================
+# Technical Analysis Chart API
+# ==========================================
+
+@app.get("/api/chart/technical")
+async def get_technical_chart(
+    ticker: str = Query(..., description="Stock ticker code (e.g., 7203.T)"),
+    period: str = Query("3M", description="Time period: 1M, 3M, 6M, 1Y"),
+    current_user: User = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
+):
+    """
+    Get technical analysis chart data for a stock
+    Premium feature - requires premium subscription
+    """
+    try:
+        # Check premium access
+        if not current_user or not has_feature_access(current_user, "advanced_charts"):
+            tier = get_user_tier(current_user) if current_user else "free"
+            return {
+                "error": "premium_required",
+                "message": "テクニカル分析チャートはプレミアムプラン限定機能です",
+                "current_tier": tier,
+                "upgrade_url": "/premium"
+            }
+
+        # Calculate number of days to fetch
+        days = calculate_period_days(period)
+
+        # Fetch stock data from Yahoo Finance
+        # Ensure ticker has .T suffix for Tokyo Stock Exchange
+        if not ticker.endswith('.T'):
+            ticker = f"{ticker}.T"
+
+        # Download historical data
+        stock = yf.Ticker(ticker)
+        df = stock.history(period=f"{days}d")
+
+        if df.empty:
+            return {
+                "error": "no_data",
+                "message": "株価データが見つかりませんでした"
+            }
+
+        # Calculate all technical indicators
+        indicators = calculate_all_indicators(
+            df,
+            ma_period=25,
+            bb_period=20,
+            rsi_period=14
+        )
+
+        # Format data for Chart.js
+        chart_data = format_chartjs_data(df, indicators)
+
+        # Get latest indicator values for display
+        latest_values = get_latest_values(indicators)
+
+        # Get current price info
+        current_price = float(df['Close'].iloc[-1]) if not df.empty else 0
+        prev_price = float(df['Close'].iloc[-2]) if len(df) >= 2 else current_price
+        price_change = current_price - prev_price
+        price_change_pct = (price_change / prev_price * 100) if prev_price != 0 else 0
+
+        return {
+            "success": True,
+            "ticker": ticker,
+            "period": period,
+            "chart_data": chart_data,
+            "latest_values": latest_values,
+            "current_price": round(current_price, 2),
+            "price_change": round(price_change, 2),
+            "price_change_pct": round(price_change_pct, 2),
+            "data_points": len(df)
+        }
+
+    except Exception as e:
+        logger.error(f"Technical chart error for {ticker}: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "error": "server_error",
+            "message": f"エラーが発生しました: {str(e)}"
+        }
+
 
 # ==========================================
 # User Profile Endpoints

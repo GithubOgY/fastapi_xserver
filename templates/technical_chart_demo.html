@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>テクニカル分析チャート - デモ | X-Stock Analyzer</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient: radial-gradient(circle at top right, #1e1b4b, #0f172a);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: var(--text-dim);
+            font-size: 1.1rem;
+        }
+
+        .ticker-selector {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .ticker-input-group {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ticker-input-group label {
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .ticker-input-group input {
+            padding: 0.75rem 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0.5rem;
+            color: white;
+            font-size: 1rem;
+            width: 200px;
+        }
+
+        .ticker-input-group input:focus {
+            outline: none;
+            border-color: #a855f7;
+        }
+
+        .ticker-input-group button {
+            padding: 0.75rem 2rem;
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+            border: none;
+            border-radius: 0.5rem;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .ticker-input-group button:hover {
+            transform: translateY(-2px);
+        }
+
+        .quick-select {
+            margin-top: 1.5rem;
+            text-align: center;
+        }
+
+        .quick-select p {
+            color: var(--text-dim);
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        .quick-select-btns {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .quick-btn {
+            padding: 0.5rem 1rem;
+            background: rgba(168, 85, 247, 0.2);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 0.5rem;
+            color: #c084fc;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .quick-btn:hover {
+            background: rgba(168, 85, 247, 0.3);
+            border-color: rgba(168, 85, 247, 0.5);
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 2rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.5rem;
+            color: var(--text-dim);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .back-link:hover {
+            border-color: rgba(168, 85, 247, 0.5);
+            color: var(--text-main);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📈 テクニカル分析チャート</h1>
+            <p>プレミアムプラン限定 - 高度なテクニカル指標で銘柄を分析</p>
+        </div>
+
+        <div class="ticker-selector">
+            <div class="ticker-input-group">
+                <label for="ticker-input">銘柄コード:</label>
+                <input
+                    type="text"
+                    id="ticker-input"
+                    placeholder="例: 7203"
+                    value="7203"
+                >
+                <button onclick="loadChartForTicker()">チャート表示</button>
+            </div>
+
+            <div class="quick-select">
+                <p>クイック選択:</p>
+                <div class="quick-select-btns">
+                    <button class="quick-btn" onclick="selectTicker('7203')">トヨタ (7203)</button>
+                    <button class="quick-btn" onclick="selectTicker('6758')">ソニー (6758)</button>
+                    <button class="quick-btn" onclick="selectTicker('9984')">ソフトバンクG (9984)</button>
+                    <button class="quick-btn" onclick="selectTicker('6501')">日立 (6501)</button>
+                    <button class="quick-btn" onclick="selectTicker('8306')">三菱UFJ (8306)</button>
+                    <button class="quick-btn" onclick="selectTicker('4063')">信越化学 (4063)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart Container -->
+        <div id="chart-container"></div>
+
+        <div style="text-align: center;">
+            <a href="/" class="back-link">← ダッシュボードに戻る</a>
+        </div>
+    </div>
+
+    <script>
+        let currentTickerGlobal = '7203'; // Default ticker
+
+        function selectTicker(ticker) {
+            document.getElementById('ticker-input').value = ticker;
+            loadChartForTicker();
+        }
+
+        function loadChartForTicker() {
+            const ticker = document.getElementById('ticker-input').value.trim();
+            if (!ticker) {
+                alert('銘柄コードを入力してください');
+                return;
+            }
+
+            currentTickerGlobal = ticker;
+
+            // Load the chart component via innerHTML
+            // In production, this would be done via htmx or server-side include
+            const chartHtml = `
+                <!-- Advanced Technical Analysis Chart Component -->
+                <div id="technical-chart-container" class="mt-6 bg-gradient-to-br from-gray-900/80 via-purple-900/20 to-gray-900/80 rounded-xl p-6 border border-purple-500/30 backdrop-blur-sm shadow-2xl">
+
+                    <!-- Header -->
+                    <div class="flex items-center justify-between mb-6" style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <h3 style="font-size: 1.25rem; font-weight: 700; background: linear-gradient(135deg, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                                📈 ${ticker} - テクニカル分析チャート
+                            </h3>
+                            <span style="padding: 0.25rem 0.75rem; background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(249, 115, 22, 0.2)); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 9999px; font-size: 0.75rem; color: #fcd34d; font-weight: 600;">
+                                ⭐ PREMIUM
+                            </span>
+                        </div>
+
+                        <!-- Period Selector -->
+                        <div style="display: flex; gap: 0.5rem;" id="period-selector">
+                            <button onclick="loadTechnicalChart('1M')" class="period-btn" style="padding: 0.5rem 0.75rem; border-radius: 0.5rem; font-size: 0.875rem; font-weight: 500; background: rgba(31, 41, 55, 0.5); color: #9ca3af; border: none; cursor: pointer;">
+                                1ヶ月
+                            </button>
+                            <button onclick="loadTechnicalChart('3M')" class="period-btn active" style="padding: 0.5rem 0.75rem; border-radius: 0.5rem; font-size: 0.875rem; font-weight: 500; background: rgba(168, 85, 247, 0.5); color: #e9d5ff; border: 1px solid rgba(168, 85, 247, 0.5); cursor: pointer;">
+                                3ヶ月
+                            </button>
+                            <button onclick="loadTechnicalChart('6M')" class="period-btn" style="padding: 0.5rem 0.75rem; border-radius: 0.5rem; font-size: 0.875rem; font-weight: 500; background: rgba(31, 41, 55, 0.5); color: #9ca3af; border: none; cursor: pointer;">
+                                6ヶ月
+                            </button>
+                            <button onclick="loadTechnicalChart('1Y')" class="period-btn" style="padding: 0.5rem 0.75rem; border-radius: 0.5rem; font-size: 0.875rem; font-weight: 500; background: rgba(31, 41, 55, 0.5); color: #9ca3af; border: none; cursor: pointer;">
+                                1年
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div id="chart-loading" style="text-align: center; padding: 3rem 0;">
+                        <div style="display: inline-block; width: 3rem; height: 3rem; border: 2px solid transparent; border-top-color: #a855f7; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        <p style="color: #9ca3af; margin-top: 1rem;">チャートを読み込み中...</p>
+                    </div>
+
+                    <!-- Error State -->
+                    <div id="chart-error" class="hidden" style="display: none; background: rgba(127, 29, 29, 0.2); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 0.5rem; padding: 1rem; color: #fca5a5;"></div>
+
+                    <!-- Premium Upgrade Prompt -->
+                    <div id="chart-premium-prompt" class="hidden" style="display: none; background: linear-gradient(135deg, rgba(120, 53, 15, 0.2), rgba(124, 45, 18, 0.2)); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 0.5rem; padding: 1.5rem; text-align: center;">
+                        <h4 style="font-size: 1.125rem; font-weight: 700; color: #fcd34d; margin-bottom: 0.75rem;">⭐ プレミアムプラン限定機能</h4>
+                        <p style="color: #d1d5db; margin-bottom: 1rem;">テクニカル分析チャートはプレミアムプラン以上でご利用いただけます</p>
+                        <a href="/premium" style="display: inline-block; padding: 0.5rem 1.5rem; background: linear-gradient(135deg, #f59e0b, #f97316); color: white; font-weight: 700; border-radius: 0.5rem; text-decoration: none;">
+                            プレミアムプランを見る
+                        </a>
+                    </div>
+
+                    <!-- Current Price Info -->
+                    <div id="price-info" class="hidden" style="display: none; margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                        <div style="background: rgba(31, 41, 55, 0.5); border-radius: 0.5rem; padding: 0.75rem;">
+                            <div style="font-size: 0.75rem; color: #9ca3af; margin-bottom: 0.25rem;">現在値</div>
+                            <div id="current-price" style="font-size: 1.125rem; font-weight: 700; color: white;">-</div>
+                        </div>
+                        <div style="background: rgba(31, 41, 55, 0.5); border-radius: 0.5rem; padding: 0.75rem;">
+                            <div style="font-size: 0.75rem; color: #9ca3af; margin-bottom: 0.25rem;">変化</div>
+                            <div id="price-change" style="font-size: 1.125rem; font-weight: 700;">-</div>
+                        </div>
+                        <div style="background: rgba(31, 41, 55, 0.5); border-radius: 0.5rem; padding: 0.75rem;">
+                            <div style="font-size: 0.75rem; color: #9ca3af; margin-bottom: 0.25rem;">RSI</div>
+                            <div id="rsi-value" style="font-size: 1.125rem; font-weight: 700; color: #a855f7;">-</div>
+                        </div>
+                        <div style="background: rgba(31, 41, 55, 0.5); border-radius: 0.5rem; padding: 0.75rem;">
+                            <div style="font-size: 0.75rem; color: #9ca3af; margin-bottom: 0.25rem;">25日MA</div>
+                            <div id="ma-value" style="font-size: 1.125rem; font-weight: 700; color: #fb923c;">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Chart Canvas -->
+                    <div id="chart-wrapper" class="hidden" style="display: none; height: 500px;">
+                        <canvas id="technical-chart"></canvas>
+                    </div>
+
+                    <!-- Indicator Legend -->
+                    <div id="indicator-legend" class="hidden" style="display: none; margin-top: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 0.75rem; font-size: 0.875rem;">
+                        <div style="background: rgba(31, 41, 55, 0.3); border-radius: 0.5rem; padding: 0.75rem;">
+                            <div style="font-weight: 600; color: #d1d5db; margin-bottom: 0.5rem;">📊 価格指標</div>
+                            <div style="display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.75rem;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span style="width: 0.75rem; height: 0.75rem; border-radius: 50%; background: #3b82f6;"></span>
+                                    <span style="color: #9ca3af;">株価</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span style="width: 0.75rem; height: 0.75rem; border-radius: 50%; background: #f97316;"></span>
+                                    <span style="color: #9ca3af;">移動平均線(25日)</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span style="width: 0.75rem; height: 0.75rem; border-radius: 50%; background: #a855f7;"></span>
+                                    <span style="color: #9ca3af;">ボリンジャーバンド</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="background: rgba(31, 41, 55, 0.3); border-radius: 0.5rem; padding: 0.75rem;">
+                            <div style="font-weight: 600; color: #d1d5db; margin-bottom: 0.5rem;">☁️ 一目均衡表</div>
+                            <div style="display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.75rem;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span style="width: 0.75rem; height: 0.75rem; border-radius: 50%; background: #ef4444;"></span>
+                                    <span style="color: #9ca3af;">転換線</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span style="width: 0.75rem; height: 0.75rem; border-radius: 50%; background: #22c55e;"></span>
+                                    <span style="color: #9ca3af;">基準線</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <span style="width: 0.75rem; height: 0.75rem; background: linear-gradient(90deg, rgba(34, 197, 94, 0.3), rgba(239, 68, 68, 0.3)); border-radius: 0.125rem;"></span>
+                                    <span style="color: #9ca3af;">雲（先行スパンA/B）</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <style>
+                    @keyframes spin {
+                        to { transform: rotate(360deg); }
+                    }
+                    .hidden { display: none !important; }
+                </style>
+            `;
+
+            document.getElementById('chart-container').innerHTML = chartHtml;
+
+            // Auto-load chart
+            setTimeout(() => loadTechnicalChart('3M'), 100);
+        }
+
+        function loadTechnicalChart(period = '3M') {
+            const ticker = currentTickerGlobal;
+            const loading = document.getElementById('chart-loading');
+            const error = document.getElementById('chart-error');
+            const premiumPrompt = document.getElementById('chart-premium-prompt');
+            const chartWrapper = document.getElementById('chart-wrapper');
+            const priceInfo = document.getElementById('price-info');
+            const legend = document.getElementById('indicator-legend');
+
+            // Hide all states
+            if (loading) loading.style.display = 'block';
+            if (error) error.style.display = 'none';
+            if (premiumPrompt) premiumPrompt.style.display = 'none';
+            if (chartWrapper) chartWrapper.style.display = 'none';
+            if (priceInfo) priceInfo.style.display = 'none';
+            if (legend) legend.style.display = 'none';
+
+            // Update period buttons
+            document.querySelectorAll('.period-btn').forEach(btn => {
+                btn.style.background = 'rgba(31, 41, 55, 0.5)';
+                btn.style.color = '#9ca3af';
+                btn.style.border = 'none';
+            });
+            event?.target?.style.setProperty('background', 'rgba(168, 85, 247, 0.5)');
+            event?.target?.style.setProperty('color', '#e9d5ff');
+            event?.target?.style.setProperty('border', '1px solid rgba(168, 85, 247, 0.5)');
+
+            // Fetch chart data
+            fetch(\`/api/chart/technical?ticker=\${encodeURIComponent(ticker)}&period=\${period}\`)
+                .then(response => response.json())
+                .then(data => {
+                    if (loading) loading.style.display = 'none';
+
+                    if (data.error === 'premium_required') {
+                        if (premiumPrompt) premiumPrompt.style.display = 'block';
+                        return;
+                    }
+
+                    if (data.error) {
+                        if (error) {
+                            error.textContent = data.message || 'エラーが発生しました';
+                            error.style.display = 'block';
+                        }
+                        return;
+                    }
+
+                    // Update price info
+                    document.getElementById('current-price').textContent = \`¥\${data.current_price.toLocaleString()}\`;
+
+                    const changeElem = document.getElementById('price-change');
+                    const changeText = \`\${data.price_change >= 0 ? '+' : ''}\${data.price_change.toFixed(2)} (\${data.price_change_pct.toFixed(2)}%)\`;
+                    changeElem.textContent = changeText;
+                    changeElem.style.color = data.price_change >= 0 ? '#4ade80' : '#f87171';
+
+                    if (data.latest_values.rsi !== null) {
+                        const rsi = data.latest_values.rsi.toFixed(1);
+                        document.getElementById('rsi-value').textContent = rsi;
+                        const rsiElem = document.getElementById('rsi-value');
+                        rsiElem.style.color = rsi > 70 ? '#f87171' : rsi < 30 ? '#4ade80' : '#a855f7';
+                    }
+
+                    if (data.latest_values.ma !== null) {
+                        document.getElementById('ma-value').textContent = \`¥\${data.latest_values.ma.toFixed(2)}\`;
+                    }
+
+                    if (priceInfo) priceInfo.style.display = 'grid';
+                    if (legend) legend.style.display = 'grid';
+
+                    // Render chart
+                    renderChart(data.chart_data);
+                })
+                .catch(err => {
+                    if (loading) loading.style.display = 'none';
+                    if (error) {
+                        error.textContent = \`通信エラー: \${err.message}\`;
+                        error.style.display = 'block';
+                    }
+                });
+        }
+
+        let chartInstance = null;
+
+        function renderChart(chartData) {
+            const ctx = document.getElementById('technical-chart');
+            const chartWrapper = document.getElementById('chart-wrapper');
+
+            if (!ctx) return;
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            if (chartWrapper) chartWrapper.style.display = 'block';
+
+            chartInstance = new Chart(ctx.getContext('2d'), {
+                type: 'line',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 12,
+                                font: { size: 11 },
+                                color: '#d1d5db',
+                                filter: function(item) {
+                                    return !item.text.includes('スパン');
+                                }
+                            }
+                        },
+                        tooltip: {
+                            enabled: true,
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                            titleColor: '#f3f4f6',
+                            bodyColor: '#d1d5db',
+                            borderColor: '#6b7280',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: '日付',
+                                color: '#9ca3af'
+                            },
+                            ticks: {
+                                maxTicksLimit: 12,
+                                maxRotation: 45,
+                                minRotation: 0,
+                                color: '#9ca3af'
+                            },
+                            grid: {
+                                color: 'rgba(107, 114, 128, 0.1)'
+                            }
+                        },
+                        'y-price': {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: '株価 (円)',
+                                color: '#9ca3af'
+                            },
+                            ticks: {
+                                color: '#9ca3af'
+                            },
+                            grid: {
+                                color: 'rgba(107, 114, 128, 0.1)'
+                            }
+                        },
+                        'y-rsi': {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'RSI',
+                                color: '#9ca3af'
+                            },
+                            min: 0,
+                            max: 100,
+                            ticks: {
+                                color: '#9ca3af',
+                                stepSize: 20
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Auto-load on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            loadChartForTicker();
+        });
+    </script>
+</body>
+</html>
