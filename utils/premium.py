@@ -192,16 +192,23 @@ def get_tier_display_name(tier: str) -> str:
     return names.get(tier, "無料プラン")
 
 
-def get_tier_badge_html(tier: str) -> str:
+def get_tier_badge_html(user_or_tier) -> str:
     """
     Get HTML badge for a tier.
 
     Args:
-        tier: Tier code (free, premium, enterprise)
+        user_or_tier: User object or tier string (free, premium, enterprise)
 
     Returns:
         str: HTML badge
     """
+    # Handle both User objects and tier strings
+    if isinstance(user_or_tier, str):
+        tier = user_or_tier
+    else:
+        # Assume it's a User object
+        tier = get_user_tier(user_or_tier)
+
     badges = {
         PremiumTier.FREE: '<span style="background: #64748b; color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">FREE</span>',
         PremiumTier.PREMIUM: '<span style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">⭐ PREMIUM</span>',

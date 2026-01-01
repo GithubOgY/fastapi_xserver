@@ -372,14 +372,17 @@
             })
                 .then(response => response.json())
                 .then(data => {
+                    console.log('API Response:', data);
                     if (loading) loading.style.display = 'none';
 
                     if (data.error === 'premium_required') {
+                        console.log('Premium required - showing upgrade prompt');
                         if (premiumPrompt) premiumPrompt.style.display = 'block';
                         return;
                     }
 
                     if (data.error) {
+                        console.log('Error:', data.error, data.message);
                         if (error) {
                             error.textContent = data.message || 'エラーが発生しました';
                             error.style.display = 'block';

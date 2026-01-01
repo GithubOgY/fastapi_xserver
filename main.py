@@ -3919,9 +3919,16 @@ async def get_technical_chart(
     Premium feature - requires premium subscription
     """
     try:
+        # Debug logging
+        if current_user:
+            logger.info(f"Technical chart request - User: {current_user.username}, is_admin: {current_user.is_admin}, tier: {get_user_tier(current_user)}")
+        else:
+            logger.info("Technical chart request - No authenticated user")
+
         # Check premium access
         if not current_user or not has_feature_access(current_user, "advanced_charts"):
             tier = get_user_tier(current_user) if current_user else "free"
+            logger.warning(f"Premium access denied - current_user: {current_user is not None}, tier: {tier}")
             return {
                 "error": "premium_required",
                 "message": "テクニカル分析チャートはプレミアムプラン限定機能です",
