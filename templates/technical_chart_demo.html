@@ -367,7 +367,7 @@
             event?.target?.style.setProperty('border', '1px solid rgba(168, 85, 247, 0.5)');
 
             // Fetch chart data
-            fetch(\`/api/chart/technical?ticker=\${encodeURIComponent(ticker)}&period=\${period}\`)
+            fetch('/api/chart/technical?ticker=' + encodeURIComponent(ticker) + '&period=' + period)
                 .then(response => response.json())
                 .then(data => {
                     if (loading) loading.style.display = 'none';
@@ -386,10 +386,10 @@
                     }
 
                     // Update price info
-                    document.getElementById('current-price').textContent = \`¥\${data.current_price.toLocaleString()}\`;
+                    document.getElementById('current-price').textContent = '¥' + data.current_price.toLocaleString();
 
                     const changeElem = document.getElementById('price-change');
-                    const changeText = \`\${data.price_change >= 0 ? '+' : ''}\${data.price_change.toFixed(2)} (\${data.price_change_pct.toFixed(2)}%)\`;
+                    const changeText = (data.price_change >= 0 ? '+' : '') + data.price_change.toFixed(2) + ' (' + data.price_change_pct.toFixed(2) + '%)';
                     changeElem.textContent = changeText;
                     changeElem.style.color = data.price_change >= 0 ? '#4ade80' : '#f87171';
 
@@ -401,7 +401,7 @@
                     }
 
                     if (data.latest_values.ma !== null) {
-                        document.getElementById('ma-value').textContent = \`¥\${data.latest_values.ma.toFixed(2)}\`;
+                        document.getElementById('ma-value').textContent = '¥' + data.latest_values.ma.toFixed(2);
                     }
 
                     if (priceInfo) priceInfo.style.display = 'grid';
@@ -413,7 +413,7 @@
                 .catch(err => {
                     if (loading) loading.style.display = 'none';
                     if (error) {
-                        error.textContent = \`通信エラー: \${err.message}\`;
+                        error.textContent = '通信エラー: ' + err.message;
                         error.style.display = 'block';
                     }
                 });
