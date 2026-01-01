@@ -544,6 +544,21 @@
             </div>
         </div>
 
+        <!-- PWA Debug Panel (visible on screen) -->
+        <div id="pwa-debug-panel" style="position: fixed; bottom: 0; left: 0; right: 0; background: rgba(0, 0, 0, 0.95); color: #10b981; padding: 0.5rem; font-size: 0.7rem; font-family: monospace; max-height: 150px; overflow-y: auto; z-index: 99999; border-top: 2px solid #10b981; display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                <strong>🔍 PWA Debug Log</strong>
+                <button onclick="document.getElementById('pwa-debug-panel').style.display='none'; return false;" style="background: #dc2626; color: white; border: none; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem;">Close</button>
+            </div>
+            <div id="pwa-debug-log"></div>
+        </div>
+
+        <!-- Debug Toggle Button -->
+        <button id="debug-toggle" onclick="var panel = document.getElementById('pwa-debug-panel'); panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; return false;"
+            style="position: fixed; bottom: 10px; right: 10px; background: #10b981; color: white; border: none; padding: 0.5rem 1rem; border-radius: 50%; font-size: 1rem; z-index: 99998; box-shadow: 0 4px 6px rgba(0,0,0,0.3); cursor: pointer;">
+            🐛
+        </button>
+
         <!-- Checkpoint for grid layout -->
         <div class="dashboard-grid">
             <!-- Main Content Column -->
@@ -716,8 +731,34 @@
         }
         applyTheme(localStorage.getItem('theme') || 'dark');
 
+        // Debug logging function (visible on screen)
+        function debugLog(message, type = 'info') {
+            const logDiv = document.getElementById('pwa-debug-log');
+            const panel = document.getElementById('pwa-debug-panel');
+            if (logDiv && panel) {
+                const time = new Date().toLocaleTimeString();
+                const color = type === 'error' ? '#f43f5e' : type === 'success' ? '#10b981' : '#60a5fa';
+                const entry = document.createElement('div');
+                entry.style.color = color;
+                entry.style.marginBottom = '0.25rem';
+                entry.textContent = `[${time}] ${message}`;
+                logDiv.insertBefore(entry, logDiv.firstChild);
+
+                // Auto-show panel on new log
+                panel.style.display = 'block';
+
+                // Keep only last 20 entries
+                while (logDiv.children.length > 20) {
+                    logDiv.removeChild(logDiv.lastChild);
+                }
+            }
+            console.log(message); // Also log to console
+        }
+
         // Auto-search last ticker on page load
         document.addEventListener('DOMContentLoaded', function () {
+            debugLog('🚀 Page loaded - PWA Debug Mode Active');
+
             // Auto-fetch company name from ticker input
             const tickerInput = document.getElementById('yf-ticker-input');
             const companyInput = document.getElementById('yf-company-name');
@@ -764,37 +805,38 @@
             // Debug logging for PWA
             if (companyInput) {
                 companyInput.addEventListener('focus', function() {
-                    console.log('[PWA Debug] Company input focused');
+                    debugLog('📝 Company input focused');
                 });
                 companyInput.addEventListener('input', function(e) {
-                    console.log('[PWA Debug] Input event:', e.target.value);
+                    debugLog('⌨️ Input: ' + e.target.value);
                 });
             }
 
             // HTMX debug logging and error handling
             document.body.addEventListener('htmx:beforeRequest', function(evt) {
                 if (evt.detail.path && evt.detail.path.includes('/api/companies/search')) {
-                    console.log('[PWA Debug] HTMX request to:', evt.detail.path);
-                    console.log('[PWA Debug] Request headers:', evt.detail.xhr);
+                    debugLog('🌐 HTMX → ' + evt.detail.path);
                 }
             });
 
             document.body.addEventListener('htmx:afterSwap', function(evt) {
                 if (evt.detail.pathInfo && evt.detail.pathInfo.requestPath.includes('/api/companies/search')) {
-                    console.log('[PWA Debug] HTMX response received, target:', evt.detail.target.id);
-                    console.log('[PWA Debug] Response content:', evt.detail.target.innerHTML);
-                    console.log('[PWA Debug] Response length:', evt.detail.target.innerHTML.length);
+                    const contentLength = evt.detail.target.innerHTML.length;
+                    debugLog('✅ Response received (' + contentLength + ' chars)', 'success');
+                    if (contentLength > 0) {
+                        debugLog('📋 List HTML updated');
+                    }
                 }
             });
 
             document.body.addEventListener('htmx:responseError', function(evt) {
                 if (evt.detail.pathInfo && evt.detail.pathInfo.requestPath.includes('/api/companies/search')) {
-                    console.error('[PWA Debug] HTMX error:', evt.detail);
+                    debugLog('❌ HTMX Error: ' + JSON.stringify(evt.detail), 'error');
                 }
             });
 
             document.body.addEventListener('htmx:sendError', function(evt) {
-                console.error('[PWA Debug] HTMX send error:', evt.detail);
+                debugLog('❌ Send Error: ' + JSON.stringify(evt.detail), 'error');
             });
 
             var lastTicker = '{{ last_ticker }}';

@@ -1294,8 +1294,11 @@ async def search_companies(
         code = company.code_4digit if company.code_4digit else company.ticker.split('.')[0]
         
         # Create list item with better mobile touch handling
+        # Escape company name for JavaScript
+        company_name_escaped = company.name.replace("'", "\\'").replace('"', '\\"')
+
         # Use mousedown instead of click to fire before blur event
-        click_handler = f"console.log('[PWA Debug] Item clicked: {code}'); document.getElementById('yf-ticker-input').value = '{code}'; document.getElementById('yf-company-name').value = '{company.name}'; setTimeout(function(){{document.getElementById('company-search-results').innerHTML = '';}}, 100); return false;"
+        click_handler = f"debugLog('👆 Item clicked: {code}', 'success'); document.getElementById('yf-ticker-input').value = '{code}'; document.getElementById('yf-company-name').value = '{company_name_escaped}'; setTimeout(function(){{document.getElementById('company-search-results').innerHTML = '';}}, 100); return false;"
 
         html_content += f"""
         <li style="padding: 0.75rem 1rem; cursor: pointer; font-size: 0.9rem; color: #e2e8f0; border-bottom: 1px solid rgba(255, 255, 255, 0.08); transition: background 0.2s; user-select: none; -webkit-tap-highlight-color: rgba(255, 255, 255, 0.1);"
@@ -1304,7 +1307,7 @@ async def search_companies(
             onmousedown="{click_handler}"
             ontouchstart="{click_handler}">
             <span style="font-weight: bold; color: #10b981; margin-right: 0.5rem;">{code}</span>
-            <span>{company.name}</span>
+            <span>{company_name_escaped}</span>
         </li>
         """
     
