@@ -5,8 +5,22 @@ This module formats technical analysis data for Chart.js visualization.
 """
 
 import pandas as pd
+import numpy as np
 from typing import Dict, List, Optional
 from datetime import datetime
+
+
+def safe_to_list(series: pd.Series) -> List:
+    """
+    Convert pandas Series to list, replacing NaN with None for JSON serialization
+
+    Args:
+        series: pandas Series
+
+    Returns:
+        List with NaN values replaced by None
+    """
+    return [None if pd.isna(x) else float(x) for x in series]
 
 
 def format_chartjs_data(df: pd.DataFrame, indicators: Dict[str, pd.Series]) -> Dict:
@@ -24,7 +38,7 @@ def format_chartjs_data(df: pd.DataFrame, indicators: Dict[str, pd.Series]) -> D
     labels = [date.strftime('%Y-%m-%d') for date in df.index]
 
     # Price data (candlestick will be handled separately, using Close for line chart)
-    price_data = df['Close'].tolist()
+    price_data = safe_to_list(df['Close'])
 
     # Prepare datasets
     datasets = []
@@ -44,7 +58,7 @@ def format_chartjs_data(df: pd.DataFrame, indicators: Dict[str, pd.Series]) -> D
 
     # 2. 25-day Moving Average
     if 'ma' in indicators:
-        ma_data = indicators['ma'].tolist()
+        ma_data = safe_to_list(indicators['ma'])
         datasets.append({
             'label': '移動平均線(25日)',
             'data': ma_data,
@@ -62,7 +76,7 @@ def format_chartjs_data(df: pd.DataFrame, indicators: Dict[str, pd.Series]) -> D
         # Upper Band
         datasets.append({
             'label': 'ボリンジャーバンド上限',
-            'data': indicators['bb_upper'].tolist(),
+            'data': safe_to_list(indicators['bb_upper']),
             'borderColor': 'rgba(168, 85, 247, 0.5)',
             'backgroundColor': 'transparent',
             'borderWidth': 1,
@@ -75,7 +89,7 @@ def format_chartjs_data(df: pd.DataFrame, indicators: Dict[str, pd.Series]) -> D
         # Middle Band
         datasets.append({
             'label': 'ボリンジャーバンド中央',
-            'data': indicators['bb_middle'].tolist(),
+            'data': safe_to_list(indicators['bb_middle']),
             'borderColor': 'rgba(168, 85, 247, 0.3)',
             'backgroundColor': 'transparent',
             'borderWidth': 1,
@@ -88,7 +102,7 @@ def format_chartjs_data(df: pd.DataFrame, indicators: Dict[str, pd.Series]) -> D
         # Lower Band
         datasets.append({
             'label': 'ボリンジャーバンド下限',
-            'data': indicators['bb_lower'].tolist(),
+            'data': safe_to_list(indicators['bb_lower']),
             'borderColor': 'rgba(168, 85, 247, 0.5)',
             'backgroundColor': 'transparent',
             'borderWidth': 1,
@@ -103,7 +117,7 @@ def format_chartjs_data(df: pd.DataFrame, indicators: Dict[str, pd.Series]) -> D
         # Tenkan-sen (Conversion Line)
         datasets.append({
             'label': '転換線',
-            'data': indicators['ichimoku_tenkan'].tolist(),
+            'data': safe_to_list(indicators['ichimoku_tenkan']),
             'borderColor': 'rgba(239, 68, 68, 0.8)',
             'backgroundColor': 'transparent',
             'borderWidth': 1.5,
@@ -115,7 +129,7 @@ def format_chartjs_data(df: pd.DataFrame, indicators: Dict[str, pd.Series]) -> D
         # Kijun-sen (Base Line)
         datasets.append({
             'label': '基準線',
-            'data': indicators['ichimoku_kijun'].tolist(),
+            'data': safe_to_list(indicators['ichimoku_kijun']),
             'borderColor': 'rgba(34, 197, 94, 0.8)',
             'backgroundColor': 'transparent',
             'borderWidth': 1.5,
@@ -125,8 +139,8 @@ def format_chartjs_data(df: pd.DataFrame, indicators: Dict[str, pd.Series]) -> D
         })
 
         # Senkou Span A (Leading Span A) - Cloud
-        senkou_a_data = indicators['ichimoku_senkou_a'].tolist()
-        senkou_b_data = indicators['ichimoku_senkou_b'].tolist()
+        senkou_a_data = safe_to_list(indicators['ichimoku_senkou_a'])
+        senkou_b_data = safe_to_list(indicators['ichimoku_senkou_b'])
 
         datasets.append({
             'label': '先行スパンA',
@@ -154,7 +168,7 @@ def format_chartjs_data(df: pd.DataFrame, indicators: Dict[str, pd.Series]) -> D
 
     # 5. RSI (separate Y-axis)
     if 'rsi' in indicators:
-        rsi_data = indicators['rsi'].tolist()
+        rsi_data = safe_to_list(indicators['rsi'])
         datasets.append({
             'label': 'RSI',
             'data': rsi_data,
