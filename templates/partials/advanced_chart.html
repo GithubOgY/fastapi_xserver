@@ -145,8 +145,10 @@ function loadTechnicalChart(period = '3M') {
     event?.target?.classList.remove('bg-gray-800/50', 'text-gray-400');
     event?.target?.classList.add('bg-purple-600/50', 'text-purple-200', 'border', 'border-purple-500/50');
 
-    // Fetch chart data
-    fetch(`/api/chart/technical?ticker=${encodeURIComponent(currentTicker)}&period=${period}`)
+    // Fetch chart data (include credentials for authentication)
+    fetch(`/api/chart/technical?ticker=${encodeURIComponent(currentTicker)}&period=${period}`, {
+        credentials: 'same-origin'
+    })
         .then(response => response.json())
         .then(data => {
             loading.classList.add('hidden');

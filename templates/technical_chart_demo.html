@@ -366,8 +366,10 @@
             event?.target?.style.setProperty('color', '#e9d5ff');
             event?.target?.style.setProperty('border', '1px solid rgba(168, 85, 247, 0.5)');
 
-            // Fetch chart data
-            fetch('/api/chart/technical?ticker=' + encodeURIComponent(ticker) + '&period=' + period)
+            // Fetch chart data (include credentials for authentication)
+            fetch('/api/chart/technical?ticker=' + encodeURIComponent(ticker) + '&period=' + period, {
+                credentials: 'same-origin'
+            })
                 .then(response => response.json())
                 .then(data => {
                     if (loading) loading.style.display = 'none';
