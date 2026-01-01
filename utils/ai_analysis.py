@@ -278,6 +278,20 @@ def analyze_stock_with_ai(ticker_code: str, financial_context: Dict[str, Any], c
 
 ---
 
+## 重要: 言語指定
+**すべての分析結果は必ず日本語で記述してください。**
+- 総合判定の理由: 日本語で記述
+- 成長性の評価: 日本語で記述
+- バリュエーションの評価: 日本語で記述
+- リスクと懸念点: 日本語で記述
+- 財務健全性の評価: 日本語で記述
+- アナリスト推奨アクション: 日本語で記述
+- 英語での出力は厳禁です
+
+分析結果はMarkdown形式で、すべて日本語で回答してください。
+
+---
+
 **最後に:** 投資判断は自己責任です。本分析は参考情報であり、投資を保証するものではありません。
 """
 
@@ -382,9 +396,20 @@ def analyze_financial_health(ticker_code: str, financial_context: Dict[str, Any]
 財務面から見た投資判断を明確に述べてください。
 
 ---
+
+## 重要: 言語指定
+**すべての分析結果は必ず日本語で記述してください。**
+- 評価サマリー: 日本語で記述
+- 詳細分析: 日本語で記述
+- 投資家へのアドバイス: 日本語で記述
+- 英語での出力は厳禁です
+
+分析結果はMarkdown形式で、すべて日本語で回答してください。
+
+---
 **注意:** 本分析は参考情報であり、投資を保証するものではありません。
 """
-    
+
     try:
         api_key = os.getenv("GEMINI_API_KEY")
         model_name = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
@@ -463,9 +488,20 @@ def analyze_business_competitiveness(ticker_code: str, financial_context: Dict[s
 事業面から見た長期投資の可否を明確に述べてください。
 
 ---
+
+## 重要: 言語指定
+**すべての分析結果は必ず日本語で記述してください。**
+- 評価サマリー: 日本語で記述
+- 詳細分析: 日本語で記述
+- 投資家へのアドバイス: 日本語で記述
+- 英語での出力は厳禁です
+
+分析結果はMarkdown形式で、すべて日本語で回答してください。
+
+---
 **注意:** 本分析は参考情報であり、投資を保証するものではありません。
 """
-    
+
     try:
         api_key = os.getenv("GEMINI_API_KEY")
         model_name = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
@@ -558,9 +594,20 @@ def analyze_risk_governance(ticker_code: str, financial_context: Dict[str, Any],
 リスクが重大な場合は、率直に「見送り」と評価してください。
 
 ---
+
+## 重要: 言語指定
+**すべての分析結果は必ず日本語で記述してください。**
+- 評価サマリー: 日本語で記述
+- 詳細分析: 日本語で記述
+- 投資家へのアドバイス: 日本語で記述
+- 英語での出力は厳禁です
+
+分析結果はMarkdown形式で、すべて日本語で回答してください。
+
+---
 **注意:** 本分析は参考情報であり、投資を保証するものではありません。
 """
-    
+
     try:
         api_key = os.getenv("GEMINI_API_KEY")
         model_name = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
@@ -753,7 +800,16 @@ def analyze_dashboard_image(image_base64: str, ticker_code: str, company_name: s
 - recommendationsは投資判断の具体的根拠を3つ
 - one_linerはこの銘柄の本質を的確に表現する一言
 
-JSON形式で回答してください。
+## 重要: 言語指定
+**すべてのテキスト出力は必ず日本語で記述してください。**
+- summary: 日本語で記述
+- strengths: すべての項目を日本語で記述
+- weaknesses: すべての項目を日本語で記述
+- recommendations: すべての項目を日本語で記述
+- one_liner: 日本語で記述
+- 英語での出力は厳禁です
+
+JSON形式で回答してください（フィールド名は英語、値は日本語）。
 """
 
     try:
