@@ -217,7 +217,42 @@
                         {% endif %}
                     </span>
                 </div>
+                <div class="info-row">
+                    <span class="info-label">プラン</span>
+                    <span class="info-value">
+                        {{ user | get_tier_badge_html | safe }}
+                    </span>
+                </div>
             </div>
+
+            <!-- Premium Plan Section -->
+            {% if premium_tier %}
+            <div class="info-section" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.05)); border: 1px solid rgba(245, 158, 11, 0.3);">
+                <h3 style="color: #f59e0b; font-size: 1.1rem; margin-bottom: 1rem;">⭐ プレミアムプラン利用状況</h3>
+
+                <div class="info-row">
+                    <span class="info-label">現在のプラン</span>
+                    <span class="info-value">{{ user | get_tier_display_name }}</span>
+                </div>
+
+                {% if premium_usage %}
+                <div class="info-row">
+                    <span class="info-label">AI分析（本日）</span>
+                    <span class="info-value">{{ premium_usage.ai_analyses_today }}/{{ premium_usage.ai_analyses_limit }}回</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">お気に入り銘柄</span>
+                    <span class="info-value">{{ premium_usage.favorites_count }}/{{ premium_usage.favorites_limit }}銘柄</span>
+                </div>
+                {% endif %}
+
+                {% if premium_tier == 'free' %}
+                <a href="/premium" class="btn-primary" style="margin-top: 1rem; background: linear-gradient(135deg, #f59e0b, #d97706);">
+                    プレミアムにアップグレード
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
 
             <!-- Profile Settings -->
             <div class="info-section">

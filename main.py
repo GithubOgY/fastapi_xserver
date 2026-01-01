@@ -215,6 +215,11 @@ async def log_requests(request: Request, call_next):
 
 templates = Jinja2Templates(directory="templates")
 
+# Add custom Jinja2 filters for premium features
+templates.env.filters['get_user_tier'] = get_user_tier
+templates.env.filters['get_tier_badge_html'] = get_tier_badge_html
+templates.env.filters['get_tier_display_name'] = get_tier_display_name
+
 # ヘルパー関数
 def get_db():
     db = SessionLocal()
@@ -780,14 +785,33 @@ async def admin_delete_user(user_id: int, db: Session = Depends(get_db), current
 async def account_page(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if not current_user:
         return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
-    
+
     # Fetch user's comment history
     user_comments = db.query(StockComment).filter(StockComment.user_id == current_user.id).order_by(StockComment.created_at.desc()).all()
-    
+
+    # Get premium tier and usage info
+    premium_tier = get_user_tier(current_user)
+
+    # Get usage statistics
+    favorites_count = db.query(UserFavorite).filter(UserFavorite.user_id == current_user.id).count()
+    favorites_limit = get_feature_limit(current_user, "favorites")
+
+    # AI analyses today (you would track this in a usage table in production)
+    ai_analyses_limit = get_feature_limit(current_user, "ai_analyses")
+
+    premium_usage = {
+        "favorites_count": favorites_count,
+        "favorites_limit": favorites_limit,
+        "ai_analyses_today": 0,  # Placeholder - implement tracking in production
+        "ai_analyses_limit": ai_analyses_limit,
+    }
+
     return templates.TemplateResponse("account.html", {
         "request": request,
         "user": current_user,
-        "comments": user_comments
+        "comments": user_comments,
+        "premium_tier": premium_tier,
+        "premium_usage": premium_usage
     })
 
 @app.post("/account/delete")
@@ -944,27 +968,47 @@ async def add_favorite(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Add a stock to user's favorites"""
+    """Add a stock to user's favorites with premium tier limit check"""
     if not current_user:
         return RedirectResponse(url="/login", status_code=303)
-    
+
+    # Check premium tier limit
+    favorites_count = db.query(UserFavorite).filter(UserFavorite.user_id == current_user.id).count()
+    favorites_limit = get_feature_limit(current_user, "favorites")
+
     # Check if already exists (flexible check)
     possible_tickers = [ticker]
     if ticker.endswith(".T"):
         possible_tickers.append(ticker[:-2])
     else:
         possible_tickers.append(f"{ticker}.T")
-    
+
     existing = db.query(UserFavorite).filter(
         UserFavorite.user_id == current_user.id,
         UserFavorite.ticker.in_(possible_tickers)
     ).first()
-    
+
     if not existing:
+        # Check if user has reached their limit
+        if favorites_count >= favorites_limit:
+            # Return HTML response with upgrade prompt
+            tier = get_user_tier(current_user)
+            return HTMLResponse(content=f"""
+                <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 1.5rem; text-align: center;">
+                    <h3 style="color: #f59e0b; margin-bottom: 0.5rem;">⭐ お気に入り上限に達しました</h3>
+                    <p style="color: #94a3b8; margin-bottom: 1rem;">
+                        現在のプラン（{get_tier_display_name(tier)}）では{favorites_limit}銘柄まで登録できます。
+                    </p>
+                    <a href="/premium" style="display: inline-block; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 0.75rem 2rem; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                        プレミアムプランにアップグレード
+                    </a>
+                </div>
+            """, status_code=200)
+
         # Add to favorites
         fav = UserFavorite(user_id=current_user.id, ticker=ticker)
         db.add(fav)
-        
+
         # Also add/update Company record with name if provided
         if ticker_name:
             company = db.query(Company).filter(Company.ticker == ticker).first()
@@ -973,9 +1017,9 @@ async def add_favorite(
                 db.add(company)
             elif not company.name:
                 company.name = ticker_name
-        
+
         db.commit()
-    
+
     return RedirectResponse(url="/dashboard", status_code=303)
 
 

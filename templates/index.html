@@ -479,8 +479,9 @@
                 <a href="/premium"
                     style="font-size: 0.9rem; color: #f59e0b; margin-right: 0.5rem; text-decoration: none; font-weight: 600;">⭐
                     プレミアム</a>
-                <a href="/account" style="font-size: 0.9rem; color: var(--accent); text-decoration: none;">{{
+                <a href="/account" style="font-size: 0.9rem; color: var(--accent); margin-right: 0.3rem; text-decoration: none;">{{
                     user.username }}</a>
+                {{ user | get_tier_badge_html | safe }}
                 {% if user.is_admin %}
                 <a href="/admin/users"
                     style="color: var(--success); text-decoration: none; font-size: 0.8rem; background: rgba(16, 185, 129, 0.2); padding: 0.3rem 0.6rem; border-radius: 6px;">管理者</a>
