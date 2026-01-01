@@ -1286,7 +1286,7 @@ async def search_companies(
         ).limit(10).all()
 
     if not companies:
-        return "<li class='p-2 text-gray-500 text-sm'>該当なし</li>"
+        return "<li style='padding: 0.75rem; font-size: 0.85rem; color: #64748b; text-align: center;'>該当なし</li>"
 
     html_content = ""
     for company in companies:
@@ -1294,13 +1294,16 @@ async def search_companies(
         code = company.code_4digit if company.code_4digit else company.ticker.split('.')[0]
         
         # Create list item with cursor-pointer and hover effect
-        # On click, fill inputs and hide list
-        click_handler = f"document.getElementById('yf-ticker-input').value = '{code}'; document.getElementById('yf-company-name').value = '{company.name}'; document.getElementById('company-search-results').innerHTML = '';"
-        
+        # On click/touch, fill inputs and hide list
+        click_handler = f"document.getElementById('yf-ticker-input').value = '{code}'; document.getElementById('yf-company-name').value = '{company.name}'; document.getElementById('company-search-results').innerHTML = ''; event.preventDefault();"
+
         html_content += f"""
-        <li class="p-2 hover:bg-gray-700 cursor-pointer text-sm text-gray-200 border-b border-gray-700 last:border-0" 
-            onclick="{click_handler}">
-            <span class="font-bold text-emerald-400 mr-2">{code}</span>
+        <li style="padding: 0.75rem; cursor: pointer; font-size: 0.9rem; color: #e2e8f0; border-bottom: 1px solid rgba(255, 255, 255, 0.08); transition: background 0.2s;"
+            onmouseover="this.style.background='rgba(255, 255, 255, 0.1)';"
+            onmouseout="this.style.background='transparent';"
+            onclick="{click_handler}"
+            ontouchend="{click_handler}">
+            <span style="font-weight: bold; color: #10b981; margin-right: 0.5rem;">{code}</span>
             <span>{company.name}</span>
         </li>
         """

@@ -521,7 +521,7 @@
                     style="width: 140px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.8rem 1rem; color: white; outline: none; text-align: center;">
                 <div style="position: relative;">
                     <input type="search" id="yf-company-name" name="q" placeholder="企業名" autocomplete="off"
-                        hx-get="/api/companies/search" hx-trigger="keyup changed delay:500ms, search"
+                        hx-get="/api/companies/search" hx-trigger="input changed delay:300ms, search, focus"
                         hx-target="#company-search-results"
                         style="width: 160px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.8rem 1rem; color: var(--text-dim); outline: none; text-align: center;">
                     <ul id="company-search-results"
@@ -719,10 +719,12 @@
         document.addEventListener('DOMContentLoaded', function () {
             // Auto-fetch company name from ticker input
             const tickerInput = document.getElementById('yf-ticker-input');
+            const companyInput = document.getElementById('yf-company-name');
+            const searchResults = document.getElementById('company-search-results');
+
             if (tickerInput) {
                 tickerInput.addEventListener('input', function (e) {
                     const val = (e.target.value.trim()).replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
-                    const companyInput = document.getElementById('yf-company-name');
 
                     if (val.length >= 4 && /^\d{4}/.test(val)) {
                         fetch(`/api/companies/get-name?q=${val}`)
@@ -734,6 +736,26 @@
                             })
                             .catch(err => console.error('Error fetching company name:', err));
                     }
+                });
+            }
+
+            // Close search results when clicking outside
+            document.addEventListener('click', function (e) {
+                if (companyInput && searchResults &&
+                    !companyInput.contains(e.target) &&
+                    !searchResults.contains(e.target)) {
+                    searchResults.innerHTML = '';
+                }
+            });
+
+            // Clear search results when company input loses focus (delayed)
+            if (companyInput) {
+                companyInput.addEventListener('blur', function () {
+                    setTimeout(function () {
+                        if (searchResults) {
+                            searchResults.innerHTML = '';
+                        }
+                    }, 200);
                 });
             }
 
