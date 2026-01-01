@@ -350,11 +350,26 @@
 
             // Hide all states
             if (loading) loading.style.display = 'block';
-            if (error) error.style.display = 'none';
-            if (premiumPrompt) premiumPrompt.style.display = 'none';
-            if (chartWrapper) chartWrapper.style.display = 'none';
-            if (priceInfo) priceInfo.style.display = 'none';
-            if (legend) legend.style.display = 'none';
+            if (error) {
+                error.classList.add('hidden');
+                error.style.display = 'none';
+            }
+            if (premiumPrompt) {
+                premiumPrompt.classList.add('hidden');
+                premiumPrompt.style.display = 'none';
+            }
+            if (chartWrapper) {
+                chartWrapper.classList.add('hidden');
+                chartWrapper.style.display = 'none';
+            }
+            if (priceInfo) {
+                priceInfo.classList.add('hidden');
+                priceInfo.style.display = 'none';
+            }
+            if (legend) {
+                legend.classList.add('hidden');
+                legend.style.display = 'none';
+            }
 
             // Update period buttons
             document.querySelectorAll('.period-btn').forEach(btn => {
@@ -377,7 +392,10 @@
 
                     if (data.error === 'premium_required') {
                         console.log('Premium required - showing upgrade prompt');
-                        if (premiumPrompt) premiumPrompt.style.display = 'block';
+                        if (premiumPrompt) {
+                            premiumPrompt.classList.remove('hidden');
+                            premiumPrompt.style.display = 'block';
+                        }
                         return;
                     }
 
@@ -385,6 +403,7 @@
                         console.log('Error:', data.error, data.message);
                         if (error) {
                             error.textContent = data.message || 'エラーが発生しました';
+                            error.classList.remove('hidden');
                             error.style.display = 'block';
                         }
                         return;
@@ -409,8 +428,14 @@
                         document.getElementById('ma-value').textContent = '¥' + data.latest_values.ma.toFixed(2);
                     }
 
-                    if (priceInfo) priceInfo.style.display = 'grid';
-                    if (legend) legend.style.display = 'grid';
+                    if (priceInfo) {
+                        priceInfo.classList.remove('hidden');
+                        priceInfo.style.display = 'grid';
+                    }
+                    if (legend) {
+                        legend.classList.remove('hidden');
+                        legend.style.display = 'grid';
+                    }
 
                     // Render chart
                     renderChart(data.chart_data);
@@ -419,6 +444,7 @@
                     if (loading) loading.style.display = 'none';
                     if (error) {
                         error.textContent = '通信エラー: ' + err.message;
+                        error.classList.remove('hidden');
                         error.style.display = 'block';
                     }
                 });
@@ -443,6 +469,7 @@
             }
 
             if (chartWrapper) {
+                chartWrapper.classList.remove('hidden');
                 chartWrapper.style.display = 'block';
                 console.log('Chart wrapper display set to block');
             }
