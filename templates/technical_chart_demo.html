@@ -100,40 +100,6 @@
             transform: translateY(-2px);
         }
 
-        .quick-select {
-            margin-top: 1.5rem;
-            text-align: center;
-        }
-
-        .quick-select p {
-            color: var(--text-dim);
-            margin-bottom: 0.75rem;
-            font-size: 0.9rem;
-        }
-
-        .quick-select-btns {
-            display: flex;
-            gap: 0.75rem;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .quick-btn {
-            padding: 0.5rem 1rem;
-            background: rgba(168, 85, 247, 0.2);
-            border: 1px solid rgba(168, 85, 247, 0.3);
-            border-radius: 0.5rem;
-            color: #c084fc;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 0.9rem;
-        }
-
-        .quick-btn:hover {
-            background: rgba(168, 85, 247, 0.3);
-            border-color: rgba(168, 85, 247, 0.5);
-        }
-
         .back-link {
             display: inline-block;
             margin-top: 2rem;
@@ -170,18 +136,6 @@
                 >
                 <button onclick="loadChartForTicker()">チャート表示</button>
             </div>
-
-            <div class="quick-select">
-                <p>クイック選択:</p>
-                <div class="quick-select-btns">
-                    <button class="quick-btn" onclick="selectTicker('7203')">トヨタ (7203)</button>
-                    <button class="quick-btn" onclick="selectTicker('6758')">ソニー (6758)</button>
-                    <button class="quick-btn" onclick="selectTicker('9984')">ソフトバンクG (9984)</button>
-                    <button class="quick-btn" onclick="selectTicker('6501')">日立 (6501)</button>
-                    <button class="quick-btn" onclick="selectTicker('8306')">三菱UFJ (8306)</button>
-                    <button class="quick-btn" onclick="selectTicker('4063')">信越化学 (4063)</button>
-                </div>
-            </div>
         </div>
 
         <!-- Chart Container -->
@@ -194,11 +148,6 @@
 
     <script>
         let currentTickerGlobal = '{{ default_ticker }}'; // Default ticker from server
-
-        function selectTicker(ticker) {
-            document.getElementById('ticker-input').value = ticker;
-            loadChartForTicker();
-        }
 
         function loadChartForTicker() {
             const ticker = document.getElementById('ticker-input').value.trim();
