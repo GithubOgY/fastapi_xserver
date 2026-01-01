@@ -516,17 +516,17 @@
             </p>
             <form hx-post="/api/yahoo-finance/lookup" hx-target="#yf-lookup-result" hx-swap="innerHTML"
                 hx-indicator="#yf-lookup-spinner"
-                style="display: flex; gap: 0.5rem; justify-content: center; margin-bottom: 1rem;">
+                style="display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; margin-bottom: 1rem;">
                 <input type="text" name="ticker_code" id="yf-ticker-input" placeholder="銘柄コード（例: 7203）"
                     style="width: 140px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.8rem 1rem; color: white; outline: none; text-align: center;">
-                <div style="position: relative; z-index: 100;">
+                <div style="position: relative; z-index: 100; min-width: 160px;">
                     <input type="text" id="yf-company-name" name="q" placeholder="企業名"
                         autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
                         hx-get="/api/companies/search" hx-trigger="input changed delay:300ms, focus"
                         hx-target="#company-search-results"
-                        style="width: 160px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.8rem 1rem; color: var(--text-dim); outline: none; text-align: center; position: relative; z-index: 101;">
+                        style="width: 100%; min-width: 160px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.8rem 1rem; color: var(--text-dim); outline: none; text-align: center; position: relative; z-index: 101;">
                     <ul id="company-search-results"
-                        style="position: absolute; top: 100%; left: 0; right: 0; background: rgba(15, 23, 42, 0.98); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 8px; max-height: 300px; overflow-y: auto; overflow-x: hidden; z-index: 9999; list-style: none; padding: 0; margin-top: 4px; box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.8); -webkit-overflow-scrolling: touch;">
+                        style="position: fixed; width: 280px; max-width: calc(100vw - 2rem); background: rgba(15, 23, 42, 0.98); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 8px; max-height: 300px; overflow-y: auto; overflow-x: hidden; z-index: 9999; list-style: none; padding: 0; margin-top: 4px; box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.8); -webkit-overflow-scrolling: touch; display: none;">
                     </ul>
                 </div>
                 <button type="submit"
@@ -786,6 +786,7 @@
                 if (companyInput && searchResults &&
                     !companyInput.contains(e.target) &&
                     !searchResults.contains(e.target)) {
+                    searchResults.style.display = 'none';
                     searchResults.innerHTML = '';
                 }
             });
@@ -796,21 +797,37 @@
                     setTimeout(function () {
                         if (searchResults && searchResults.innerHTML) {
                             // Only clear if not recently clicked on results
+                            searchResults.style.display = 'none';
                             searchResults.innerHTML = '';
                         }
                     }, 300);
                 });
             }
 
+            // Position dropdown list dynamically
+            function positionSearchResults() {
+                if (companyInput && searchResults) {
+                    const rect = companyInput.getBoundingClientRect();
+                    searchResults.style.top = (rect.bottom + 4) + 'px';
+                    searchResults.style.left = Math.max(16, rect.left) + 'px';
+                    debugLog('📍 List positioned at top:' + searchResults.style.top + ' left:' + searchResults.style.left);
+                }
+            }
+
             // Debug logging for PWA
             if (companyInput) {
                 companyInput.addEventListener('focus', function() {
                     debugLog('📝 Company input focused');
+                    positionSearchResults();
                 });
                 companyInput.addEventListener('input', function(e) {
                     debugLog('⌨️ Input: ' + e.target.value);
                 });
             }
+
+            // Reposition on scroll or resize
+            window.addEventListener('scroll', positionSearchResults);
+            window.addEventListener('resize', positionSearchResults);
 
             // HTMX debug logging and error handling
             document.body.addEventListener('htmx:beforeRequest', function(evt) {
@@ -825,6 +842,12 @@
                     debugLog('✅ Response received (' + contentLength + ' chars)', 'success');
                     if (contentLength > 0) {
                         debugLog('📋 List HTML updated');
+                        // Show and position the dropdown
+                        searchResults.style.display = 'block';
+                        positionSearchResults();
+                    } else {
+                        debugLog('📋 Empty response - hiding list');
+                        searchResults.style.display = 'none';
                     }
                 }
             });

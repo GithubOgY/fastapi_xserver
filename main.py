@@ -1298,7 +1298,7 @@ async def search_companies(
         company_name_escaped = company.name.replace("'", "\\'").replace('"', '\\"')
 
         # Use mousedown instead of click to fire before blur event
-        click_handler = f"debugLog('👆 Item clicked: {code}', 'success'); document.getElementById('yf-ticker-input').value = '{code}'; document.getElementById('yf-company-name').value = '{company_name_escaped}'; setTimeout(function(){{document.getElementById('company-search-results').innerHTML = '';}}, 100); return false;"
+        click_handler = f"debugLog('👆 Item clicked: {code}', 'success'); document.getElementById('yf-ticker-input').value = '{code}'; document.getElementById('yf-company-name').value = '{company_name_escaped}'; var list = document.getElementById('company-search-results'); list.style.display = 'none'; setTimeout(function(){{list.innerHTML = '';}}, 100); return false;"
 
         html_content += f"""
         <li style="padding: 0.75rem 1rem; cursor: pointer; font-size: 0.9rem; color: #e2e8f0; border-bottom: 1px solid rgba(255, 255, 255, 0.08); transition: background 0.2s; user-select: none; -webkit-tap-highlight-color: rgba(255, 255, 255, 0.1);"
