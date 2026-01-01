@@ -281,6 +281,22 @@ async def get_current_user(request: Request, db: Session = Depends(get_db)):
         return None
 
 
+async def get_current_user_optional(request: Request, db: Session = Depends(get_db)):
+    """Get current user if logged in, None otherwise (no redirect)"""
+    token = request.cookies.get("access_token")
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            return None
+        user = db.query(User).filter(User.username == username).first()
+        return user
+    except JWTError:
+        return None
+
+
 # --- Yahoo Finance Data Fetching ---
 def sync_stock_data(db: Session, target_ticker: Optional[str] = None):
     # 特定の銘柄、または全銘柄
