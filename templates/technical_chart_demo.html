@@ -166,7 +166,7 @@
                     type="text"
                     id="ticker-input"
                     placeholder="例: 7203"
-                    value="7203"
+                    value="{{ default_ticker }}"
                 >
                 <button onclick="loadChartForTicker()">チャート表示</button>
             </div>
@@ -193,7 +193,7 @@
     </div>
 
     <script>
-        let currentTickerGlobal = '7203'; // Default ticker
+        let currentTickerGlobal = '{{ default_ticker }}'; // Default ticker from server
 
         function selectTicker(ticker) {
             document.getElementById('ticker-input').value = ticker;

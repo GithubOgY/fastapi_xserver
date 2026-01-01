@@ -860,11 +860,19 @@ async def premium_page(request: Request, current_user: Optional[User] = Depends(
     })
 
 @app.get("/technical-chart", response_class=HTMLResponse)
-async def technical_chart_demo(request: Request, current_user: Optional[User] = Depends(get_current_user_optional)):
+async def technical_chart_demo(
+    request: Request,
+    ticker: Optional[str] = Query(None),
+    current_user: Optional[User] = Depends(get_current_user_optional)
+):
     """Technical Analysis Chart Demo Page - Premium Feature Showcase"""
+    # Default ticker or from query parameter
+    default_ticker = ticker if ticker else "7203"
+
     return templates.TemplateResponse("technical_chart_demo.html", {
         "request": request,
-        "user": current_user
+        "user": current_user,
+        "default_ticker": default_ticker
     })
 
 @app.post("/api/test-email")
@@ -1803,10 +1811,16 @@ async def lookup_yahoo_finance(
                         <div style="color: {change_color}; font-size: 1rem; font-weight: 600; margin-top: 0.3rem;">
                             {change_sign}{change:,.0f} ({change_sign}{change_pct:.2f}%)
                         </div>
-                        <a href="/edinet?code={code_str}&company_name={edinet_name}" 
-                           style="display: inline-flex; align-items: center; gap: 0.3rem; margin-top: 0.5rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; text-decoration: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);">
-                           <span>📄</span> EDINETで分析
-                        </a>
+                        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap;">
+                            <a href="/technical-chart?ticker={code_only}"
+                               style="display: inline-flex; align-items: center; gap: 0.3rem; background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%); color: white; text-decoration: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600; box-shadow: 0 2px 4px rgba(168, 85, 247, 0.2);">
+                               <span>📈</span> テクニカルチャート
+                            </a>
+                            <a href="/edinet?code={code_str}&company_name={edinet_name}"
+                               style="display: inline-flex; align-items: center; gap: 0.3rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; text-decoration: none; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);">
+                               <span>📄</span> EDINETで分析
+                            </a>
+                        </div>
                     </div>
                 </div>
                 
