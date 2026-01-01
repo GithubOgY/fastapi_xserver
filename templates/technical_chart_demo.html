@@ -430,14 +430,24 @@
             const ctx = document.getElementById('technical-chart');
             const chartWrapper = document.getElementById('chart-wrapper');
 
-            if (!ctx) return;
+            console.log('renderChart called', {ctx: !!ctx, chartWrapper: !!chartWrapper, chartData});
+
+            if (!ctx) {
+                console.error('Canvas element not found!');
+                return;
+            }
 
             if (chartInstance) {
+                console.log('Destroying existing chart instance');
                 chartInstance.destroy();
             }
 
-            if (chartWrapper) chartWrapper.style.display = 'block';
+            if (chartWrapper) {
+                chartWrapper.style.display = 'block';
+                console.log('Chart wrapper display set to block');
+            }
 
+            console.log('Creating new Chart instance...');
             chartInstance = new Chart(ctx.getContext('2d'), {
                 type: 'line',
                 data: chartData,
@@ -529,6 +539,7 @@
                     }
                 }
             });
+            console.log('Chart instance created successfully!', chartInstance);
         }
 
         // Auto-load on page load
