@@ -1293,16 +1293,16 @@ async def search_companies(
         # Extract 4-digit code for cleaner display
         code = company.code_4digit if company.code_4digit else company.ticker.split('.')[0]
         
-        # Create list item with cursor-pointer and hover effect
-        # On click/touch, fill inputs and hide list
-        click_handler = f"document.getElementById('yf-ticker-input').value = '{code}'; document.getElementById('yf-company-name').value = '{company.name}'; document.getElementById('company-search-results').innerHTML = ''; event.preventDefault();"
+        # Create list item with better mobile touch handling
+        # Use mousedown instead of click to fire before blur event
+        click_handler = f"console.log('[PWA Debug] Item clicked: {code}'); document.getElementById('yf-ticker-input').value = '{code}'; document.getElementById('yf-company-name').value = '{company.name}'; setTimeout(function(){{document.getElementById('company-search-results').innerHTML = '';}}, 100); return false;"
 
         html_content += f"""
-        <li style="padding: 0.75rem; cursor: pointer; font-size: 0.9rem; color: #e2e8f0; border-bottom: 1px solid rgba(255, 255, 255, 0.08); transition: background 0.2s;"
+        <li style="padding: 0.75rem 1rem; cursor: pointer; font-size: 0.9rem; color: #e2e8f0; border-bottom: 1px solid rgba(255, 255, 255, 0.08); transition: background 0.2s; user-select: none; -webkit-tap-highlight-color: rgba(255, 255, 255, 0.1);"
             onmouseover="this.style.background='rgba(255, 255, 255, 0.1)';"
             onmouseout="this.style.background='transparent';"
-            onclick="{click_handler}"
-            ontouchend="{click_handler}">
+            onmousedown="{click_handler}"
+            ontouchstart="{click_handler}">
             <span style="font-weight: bold; color: #10b981; margin-right: 0.5rem;">{code}</span>
             <span>{company.name}</span>
         </li>

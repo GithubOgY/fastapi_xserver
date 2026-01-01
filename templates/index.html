@@ -519,13 +519,14 @@
                 style="display: flex; gap: 0.5rem; justify-content: center; margin-bottom: 1rem;">
                 <input type="text" name="ticker_code" id="yf-ticker-input" placeholder="銘柄コード（例: 7203）"
                     style="width: 140px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.8rem 1rem; color: white; outline: none; text-align: center;">
-                <div style="position: relative;">
-                    <input type="search" id="yf-company-name" name="q" placeholder="企業名" autocomplete="off"
-                        hx-get="/api/companies/search" hx-trigger="input changed delay:300ms, search, focus"
+                <div style="position: relative; z-index: 100;">
+                    <input type="text" id="yf-company-name" name="q" placeholder="企業名"
+                        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+                        hx-get="/api/companies/search" hx-trigger="input changed delay:300ms, focus"
                         hx-target="#company-search-results"
-                        style="width: 160px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.8rem 1rem; color: var(--text-dim); outline: none; text-align: center;">
+                        style="width: 160px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.8rem 1rem; color: var(--text-dim); outline: none; text-align: center; position: relative; z-index: 101;">
                     <ul id="company-search-results"
-                        style="position: absolute; top: 100%; left: 0; right: 0; background: rgba(15, 23, 42, 0.95); border: 1px solid var(--glass-border); border-radius: 8px; max-height: 300px; overflow-y: auto; z-index: 50; list-style: none; padding: 0; margin-top: 4px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);">
+                        style="position: absolute; top: 100%; left: 0; right: 0; background: rgba(15, 23, 42, 0.98); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 8px; max-height: 300px; overflow-y: auto; overflow-x: hidden; z-index: 9999; list-style: none; padding: 0; margin-top: 4px; box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.8); -webkit-overflow-scrolling: touch;">
                     </ul>
                 </div>
                 <button type="submit"
@@ -748,16 +749,53 @@
                 }
             });
 
-            // Clear search results when company input loses focus (delayed)
+            // Clear search results when company input loses focus (delayed to allow click)
             if (companyInput) {
                 companyInput.addEventListener('blur', function () {
                     setTimeout(function () {
-                        if (searchResults) {
+                        if (searchResults && searchResults.innerHTML) {
+                            // Only clear if not recently clicked on results
                             searchResults.innerHTML = '';
                         }
-                    }, 200);
+                    }, 300);
                 });
             }
+
+            // Debug logging for PWA
+            if (companyInput) {
+                companyInput.addEventListener('focus', function() {
+                    console.log('[PWA Debug] Company input focused');
+                });
+                companyInput.addEventListener('input', function(e) {
+                    console.log('[PWA Debug] Input event:', e.target.value);
+                });
+            }
+
+            // HTMX debug logging and error handling
+            document.body.addEventListener('htmx:beforeRequest', function(evt) {
+                if (evt.detail.path && evt.detail.path.includes('/api/companies/search')) {
+                    console.log('[PWA Debug] HTMX request to:', evt.detail.path);
+                    console.log('[PWA Debug] Request headers:', evt.detail.xhr);
+                }
+            });
+
+            document.body.addEventListener('htmx:afterSwap', function(evt) {
+                if (evt.detail.pathInfo && evt.detail.pathInfo.requestPath.includes('/api/companies/search')) {
+                    console.log('[PWA Debug] HTMX response received, target:', evt.detail.target.id);
+                    console.log('[PWA Debug] Response content:', evt.detail.target.innerHTML);
+                    console.log('[PWA Debug] Response length:', evt.detail.target.innerHTML.length);
+                }
+            });
+
+            document.body.addEventListener('htmx:responseError', function(evt) {
+                if (evt.detail.pathInfo && evt.detail.pathInfo.requestPath.includes('/api/companies/search')) {
+                    console.error('[PWA Debug] HTMX error:', evt.detail);
+                }
+            });
+
+            document.body.addEventListener('htmx:sendError', function(evt) {
+                console.error('[PWA Debug] HTMX send error:', evt.detail);
+            });
 
             var lastTicker = '{{ last_ticker }}';
             if (lastTicker && lastTicker.trim() !== '') {
