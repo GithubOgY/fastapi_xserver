@@ -4,9 +4,10 @@ Premium Plan Management Utilities
 This module handles premium tier access control and feature gating.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 from typing import Optional
-from database import User
+from sqlalchemy.orm import Session
+from database import User, AIUsageTracking
 
 
 class PremiumTier:
@@ -207,3 +208,88 @@ def get_tier_badge_html(tier: str) -> str:
         PremiumTier.ENTERPRISE: '<span style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">💎 ENTERPRISE</span>',
     }
     return badges.get(tier, badges[PremiumTier.FREE])
+
+
+def get_ai_usage_today(db: Session, user: User) -> int:
+    """
+    Get the number of AI analyses used today by the user.
+
+    Args:
+        db: Database session
+        user: User object
+
+    Returns:
+        int: Number of AI analyses used today
+    """
+    if not user:
+        return 0
+
+    today = date.today()
+    usage_record = db.query(AIUsageTracking).filter(
+        AIUsageTracking.user_id == user.id,
+        AIUsageTracking.usage_date == today
+    ).first()
+
+    return usage_record.usage_count if usage_record else 0
+
+
+def increment_ai_usage(db: Session, user: User) -> bool:
+    """
+    Increment AI usage for today. Creates a new record if it doesn't exist.
+
+    Args:
+        db: Database session
+        user: User object
+
+    Returns:
+        bool: True if incremented successfully, False if limit reached
+    """
+    if not user:
+        return False
+
+    today = date.today()
+    limit = get_feature_limit(user, "ai_analyses")
+
+    # Get or create today's usage record
+    usage_record = db.query(AIUsageTracking).filter(
+        AIUsageTracking.user_id == user.id,
+        AIUsageTracking.usage_date == today
+    ).first()
+
+    if usage_record:
+        # Check if limit reached
+        if usage_record.usage_count >= limit:
+            return False
+        # Increment count
+        usage_record.usage_count += 1
+    else:
+        # Create new record
+        usage_record = AIUsageTracking(
+            user_id=user.id,
+            usage_date=today,
+            usage_count=1
+        )
+        db.add(usage_record)
+
+    db.commit()
+    return True
+
+
+def check_ai_usage_limit(db: Session, user: User) -> bool:
+    """
+    Check if user has remaining AI analyses available today.
+
+    Args:
+        db: Database session
+        user: User object
+
+    Returns:
+        bool: True if user can use AI analysis, False if limit reached
+    """
+    if not user:
+        return False
+
+    today_usage = get_ai_usage_today(db, user)
+    limit = get_feature_limit(user, "ai_analyses")
+
+    return today_usage < limit

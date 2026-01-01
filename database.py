@@ -190,5 +190,20 @@ class AIAnalysisHistory(Base):
     # 注意: ユニーク制約なし（同じ銘柄の複数履歴を許可）
 
 
+class AIUsageTracking(Base):
+    """Track AI analysis usage per user per day for premium tier limits"""
+    __tablename__ = "ai_usage_tracking"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    usage_date = Column(Date, index=True, nullable=False)  # Date in UTC
+    usage_count = Column(Integer, default=0, nullable=False)  # Number of AI analyses on this date
+
+    # Composite unique constraint: one row per user per day
+    __table_args__ = (
+        UniqueConstraint('user_id', 'usage_date', name='_user_date_uc'),
+    )
+
+
 # DB initialization
 Base.metadata.create_all(bind=engine)

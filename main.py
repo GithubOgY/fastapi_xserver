@@ -24,7 +24,7 @@ import pandas as pd
 from utils.edinet_enhanced import get_financial_history, format_financial_data, search_company_reports, process_document
 from utils.growth_analysis import analyze_growth_quality
 from utils.ai_analysis import analyze_stock_with_ai, analyze_financial_health, analyze_business_competitiveness, analyze_risk_governance, analyze_dashboard_image
-from utils.premium import get_user_tier, get_tier_display_name, get_tier_badge_html, has_feature_access, get_feature_limit, is_premium_active
+from utils.premium import get_user_tier, get_tier_display_name, get_tier_badge_html, has_feature_access, get_feature_limit, is_premium_active, get_ai_usage_today, increment_ai_usage, check_ai_usage_limit
 
 # Load environment variables
 load_dotenv()
@@ -796,13 +796,14 @@ async def account_page(request: Request, db: Session = Depends(get_db), current_
     favorites_count = db.query(UserFavorite).filter(UserFavorite.user_id == current_user.id).count()
     favorites_limit = get_feature_limit(current_user, "favorites")
 
-    # AI analyses today (you would track this in a usage table in production)
+    # AI analyses today
+    ai_analyses_today = get_ai_usage_today(db, current_user)
     ai_analyses_limit = get_feature_limit(current_user, "ai_analyses")
 
     premium_usage = {
         "favorites_count": favorites_count,
         "favorites_limit": favorites_limit,
-        "ai_analyses_today": 0,  # Placeholder - implement tracking in production
+        "ai_analyses_today": ai_analyses_today,
         "ai_analyses_limit": ai_analyses_limit,
     }
 
@@ -3100,23 +3101,24 @@ def _format_summary(normalized: dict) -> str:
 
 # Helper function for specialized AI analysis with caching
 def _run_specialized_analysis(
-    analysis_func, 
-    analysis_type: str, 
-    code: str, 
-    name: str, 
-    db: Session
+    analysis_func,
+    analysis_type: str,
+    code: str,
+    name: str,
+    db: Session,
+    user: User = None
 ):
-    """Common logic for specialized AI analysis with caching"""
+    """Common logic for specialized AI analysis with caching and usage tracking"""
     cache_days = 7
     clean_code = code.replace(".T", "")
-    
+
     # Check cache
     cached = db.query(AIAnalysisCache).filter(
         AIAnalysisCache.ticker_code == clean_code,
         AIAnalysisCache.analysis_type == analysis_type,
         AIAnalysisCache.expires_at > datetime.utcnow()
     ).first()
-    
+
     if cached:
         logger.info(f"[AI Cache HIT] {clean_code}/{analysis_type}")
         cache_date = cached.created_at.strftime("%Y-%m-%d %H:%M") if cached.created_at else ""
@@ -3127,9 +3129,34 @@ def _run_specialized_analysis(
         </div>
         <div>{cached.analysis_html}</div>
         """
-    
+
+    # Check AI usage limit before generating new analysis
+    if user and not check_ai_usage_limit(db, user):
+        tier = get_user_tier(user)
+        limit = get_feature_limit(user, "ai_analyses")
+        usage = get_ai_usage_today(db, user)
+        return f"""
+            <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 1.5rem; text-align: center; margin: 1rem 0;">
+                <h3 style="color: #f59e0b; margin-bottom: 1rem;">⭐ 本日のAI分析上限に達しました</h3>
+                <p style="color: #94a3b8; margin-bottom: 0.5rem;">
+                    現在のプラン（{get_tier_display_name(tier)}）では1日{limit}回まで利用できます。
+                </p>
+                <p style="color: #94a3b8; margin-bottom: 1rem;">
+                    本日の利用回数: {usage}/{limit}回
+                </p>
+                <a href="/premium" style="display: inline-block; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; transition: all 0.3s ease;">
+                    プレミアムプランにアップグレード
+                </a>
+            </div>
+        """
+
     # Generate new
     logger.info(f"[AI Cache MISS] {clean_code}/{analysis_type} - generating")
+
+    # Increment usage counter BEFORE API call
+    if user:
+        increment_ai_usage(db, user)
+        logger.info(f"[AI Usage] User {user.username} - {get_ai_usage_today(db, user)}/{get_feature_limit(user, 'ai_analyses')}")
     
     # Get financial context - include both numeric and text data
     financial_context = {}
@@ -3196,7 +3223,7 @@ def api_ai_analyze_financial(
     if not current_user:
         return "<div class='text-red-400'>ログインが必要です</div>"
     try:
-        return _run_specialized_analysis(analyze_financial_health, "financial", code, name, db)
+        return _run_specialized_analysis(analyze_financial_health, "financial", code, name, db, current_user)
     except Exception as e:
         logger.error(f"Financial analysis error: {e}")
         return f"<div class='text-red-400'>エラー: {str(e)}</div>"
@@ -3212,7 +3239,7 @@ def api_ai_analyze_business(
     if not current_user:
         return "<div class='text-red-400'>ログインが必要です</div>"
     try:
-        return _run_specialized_analysis(analyze_business_competitiveness, "business", code, name, db)
+        return _run_specialized_analysis(analyze_business_competitiveness, "business", code, name, db, current_user)
     except Exception as e:
         logger.error(f"Business analysis error: {e}")
         return f"<div class='text-red-400'>エラー: {str(e)}</div>"
@@ -3228,7 +3255,7 @@ def api_ai_analyze_risk(
     if not current_user:
         return "<div class='text-red-400'>ログインが必要です</div>"
     try:
-        return _run_specialized_analysis(analyze_risk_governance, "risk", code, name, db)
+        return _run_specialized_analysis(analyze_risk_governance, "risk", code, name, db, current_user)
     except Exception as e:
         logger.error(f"Risk analysis error: {e}")
         return f"<div class='text-red-400'>エラー: {str(e)}</div>"
@@ -3295,9 +3322,33 @@ async def api_ai_visual_analyze(
 
         logger.info(f"[Visual Cache MISS] {clean_code} - generating new analysis")
 
+        # Check AI usage limit before generating new analysis
+        if not check_ai_usage_limit(db, current_user):
+            tier = get_user_tier(current_user)
+            limit = get_feature_limit(current_user, "ai_analyses")
+            usage = get_ai_usage_today(db, current_user)
+            return HTMLResponse(content=f"""
+                <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 1.5rem; text-align: center; margin: 1rem 0;">
+                    <h3 style="color: #f59e0b; margin-bottom: 1rem;">⭐ 本日のAI分析上限に達しました</h3>
+                    <p style="color: #94a3b8; margin-bottom: 0.5rem;">
+                        現在のプラン（{get_tier_display_name(tier)}）では1日{limit}回まで利用できます。
+                    </p>
+                    <p style="color: #94a3b8; margin-bottom: 1rem;">
+                        本日の利用回数: {usage}/{limit}回
+                    </p>
+                    <a href="/premium" style="display: inline-block; padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; transition: all 0.3s ease;">
+                        プレミアムプランにアップグレード
+                    </a>
+                </div>
+            """, status_code=200)
+
         # Validate image data exists
         if not image_data or len(image_data) < 100:
             return HTMLResponse(content="<p class='error' style='color: #fb7185;'>画像データが無効です</p>", status_code=400)
+
+        # Increment usage counter BEFORE API call
+        increment_ai_usage(db, current_user)
+        logger.info(f"[AI Usage] User {current_user.username} - {get_ai_usage_today(db, current_user)}/{get_feature_limit(current_user, 'ai_analyses')}")
 
         # Call the visual analysis function - returns dict (StructuredAnalysisResult)
         analysis_data = analyze_dashboard_image(image_data, clean_code, company_name)
