@@ -697,8 +697,27 @@ def analyze_dashboard_image(image_base64: str, ticker_code: str, company_name: s
     # Validate base64 data
     try:
         image_bytes = base64.b64decode(image_base64)
+        image_size_kb = len(image_bytes) / 1024
         if len(image_bytes) < 1000:  # Less than 1KB - likely invalid
             raise ValueError("Image data too small")
+        
+        # 画像品質のログ出力（デバッグ用）
+        logger.info(f"Image size: {image_size_kb:.2f} KB")
+        
+        # 画像の解像度を確認（PILを使用）
+        try:
+            import io
+            from PIL import Image
+            img = Image.open(io.BytesIO(image_bytes))
+            width, height = img.size
+            logger.info(f"Image dimensions: {width}x{height} pixels")
+            
+            # 解像度が低すぎる場合は警告
+            if width < 800 or height < 600:
+                logger.warning(f"Image resolution may be too low for accurate analysis: {width}x{height}")
+        except Exception as img_check_error:
+            logger.warning(f"Could not check image dimensions: {img_check_error}")
+            
     except Exception as e:
         logger.error(f"Invalid image data: {e}")
         raise ValueError(f"画像データが無効です: {str(e)}")
@@ -736,11 +755,26 @@ def analyze_dashboard_image(image_base64: str, ticker_code: str, company_name: s
 
 添付された財務ダッシュボード画像を分析し、JSON形式で構造化された評価を返してください。
 
+## 重要: 数値読み取りの精度向上
+画像から数値を読み取る際は、以下の手順を厳密に守ってください：
+
+1. **グラフの軸ラベルを確認**: Y軸の単位（億円、%など）を正確に読み取る
+2. **数値の正確な読み取り**: グラフ上の数値やラベルを拡大して確認し、小数点以下も含めて正確に読み取る
+3. **トレンドの確認**: 複数年のデータがある場合、各年の値を個別に読み取り、トレンドを正確に把握する
+4. **単位の統一**: 億円、万円、%などの単位を混同しない
+5. **計算の検証**: CAGR、利益率などの計算値は、読み取った生データから再計算して検証する
+
 ## ダッシュボードの構成
 1. 売上/営業利益グラフ（棒グラフ）+ 営業利益率（折れ線）
+   - 各年の売上高と営業利益を正確に読み取り、営業利益率を計算
+   - グラフのY軸の単位（億円など）を確認
 2. キャッシュフロー推移（営業CF/投資CF/財務CF/フリーCF/ネットCF）
+   - 各CFの値を年ごとに正確に読み取り、プラス/マイナスを正確に判定
 3. 財務健全性（有利子負債/ROE/ROA）
+   - 自己資本比率、有利子負債、ROE、ROAの数値を正確に読み取り
 4. 成長性分析（売上CAGR/EPS CAGR/10%目標ライン比較）
+   - CAGRの計算値とグラフ上の表示値を両方確認
+   - 10%目標ラインとの比較を正確に行う
 
 ## スコアリング基準（0-100点）
 
@@ -792,8 +826,9 @@ def analyze_dashboard_image(image_base64: str, ticker_code: str, company_name: s
 - **Strong Sell**: 総合29点以下。財務・成長性・リスクに重大な問題あり
 
 ## 注意事項
+- **数値読み取りの最優先**: グラフから数値を読み取る際は、拡大して確認し、軸ラベル、単位、小数点以下まで正確に読み取ること
+- **読み取った数値の記録**: 分析の根拠となる具体的な数値（例：売上高○○億円、営業利益率○○%）をsummaryに記載すること
 - お世辞は不要。問題点は遠慮なく指摘すること
-- 数字の読み取りは正確に
 - 業界特有の事情は考慮しつつも、投資家視点で厳格に評価
 - 曖昧な表現は避け、明確な判断を示すこと
 - strengthsとweaknessesは各最大3項目まで、簡潔に
@@ -846,13 +881,14 @@ JSON形式で回答してください（フィールド名は英語、値は日�
             ]
 
             # Generate with config - use vision-capable model with JSON response
-            vision_model = "gemini-2.5-flash-lite"  # Fixed vision model for image analysis
+            # より高精度なモデルを使用（画像分析の精度向上のため）
+            vision_model = os.getenv("GEMINI_VISION_MODEL", "gemini-2.0-flash-exp")  # より高精度なモデルに変更
             logger.info(f"Using vision model: {vision_model} with JSON output")
             response = client.models.generate_content(
                 model=vision_model,
                 contents=contents,
                 config=types.GenerateContentConfig(
-                    temperature=0.5,  # Lower temperature for more consistent JSON
+                    temperature=0.2,  # 数値読み取りの精度向上のため温度を下げる（0.5→0.2）
                     max_output_tokens=2000,
                     response_mime_type="application/json",
                     response_schema=json_schema,
@@ -883,8 +919,8 @@ JSON形式で回答してください（フィールド名は英語、値は日�
             import google.generativeai as genai_legacy
 
             genai_legacy.configure(api_key=api_key)
-            # Use vision-capable model for image analysis
-            vision_model = "gemini-2.5-flash-lite"  # Force vision-capable model
+            # Use vision-capable model for image analysis - より高精度なモデルに変更
+            vision_model = os.getenv("GEMINI_VISION_MODEL", "gemini-2.0-flash-exp")  # より高精度なモデルに変更
             logger.info(f"Using vision model: {vision_model}")
             model = genai_legacy.GenerativeModel(vision_model)
 
@@ -898,7 +934,7 @@ JSON形式で回答してください（フィールド名は英語、値は日�
             response = model.generate_content(
                 [json_prompt, image],
                 generation_config=genai_legacy.types.GenerationConfig(
-                    temperature=0.5,
+                    temperature=0.2,  # 数値読み取りの精度向上のため温度を下げる（0.5→0.2）
                     max_output_tokens=2000,
                 )
             )

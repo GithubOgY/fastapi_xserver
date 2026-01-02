@@ -2444,10 +2444,12 @@ async def lookup_yahoo_finance(
 
                         const canvas = await html2canvas(chartSection, {{
                             backgroundColor: '#0f172a',
-                            scale: 1.2,
+                            scale: 2.0,  // 解像度を向上（1.2→2.0）してグラフの数値やラベルを読み取りやすく
                             useCORS: true,
                             logging: false,
                             willReadFrequently: true,
+                            windowWidth: chartSection.scrollWidth,
+                            windowHeight: chartSection.scrollHeight,
                             onclone: (clonedDoc) => {{
                                 // Set willReadFrequently for all canvas elements to suppress warnings
                                 const canvases = clonedDoc.getElementsByTagName('canvas');
