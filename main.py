@@ -896,11 +896,29 @@ async def login_page(request: Request, error: str = None):
     return templates.TemplateResponse("login.html", {"request": request, "error": error})
 
 @app.post("/login")
-async def login(response: Response, username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+async def login(request: Request, response: Response, username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == username).first()
+
+    # ログイン失敗の監査ログ
     if not user or not verify_password(password, user.hashed_password):
+        await create_audit_log(
+            db=db,
+            action_type="LOGIN_FAILED",
+            action_category="AUTH",
+            request=request,
+            details={"username": username, "reason": "Invalid credentials"}
+        )
         return RedirectResponse(url="/login?error=ユーザー名またはパスワードが違います", status_code=status.HTTP_303_SEE_OTHER)
-    
+
+    # ログイン成功の監査ログ
+    await create_audit_log(
+        db=db,
+        action_type="LOGIN_SUCCESS",
+        action_category="AUTH",
+        request=request,
+        user=user
+    )
+
     access_token = create_access_token(data={"sub": user.username})
     response = RedirectResponse(url="/dashboard", status_code=status.HTTP_303_SEE_OTHER)
     response.set_cookie(key="access_token", value=access_token, httponly=True)
@@ -915,10 +933,21 @@ async def register(request: Request, username: str = Form(...), password: str = 
     existing_user = db.query(User).filter(User.username == username).first()
     if existing_user:
         return HTMLResponse(content="<p style='color:red;'>このユーザー名はお使いいただけません</p>", status_code=400)
-    
+
     new_user = User(username=username, hashed_password=get_hashed_password(password))
     db.add(new_user)
     db.commit()
+    db.refresh(new_user)
+
+    # 新規登録の監査ログ
+    await create_audit_log(
+        db=db,
+        action_type="REGISTER",
+        action_category="AUTH",
+        request=request,
+        user=new_user
+    )
+
     return RedirectResponse(url=f"/register/success?username={username}", status_code=status.HTTP_303_SEE_OTHER)
 
 @app.get("/register/success", response_class=HTMLResponse)
@@ -929,7 +958,20 @@ async def register_success(request: Request, username: str = ""):
     })
 
 @app.get("/logout")
-async def logout():
+async def logout(request: Request, db: Session = Depends(get_db)):
+    # 現在のユーザーを取得（オプショナル）
+    current_user = await get_current_user_optional(request, db)
+
+    # ログアウトの監査ログ
+    if current_user:
+        await create_audit_log(
+            db=db,
+            action_type="LOGOUT",
+            action_category="AUTH",
+            request=request,
+            user=current_user
+        )
+
     response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     response.delete_cookie("access_token")
     return response
