@@ -998,7 +998,7 @@ async def admin_audit_logs_page(
     page: int = 1,
     action_type: Optional[str] = None,
     action_category: Optional[str] = None,
-    user_id: Optional[int] = None,
+    user_id: Optional[str] = None,
     ip_address: Optional[str] = None,
     days: int = 30
 ):
@@ -1018,8 +1018,12 @@ async def admin_audit_logs_page(
         query = query.filter(AuditLog.action_type == action_type)
     if action_category:
         query = query.filter(AuditLog.action_category == action_category)
-    if user_id:
-        query = query.filter(AuditLog.user_id == user_id)
+    if user_id and user_id.strip():
+        try:
+            user_id_int = int(user_id)
+            query = query.filter(AuditLog.user_id == user_id_int)
+        except ValueError:
+            pass  # 無効な値は無視
     if ip_address:
         query = query.filter(AuditLog.ip_address.like(f"%{ip_address}%"))
 
