@@ -205,5 +205,38 @@ class AIUsageTracking(Base):
     )
 
 
+class AuditLog(Base):
+    """監査ログ - セキュリティとコンプライアンスのための操作履歴"""
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    # アクション情報
+    action_type = Column(String(50), index=True, nullable=False)  # LOGIN_SUCCESS, USER_DELETE など
+    action_category = Column(String(20), index=True, nullable=False)  # AUTH, ADMIN, MODERATION
+
+    # ユーザー情報
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    username = Column(String(50), nullable=True)  # ユーザー削除後も名前を保持
+
+    # リクエスト情報
+    ip_address = Column(String(45), nullable=True, index=True)  # IPv6対応
+    user_agent = Column(String(255), nullable=True)
+
+    # 対象リソース情報
+    target_type = Column(String(50), nullable=True)  # USER, COMMENT など
+    target_id = Column(Integer, nullable=True, index=True)
+    target_description = Column(String(200), nullable=True)
+
+    # 詳細情報（JSON形式）
+    details = Column(Text, nullable=True)
+
+    # タイムスタンプ
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True, nullable=False)
+
+    # Relationship
+    user = relationship("User")
+
+
 # DB initialization
 Base.metadata.create_all(bind=engine)

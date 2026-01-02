@@ -1,10 +1,10 @@
-from fastapi import FastAPI, Request, Form, Depends, HTTPException, status, Response, Query, BackgroundTasks
+﻿from fastapi import FastAPI, Request, Form, Depends, HTTPException, status, Response, Query, BackgroundTasks
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse
 from typing import Annotated, Optional, List
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, desc, func
-from database import SessionLocal, CompanyFundamental, User, Company, UserFavorite, StockComment, UserProfile, UserFollow, AIAnalysisCache, CommentLike
+from database import SessionLocal, CompanyFundamental, User, Company, UserFavorite, StockComment, UserProfile, UserFollow, AIAnalysisCache, CommentLike, AuditLog
 from utils.mail_sender import send_email
 from passlib.context import CryptContext
 from jose import JWTError, jwt
@@ -22,6 +22,7 @@ import urllib.parse
 import yfinance as yf
 import pandas as pd
 from utils.edinet_enhanced import get_financial_history, format_financial_data, search_company_reports, process_document
+
 from utils.growth_analysis import analyze_growth_quality
 from utils.ai_analysis import analyze_stock_with_ai, analyze_financial_health, analyze_business_competitiveness, analyze_risk_governance, analyze_dashboard_image
 from utils.premium import get_user_tier, get_tier_display_name, get_tier_badge_html, has_feature_access, get_feature_limit, is_premium_active, get_ai_usage_today, increment_ai_usage, check_ai_usage_limit
@@ -160,6 +161,63 @@ async def startup_event():
                     connection.execute(text("CREATE INDEX idx_ah_score ON ai_analysis_history(overall_score)"))
                 logger.info("[Migration] Successfully created 'ai_analysis_history' table with indexes.")
 
+            # Check audit_logs table
+            try:
+                connection.execute(text("SELECT id FROM audit_logs LIMIT 1"))
+                logger.info("[Migration] 'audit_logs' table exists.")
+            except Exception:
+                logger.info("[Migration] 'audit_logs' table missing. Creating it...")
+                if DATABASE_URL.startswith("sqlite"):
+                    connection.execute(text("""
+                        CREATE TABLE audit_logs (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            action_type VARCHAR(50) NOT NULL,
+                            action_category VARCHAR(20) NOT NULL,
+                            user_id INTEGER,
+                            username VARCHAR(50),
+                            ip_address VARCHAR(45),
+                            user_agent VARCHAR(255),
+                            target_type VARCHAR(50),
+                            target_id INTEGER,
+                            target_description VARCHAR(200),
+                            details TEXT,
+                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+                        )
+                    """))
+                    # Create indexes
+                    connection.execute(text("CREATE INDEX idx_audit_action_type ON audit_logs(action_type)"))
+                    connection.execute(text("CREATE INDEX idx_audit_category ON audit_logs(action_category)"))
+                    connection.execute(text("CREATE INDEX idx_audit_user_id ON audit_logs(user_id)"))
+                    connection.execute(text("CREATE INDEX idx_audit_ip ON audit_logs(ip_address)"))
+                    connection.execute(text("CREATE INDEX idx_audit_created ON audit_logs(created_at)"))
+                    connection.execute(text("CREATE INDEX idx_audit_target ON audit_logs(target_type, target_id)"))
+                else:  # PostgreSQL
+                    connection.execute(text("""
+                        CREATE TABLE audit_logs (
+                            id SERIAL PRIMARY KEY,
+                            action_type VARCHAR(50) NOT NULL,
+                            action_category VARCHAR(20) NOT NULL,
+                            user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                            username VARCHAR(50),
+                            ip_address VARCHAR(45),
+                            user_agent VARCHAR(255),
+                            target_type VARCHAR(50),
+                            target_id INTEGER,
+                            target_description VARCHAR(200),
+                            details TEXT,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+                        )
+                    """))
+                    # Create indexes
+                    connection.execute(text("CREATE INDEX idx_audit_action_type ON audit_logs(action_type)"))
+                    connection.execute(text("CREATE INDEX idx_audit_category ON audit_logs(action_category)"))
+                    connection.execute(text("CREATE INDEX idx_audit_user_id ON audit_logs(user_id)"))
+                    connection.execute(text("CREATE INDEX idx_audit_ip ON audit_logs(ip_address)"))
+                    connection.execute(text("CREATE INDEX idx_audit_created ON audit_logs(created_at)"))
+                    connection.execute(text("CREATE INDEX idx_audit_target ON audit_logs(target_type, target_id)"))
+                logger.info("[Migration] Successfully created 'audit_logs' table with indexes.")
+
             # Commit changes if not autocommited
             connection.commit()
     except Exception as e:
@@ -297,6 +355,115 @@ async def get_current_user_optional(request: Request, db: Session = Depends(get_
         return user
     except JWTError:
         return None
+
+
+# --- Audit Log Helper Functions ---
+def get_client_ip(request: Request) -> Optional[str]:
+    """
+    リクエストからクライアントIPアドレスを取得
+    プロキシ経由の場合は X-Forwarded-For ヘッダーを優先
+    """
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+
+    real_ip = request.headers.get("X-Real-IP")
+    if real_ip:
+        return real_ip.strip()
+
+    if request.client:
+        return request.client.host
+
+    return None
+
+
+def get_user_agent(request: Request) -> Optional[str]:
+    """User-Agentヘッダーを取得（最大255文字）"""
+    ua = request.headers.get("User-Agent", "")
+    return ua[:255] if ua else None
+
+
+async def create_audit_log(
+    db: Session,
+    action_type: str,
+    action_category: str,
+    request: Request,
+    user: Optional[User] = None,
+    target_type: Optional[str] = None,
+    target_id: Optional[int] = None,
+    target_description: Optional[str] = None,
+    details: Optional[dict] = None
+):
+    """
+    監査ログを作成
+
+    Args:
+        db: データベースセッション
+        action_type: アクション種別（LOGIN_SUCCESS, USER_DELETE など）
+        action_category: カテゴリ（AUTH, ADMIN, MODERATION）
+        request: FastAPIリクエストオブジェクト
+        user: 実行ユーザー（オプション）
+        target_type: 対象リソースタイプ（オプション）
+        target_id: 対象リソースID（オプション）
+        target_description: 対象の説明（オプション）
+        details: 追加情報の辞書（オプション、JSONとして保存）
+    """
+    try:
+        audit_log = AuditLog(
+            action_type=action_type,
+            action_category=action_category,
+            user_id=user.id if user else None,
+            username=user.username if user else None,
+            ip_address=get_client_ip(request),
+            user_agent=get_user_agent(request),
+            target_type=target_type,
+            target_id=target_id,
+            target_description=target_description,
+            details=json.dumps(details, ensure_ascii=False) if details else None
+        )
+        db.add(audit_log)
+        db.commit()
+
+        logger.info(
+            f"[AUDIT] {action_type} | User: {user.username if user else 'Anonymous'} | "
+            f"IP: {get_client_ip(request)} | Target: {target_type}#{target_id if target_id else 'N/A'}"
+        )
+    except Exception as e:
+        logger.error(f"Failed to create audit log: {e}")
+        db.rollback()
+
+
+def create_audit_log_sync(
+    db: Session,
+    action_type: str,
+    action_category: str,
+    ip_address: Optional[str],
+    user_agent: Optional[str],
+    user: Optional[User] = None,
+    target_type: Optional[str] = None,
+    target_id: Optional[int] = None,
+    target_description: Optional[str] = None,
+    details: Optional[dict] = None
+):
+    """同期版の監査ログ作成（バックグラウンドタスク用）"""
+    try:
+        audit_log = AuditLog(
+            action_type=action_type,
+            action_category=action_category,
+            user_id=user.id if user else None,
+            username=user.username if user else None,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            target_type=target_type,
+            target_id=target_id,
+            target_description=target_description,
+            details=json.dumps(details, ensure_ascii=False) if details else None
+        )
+        db.add(audit_log)
+        db.commit()
+    except Exception as e:
+        logger.error(f"Failed to create audit log (sync): {e}")
+        db.rollback()
 
 
 # --- Yahoo Finance Data Fetching ---
@@ -2946,6 +3113,8 @@ async def search_edinet_company(
                 ❌ エラー: {str(e)}
             </div>
         """, status_code=500)
+
+
 
 @app.post("/api/ai/analyze", response_class=HTMLResponse)
 def api_ai_analyze(
