@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>監査ログ - 管理者画面</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-links a {
+            color: #818cf8;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            background: rgba(129, 140, 248, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            background: rgba(129, 140, 248, 0.2);
+        }
+
+        .section {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(16px);
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .stats {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: rgba(129, 140, 248, 0.1);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(129, 140, 248, 0.2);
+        }
+
+        .stat-card .label {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-card .value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #818cf8;
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .filter-group label {
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            padding: 0.5rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(15, 23, 42, 0.5);
+            color: #e2e8f0;
+            font-size: 0.9rem;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: flex-end;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: rgba(129, 140, 248, 0.2);
+            border: 1px solid #818cf8;
+            color: #818cf8;
+        }
+
+        .btn-primary:hover {
+            background: rgba(129, 140, 248, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(100, 116, 139, 0.2);
+            border: 1px solid #64748b;
+            color: #94a3b8;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(100, 116, 139, 0.4);
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        th,
+        td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            color: #94a3b8;
+            font-weight: 500;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+
+        td {
+            color: #e2e8f0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .badge-auth {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+        }
+
+        .badge-admin {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .badge-moderation {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+
+        .badge-success {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .badge-failed {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .details-btn {
+            background: rgba(129, 140, 248, 0.1);
+            border: 1px solid rgba(129, 140, 248, 0.3);
+            color: #818cf8;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+
+        .details-btn:hover {
+            background: rgba(129, 140, 248, 0.2);
+        }
+
+        .details-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .details-modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h3 {
+            color: #818cf8;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .details-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .detail-item {
+            background: rgba(15, 23, 42, 0.5);
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .detail-item .label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-bottom: 0.5rem;
+        }
+
+        .detail-item .value {
+            color: #e2e8f0;
+            word-break: break-word;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .pagination a {
+            color: #818cf8;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            background: rgba(129, 140, 248, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .pagination a:hover {
+            background: rgba(129, 140, 248, 0.2);
+        }
+
+        .pagination .current-page {
+            color: #e2e8f0;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #64748b;
+            padding: 3rem;
+        }
+
+        .code {
+            font-family: 'Courier New', monospace;
+            background: rgba(15, 23, 42, 0.8);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 監査ログ</h1>
+            <div class="nav-links">
+                <a href="/admin/users">ユーザー管理</a>
+                <a href="/dashboard">ダッシュボード</a>
+                <a href="/logout">ログアウト</a>
+            </div>
+        </div>
+
+        <!-- 統計情報 -->
+        <div class="section">
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="label">総件数</div>
+                    <div class="value">{{ total_count }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">表示期間</div>
+                    <div class="value">{{ current_filters.days }}日間</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">現在のページ</div>
+                    <div class="value">{{ page }} / {{ total_pages }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- フィルター -->
+        <div class="section">
+            <form method="get" action="/admin/audit-logs">
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>アクションカテゴリ</label>
+                        <select name="action_category">
+                            <option value="">すべて</option>
+                            {% for cat in action_categories %}
+                            <option value="{{ cat }}" {% if current_filters.action_category == cat %}selected{% endif %}>
+                                {{ cat }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>アクション種別</label>
+                        <select name="action_type">
+                            <option value="">すべて</option>
+                            {% for type in action_types %}
+                            <option value="{{ type }}" {% if current_filters.action_type == type %}selected{% endif %}>
+                                {{ type }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>ユーザーID</label>
+                        <input type="number" name="user_id" value="{{ current_filters.user_id or '' }}" placeholder="例: 1">
+                    </div>
+
+                    <div class="filter-group">
+                        <label>IPアドレス</label>
+                        <input type="text" name="ip_address" value="{{ current_filters.ip_address or '' }}" placeholder="例: 192.168">
+                    </div>
+
+                    <div class="filter-group">
+                        <label>表示期間（日）</label>
+                        <input type="number" name="days" value="{{ current_filters.days }}" min="1" max="365">
+                    </div>
+
+                    <div class="filter-actions">
+                        <button type="submit" class="btn btn-primary">フィルター適用</button>
+                        <a href="/admin/audit-logs" class="btn btn-secondary">リセット</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- ログテーブル -->
+        <div class="section">
+            {% if logs %}
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>日時</th>
+                            <th>カテゴリ</th>
+                            <th>アクション</th>
+                            <th>ユーザー</th>
+                            <th>対象</th>
+                            <th>IPアドレス</th>
+                            <th>詳細</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td>{{ log.id }}</td>
+                            <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            <td>
+                                {% if log.action_category == 'AUTH' %}
+                                <span class="badge badge-auth">AUTH</span>
+                                {% elif log.action_category == 'ADMIN' %}
+                                <span class="badge badge-admin">ADMIN</span>
+                                {% elif log.action_category == 'MODERATION' %}
+                                <span class="badge badge-moderation">MOD</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="code">{{ log.action_type }}</span>
+                            </td>
+                            <td>
+                                {% if log.username %}
+                                {{ log.username }}
+                                {% if log.user_id %}
+                                <span style="color: #64748b;">(ID: {{ log.user_id }})</span>
+                                {% endif %}
+                                {% else %}
+                                <span style="color: #64748b;">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if log.target_description %}
+                                {{ log.target_description }}
+                                {% elif log.target_type %}
+                                {{ log.target_type }} #{{ log.target_id }}
+                                {% else %}
+                                <span style="color: #64748b;">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if log.ip_address %}
+                                <span class="code">{{ log.ip_address }}</span>
+                                {% else %}
+                                <span style="color: #64748b;">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if log.details %}
+                                <button class="details-btn" onclick="showDetails({{ log.id }}, {{ log.details|tojson }})">
+                                    詳細を見る
+                                </button>
+                                {% else %}
+                                <span style="color: #64748b;">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- ページネーション -->
+            {% if total_pages > 1 %}
+            <div class="pagination">
+                {% if page > 1 %}
+                <a href="/admin/audit-logs?page={{ page - 1 }}&action_category={{ current_filters.action_category or '' }}&action_type={{ current_filters.action_type or '' }}&user_id={{ current_filters.user_id or '' }}&ip_address={{ current_filters.ip_address or '' }}&days={{ current_filters.days }}">
+                    ← 前へ
+                </a>
+                {% endif %}
+
+                <span class="current-page">{{ page }} / {{ total_pages }}</span>
+
+                {% if page < total_pages %}
+                <a href="/admin/audit-logs?page={{ page + 1 }}&action_category={{ current_filters.action_category or '' }}&action_type={{ current_filters.action_type or '' }}&user_id={{ current_filters.user_id or '' }}&ip_address={{ current_filters.ip_address or '' }}&days={{ current_filters.days }}">
+                    次へ →
+                </a>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% else %}
+            <div class="empty-state">
+                <p>該当する監査ログがありません</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 詳細モーダル -->
+    <div class="details-modal" id="detailsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>詳細情報</h3>
+                <button class="modal-close" onclick="closeDetails()">&times;</button>
+            </div>
+            <div class="details-grid" id="detailsContent"></div>
+        </div>
+    </div>
+
+    <script>
+        function showDetails(logId, details) {
+            const modal = document.getElementById('detailsModal');
+            const content = document.getElementById('detailsContent');
+
+            // JSON詳細を表示
+            content.innerHTML = '';
+            for (const [key, value] of Object.entries(details)) {
+                const item = document.createElement('div');
+                item.className = 'detail-item';
+                item.innerHTML = `
+                    <div class="label">${key}</div>
+                    <div class="value">${typeof value === 'object' ? JSON.stringify(value, null, 2) : value}</div>
+                `;
+                content.appendChild(item);
+            }
+
+            modal.classList.add('active');
+        }
+
+        function closeDetails() {
+            const modal = document.getElementById('detailsModal');
+            modal.classList.remove('active');
+        }
+
+        // モーダル外クリックで閉じる
+        document.getElementById('detailsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDetails();
+            }
+        });
+    </script>
+</body>
+
+</html>

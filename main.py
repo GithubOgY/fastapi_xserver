@@ -8,7 +8,7 @@ from database import SessionLocal, CompanyFundamental, User, Company, UserFavori
 from utils.mail_sender import send_email
 from passlib.context import CryptContext
 from jose import JWTError, jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import os
 from dotenv import load_dotenv
 import sys
@@ -982,12 +982,80 @@ async def logout(request: Request, db: Session = Depends(get_db)):
 async def admin_users_page(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if not current_user or not current_user.is_admin:
         raise HTTPException(status_code=403, detail="管理者権限が必要です")
-    
+
     users = db.query(User).all()
     return templates.TemplateResponse("admin_users.html", {
         "request": request,
         "users": users,
         "user": current_user
+    })
+
+@app.get("/admin/audit-logs", response_class=HTMLResponse)
+async def admin_audit_logs_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    page: int = 1,
+    action_type: Optional[str] = None,
+    action_category: Optional[str] = None,
+    user_id: Optional[int] = None,
+    ip_address: Optional[str] = None,
+    days: int = 30
+):
+    """管理者用監査ログ一覧ページ"""
+    if not current_user or not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="管理者権限が必要です")
+
+    # ページネーション設定
+    per_page = 50
+    offset = (page - 1) * per_page
+
+    # ベースクエリ
+    query = db.query(AuditLog)
+
+    # フィルタリング
+    if action_type:
+        query = query.filter(AuditLog.action_type == action_type)
+    if action_category:
+        query = query.filter(AuditLog.action_category == action_category)
+    if user_id:
+        query = query.filter(AuditLog.user_id == user_id)
+    if ip_address:
+        query = query.filter(AuditLog.ip_address.like(f"%{ip_address}%"))
+
+    # 日数フィルタ
+    if days > 0:
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
+        query = query.filter(AuditLog.created_at >= cutoff_date)
+
+    # 総件数取得
+    total_count = query.count()
+    total_pages = (total_count + per_page - 1) // per_page
+
+    # データ取得（新しい順）
+    logs = query.order_by(AuditLog.created_at.desc()).offset(offset).limit(per_page).all()
+
+    # ユニークな値（フィルタ用）
+    action_types = db.query(AuditLog.action_type).distinct().all()
+    action_categories = db.query(AuditLog.action_category).distinct().all()
+
+    return templates.TemplateResponse("admin_audit_logs.html", {
+        "request": request,
+        "user": current_user,
+        "logs": logs,
+        "page": page,
+        "total_pages": total_pages,
+        "total_count": total_count,
+        "per_page": per_page,
+        "action_types": [t[0] for t in action_types],
+        "action_categories": [c[0] for c in action_categories],
+        "current_filters": {
+            "action_type": action_type,
+            "action_category": action_category,
+            "user_id": user_id,
+            "ip_address": ip_address,
+            "days": days
+        }
     })
 
 @app.post("/admin/users/{user_id}/delete")
