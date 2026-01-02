@@ -2514,15 +2514,31 @@ async def lookup_yahoo_finance(
                         const chartSection = document.getElementById('charts-only');
                         if (!chartSection) throw new Error('Chart section not found');
 
+                        // グラフが増えたため、全グラフを含むようにキャプチャ範囲を確実に設定
+                        // スクロール可能な要素の場合、全範囲をキャプチャする
+                        const fullWidth = Math.max(chartSection.scrollWidth, chartSection.offsetWidth, chartSection.clientWidth);
+                        const fullHeight = Math.max(chartSection.scrollHeight, chartSection.offsetHeight, chartSection.clientHeight);
+
                         const canvas = await html2canvas(chartSection, {{
                             backgroundColor: '#0f172a',
                             scale: 2.0,  // 解像度を向上（1.2→2.0）してグラフの数値やラベルを読み取りやすく
                             useCORS: true,
                             logging: false,
                             willReadFrequently: true,
-                            windowWidth: chartSection.scrollWidth,
-                            windowHeight: chartSection.scrollHeight,
+                            windowWidth: fullWidth,
+                            windowHeight: fullHeight,
+                            scrollX: 0,
+                            scrollY: 0,
+                            allowTaint: false,
                             onclone: (clonedDoc) => {{
+                                // クローンされた要素のスタイルを調整して全グラフが表示されるようにする
+                                const clonedSection = clonedDoc.getElementById('charts-only');
+                                if (clonedSection) {{
+                                    clonedSection.style.width = fullWidth + 'px';
+                                    clonedSection.style.height = fullHeight + 'px';
+                                    clonedSection.style.overflow = 'visible';
+                                    clonedSection.style.display = 'block';
+                                }}
                                 // Set willReadFrequently for all canvas elements to suppress warnings
                                 const canvases = clonedDoc.getElementsByTagName('canvas');
                                 for (let i = 0; i < canvases.length; i++) {{
