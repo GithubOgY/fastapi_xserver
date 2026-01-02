@@ -2358,36 +2358,106 @@ async def lookup_yahoo_finance(
                             throw new Error('html2canvas not loaded');
                         }}
                         
-                        const chartSection = document.getElementById('charts-only');
-                        if (!chartSection) {{
-                            throw new Error('Chart section not found');
-                        }}
-                        
-                        const canvas = await html2canvas(chartSection, {{
-                            backgroundColor: '#0f172a',
-                            scale: 1.5,
-                            useCORS: true,
-                            allowTaint: false,
-                            logging: false,
-                            willReadFrequently: true,
-                            onclone: (clonedDoc) => {{
-                                const el = clonedDoc.getElementById('charts-only');
-                                if (el) {{
-                                    el.style.width = chartSection.offsetWidth + 'px';
-                                    el.style.display = 'flex';
-                                }}
-                                // Set willReadFrequently for all canvas elements to suppress warnings
-                                const canvases = clonedDoc.getElementsByTagName('canvas');
-                                for (let i = 0; i < canvases.length; i++) {{
-                                    const ctx = canvases[i].getContext('2d', {{ willReadFrequently: true }});
+                        // 1. Create a temporary container for capturing
+                        const tempContainer = document.createElement('div');
+                        tempContainer.style.position = 'absolute';
+                        tempContainer.style.left = '-9999px';
+                        tempContainer.style.top = '0';
+                        tempContainer.style.width = '1200px'; 
+                        tempContainer.style.backgroundColor = '#0f172a';
+                        tempContainer.style.padding = '2rem';
+                        tempContainer.style.display = 'flex';
+                        tempContainer.style.flexDirection = 'column';
+                        tempContainer.style.gap = '2rem';
+                        document.body.appendChild(tempContainer);
+
+                        // Helper to safely clone and convert canvases to images
+                        async function cloneSectionWithImages(sourceId) {{
+                            const sourceEl = document.getElementById(sourceId);
+                            if (!sourceEl) return null;
+
+                            const clone = sourceEl.cloneNode(true);
+                            // Ensure the clone has display:block or flex so it has layout
+                            clone.style.display = 'block'; 
+                            
+                            // Get all canvases in original and clone
+                            const origCanvases = sourceEl.getElementsByTagName('canvas');
+                            const cloneCanvases = clone.getElementsByTagName('canvas');
+                            
+                            for (let i = 0; i < origCanvases.length; i++) {{
+                                const origCanvas = origCanvases[i];
+                                const cloneCanvas = cloneCanvases[i]; 
+                                
+                                if (origCanvas && cloneCanvas) {{
+                                    try {{
+                                        const img = document.createElement('img');
+                                        img.src = origCanvas.toDataURL('image/png');
+                                        img.style.width = '100%';
+                                        img.style.height = '100%';
+                                        img.style.display = 'block';
+                                        img.style.objectFit = 'contain';
+                                        
+                                        if(cloneCanvas.parentNode) {{
+                                            cloneCanvas.parentNode.replaceChild(img, cloneCanvas);
+                                        }}
+                                    }} catch (e) {{
+                                        console.warn('Canvas to image conversion failed:', e);
+                                    }}
                                 }}
                             }}
+                            return clone;
+                        }}
+
+                        // 2. Clone Main Charts
+                        const chartsClone = await cloneSectionWithImages('charts-only');
+                        if (chartsClone) {{
+                            chartsClone.style.display = 'flex';
+                            chartsClone.style.flexWrap = 'wrap';
+                            chartsClone.style.gap = '1rem';
+                            tempContainer.appendChild(chartsClone);
+                        }}
+
+                        // 3. Clone Advanced Metrics (if present)
+                        const advancedSection = document.getElementById('advanced-metrics-section');
+                        if (advancedSection && advancedSection.style.display !== 'none') {{
+                             // Create a wrapper for visual separation
+                            const metricsWrapper = document.createElement('div');
+                            metricsWrapper.style.marginTop = '1rem';
+                            metricsWrapper.style.paddingTop = '1rem';
+                            metricsWrapper.style.borderTop = '1px dashed rgba(148, 163, 184, 0.3)';
+                            
+                            // Add Header
+                            const header = document.createElement('h2');
+                            header.innerText = '📊 高度な財務指標';
+                            header.style.color = '#818cf8';
+                            header.style.fontFamily = "'Outfit', sans-serif";
+                            header.style.fontSize = '1.2rem';
+                            header.style.marginBottom = '1rem';
+                            header.style.textAlign = 'center';
+                            metricsWrapper.appendChild(header);
+                            
+                            const metricsClone = await cloneSectionWithImages('advanced-metrics-section');
+                            if (metricsClone) {{
+                                metricsWrapper.innerHTML = ''; 
+                                metricsWrapper.appendChild(metricsClone);
+                                tempContainer.appendChild(metricsWrapper);
+                            }}
+                        }}
+                        
+                        // 4. Capture the temporary container
+                        const canvas = await html2canvas(tempContainer, {{
+                            backgroundColor: '#0f172a',
+                            scale: 2.0, 
+                            useCORS: true,
+                            logging: false
                         }});
                         
+                        // 5. Cleanup
+                        document.body.removeChild(tempContainer);
+
                         canvas.toBlob(async function(blob) {{
                             if (!blob) return;
                             try {{
-                                // Check for ClipboardItem support
                                 if (typeof ClipboardItem !== 'undefined' && navigator.clipboard && navigator.clipboard.write) {{
                                     const clipboardItem = new ClipboardItem({{ 'image/png': blob }});
                                     await navigator.clipboard.write([clipboardItem]);
@@ -2401,7 +2471,7 @@ async def lookup_yahoo_finance(
                                 const url = URL.createObjectURL(blob);
                                 const a = document.createElement('a');
                                 a.href = url;
-                                a.download = 'dashboard.png';
+                                a.download = 'dashboard_full.png';
                                 document.body.appendChild(a);
                                 a.click();
                                 document.body.removeChild(a);
