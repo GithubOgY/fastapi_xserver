@@ -77,18 +77,27 @@ def analyze_growth_quality(ticker_obj: Any) -> Dict[str, Any]:
         n = len(vals_rev)
         if n >= 2:
             latest_rev = vals_rev.iloc[-1]
-            # 3yr CAGR
+
+            # 3年CAGR計算
+            # 必要データ: 4つのデータポイント (Year 0, 1, 2, 3)
+            # 計算: (Year3 / Year0)^(1/3) - 1
             if n >= 4:
-                results["revenue_cagr_3y"] = calculate_cagr(vals_rev.iloc[-4], latest_rev, 3)
+                start_val = vals_rev.iloc[-4]  # 3年前 (Year 0)
+                end_val = latest_rev           # 最新年 (Year 3)
+                results["revenue_cagr_3y"] = calculate_cagr(start_val, end_val, 3)
+
                 if op_key and len(vals_op) >= 4:
                     results["op_income_cagr_3y"] = calculate_cagr(vals_op.iloc[-4], vals_op.iloc[-1], 3)
                 if eps_key and len(vals_eps) >= 4:
                     results["eps_cagr_3y"] = calculate_cagr(vals_eps.iloc[-4], vals_eps.iloc[-1], 3)
-            
-            # 5yr CAGR (yfinance usually provides ~4 years, so this might be None unless we fetch more)
-            # But let's check what we have
+
+            # 5年CAGR計算
+            # 必要データ: 6つのデータポイント (Year 0, 1, 2, 3, 4, 5)
+            # 計算: (Year5 / Year0)^(1/5) - 1
             if n >= 6:
-                results["revenue_cagr_5y"] = calculate_cagr(vals_rev.iloc[-6], latest_rev, 5)
+                start_val = vals_rev.iloc[-6]  # 5年前 (Year 0)
+                end_val = latest_rev           # 最新年 (Year 5)
+                results["revenue_cagr_5y"] = calculate_cagr(start_val, end_val, 5)
 
             # Check for high growth (Revenue CAGR > 10%)
             if results["revenue_cagr_3y"] and results["revenue_cagr_3y"] >= 10:
@@ -103,15 +112,23 @@ def analyze_growth_quality(ticker_obj: Any) -> Dict[str, Any]:
                 break
         results["consecutive_growth_years"] = growth_count
 
-        # Margin Trend
+        # Margin Trend (3年間のトレンド分析)
         if rev_key and op_key:
             margins = (df[op_key] / df[rev_key]).dropna()
             if len(margins) >= 3:
-                last_margin = margins.iloc[-1]
-                prev_margin = margins.iloc[-2]
-                if last_margin > prev_margin * 1.05:
+                # 直近3年の利益率を取得
+                recent_margins = margins.iloc[-3:]
+
+                # 線形回帰的なトレンド判定：最古と最新を比較
+                oldest_margin = recent_margins.iloc[0]
+                latest_margin = recent_margins.iloc[-1]
+
+                # 3年間での変化率を計算
+                margin_change = (latest_margin - oldest_margin) / oldest_margin if oldest_margin != 0 else 0
+
+                if margin_change > 0.05:  # 5%以上改善
                     results["margin_trend"] = "improving"
-                elif last_margin < prev_margin * 0.95:
+                elif margin_change < -0.05:  # 5%以上悪化
                     results["margin_trend"] = "declining"
                 else:
                     results["margin_trend"] = "stable"
