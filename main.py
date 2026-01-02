@@ -4419,18 +4419,30 @@ async def get_advanced_metrics(
             current_price = None
             pe_ratio = None
 
-        # Prepare chart data
-        roe_years = [item["year"] for item in metrics["roe_history"]]
-        roe_values = [item["roe"] for item in metrics["roe_history"]]
+        # Prepare chart data (convert to JSON for JavaScript)
+        roe_years_list = [item["year"] for item in metrics["roe_history"]]
+        roe_values_list = [item["roe"] for item in metrics["roe_history"]]
+        roe_years = json.dumps(roe_years_list)
+        roe_values = json.dumps(roe_values_list)
+        roe_count = len(roe_years_list)
 
-        roic_years = [item["year"] for item in metrics["roic_history"]]
-        roic_values = [item["roic"] for item in metrics["roic_history"]]
+        roic_years_list = [item["year"] for item in metrics["roic_history"]]
+        roic_values_list = [item["roic"] for item in metrics["roic_history"]]
+        roic_years = json.dumps(roic_years_list)
+        roic_values = json.dumps(roic_values_list)
+        roic_count = len(roic_years_list)
 
-        revenue_yoy_years = [item["year"] for item in metrics["revenue_yoy_history"]]
-        revenue_yoy_values = [item["yoy"] for item in metrics["revenue_yoy_history"]]
+        revenue_yoy_years_list = [item["year"] for item in metrics["revenue_yoy_history"]]
+        revenue_yoy_values_list = [item["yoy"] for item in metrics["revenue_yoy_history"]]
+        revenue_yoy_years = json.dumps(revenue_yoy_years_list)
+        revenue_yoy_values = json.dumps(revenue_yoy_values_list)
+        revenue_yoy_count = len(revenue_yoy_years_list)
 
-        eps_yoy_years = [item["year"] for item in metrics["eps_yoy_history"]]
-        eps_yoy_values = [item["yoy"] for item in metrics["eps_yoy_history"]]
+        eps_yoy_years_list = [item["year"] for item in metrics["eps_yoy_history"]]
+        eps_yoy_values_list = [item["yoy"] for item in metrics["eps_yoy_history"]]
+        eps_yoy_years = json.dumps(eps_yoy_years_list)
+        eps_yoy_values = json.dumps(eps_yoy_values_list)
+        eps_yoy_count = len(eps_yoy_years_list)
 
         # Generate HTML with charts
         html_content = f"""
@@ -4486,7 +4498,7 @@ async def get_advanced_metrics(
 
         <script>
         // ROE Chart
-        if ({len(roe_values)} > 0) {{
+        if ({roe_count} > 0) {{
             const roeCtx = document.getElementById('roeChart').getContext('2d');
             new Chart(roeCtx, {{
                 type: 'line',
@@ -4523,7 +4535,7 @@ async def get_advanced_metrics(
         }}
 
         // ROIC Chart
-        if ({len(roic_values)} > 0) {{
+        if ({roic_count} > 0) {{
             const roicCtx = document.getElementById('roicChart').getContext('2d');
             new Chart(roicCtx, {{
                 type: 'line',
@@ -4560,7 +4572,7 @@ async def get_advanced_metrics(
         }}
 
         // Revenue YoY Chart
-        if ({len(revenue_yoy_values)} > 0) {{
+        if ({revenue_yoy_count} > 0) {{
             const revYoyCtx = document.getElementById('revenueYoyChart').getContext('2d');
             new Chart(revYoyCtx, {{
                 type: 'bar',
@@ -4595,7 +4607,7 @@ async def get_advanced_metrics(
         }}
 
         // EPS YoY Chart
-        if ({len(eps_yoy_values)} > 0) {{
+        if ({eps_yoy_count} > 0) {{
             const epsYoyCtx = document.getElementById('epsYoyChart').getContext('2d');
             new Chart(epsYoyCtx, {{
                 type: 'bar',
