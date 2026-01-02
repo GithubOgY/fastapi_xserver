@@ -1513,6 +1513,7 @@ async def post_comment(
 
 @app.delete("/api/comments/{comment_id}")
 async def delete_comment(
+    request: Request,
     comment_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -1520,14 +1521,40 @@ async def delete_comment(
     """Delete a comment if owner"""
     if not current_user:
         raise HTTPException(status_code=401)
-        
+
     comment = db.query(StockComment).filter(StockComment.id == comment_id).first()
     if not comment:
         raise HTTPException(status_code=404)
-        
+
     if comment.user_id != current_user.id and not current_user.is_admin:
         raise HTTPException(status_code=403)
-        
+
+    # 削除前に監査ログを記録（削除後はコメント情報が取得できないため）
+    is_admin_delete = comment.user_id != current_user.id
+    action_type = "COMMENT_DELETE_ADMIN" if is_admin_delete else "COMMENT_DELETE_OWNER"
+
+    # コメント内容のプレビュー（最初の100文字）
+    content_preview = comment.content[:100] + "..." if len(comment.content) > 100 else comment.content
+
+    await create_audit_log(
+        db=db,
+        action_type=action_type,
+        action_category="MODERATION",
+        request=request,
+        user=current_user,
+        target_type="COMMENT",
+        target_id=comment.id,
+        target_description=f"投稿 by {comment.user.username if comment.user else 'Unknown'}",
+        details={
+            "comment_id": comment.id,
+            "comment_ticker": comment.ticker,
+            "comment_author_id": comment.user_id,
+            "comment_author": comment.user.username if comment.user else None,
+            "content_preview": content_preview,
+            "deleted_by_admin": is_admin_delete
+        }
+    )
+
     db.delete(comment)
     db.commit()
     return Response(status_code=status.HTTP_200_OK)
