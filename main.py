@@ -3815,6 +3815,13 @@ async def api_ai_visual_analyze(
         clean_code = ticker_code.replace(".T", "")
         analysis_type = "visual"
         cache_days = 7
+        # キャッシュ判定用（画像内容が変われば別物として扱う）
+        from utils.ai_analysis import (
+            compute_image_hash,
+            VISUAL_ANALYSIS_PROMPT_VERSION,
+            sanitize_visual_analysis_data,
+        )
+        request_image_hash = compute_image_hash(image_data)
 
         # Check cache first (unless force refresh requested)
         if not force_refresh:
@@ -3830,19 +3837,31 @@ async def api_ai_visual_analyze(
                     # Parse stored JSON
                     analysis_data = json.loads(cached.analysis_html)
 
-                    # Phase 3: Get history and analyze trend
-                    history = get_analysis_history(db, clean_code, analysis_type, limit=10)
-                    trend_data = analyze_trend(history)
+                    # ✅ 明確な原因：このキャッシュは「銘柄コード×visual」だけで判定しており、
+                    # 画像内容やプロンプト変更を反映できない。ここで必ず無効化チェックを行う。
+                    cached_prompt_ver = analysis_data.get("_prompt_version", "")
+                    cached_image_hash = analysis_data.get("_image_hash", "")
+                    if cached_prompt_ver != VISUAL_ANALYSIS_PROMPT_VERSION:
+                        logger.info(f"[Visual Cache STALE] prompt_version mismatch ({cached_prompt_ver} != {VISUAL_ANALYSIS_PROMPT_VERSION})")
+                    elif cached_image_hash and cached_image_hash != request_image_hash:
+                        logger.info(f"[Visual Cache STALE] image_hash mismatch ({cached_image_hash} != {request_image_hash})")
+                    else:
+                        # キャッシュ経由でも必ずサニタイズ（recommendationsフィルタ等）を適用
+                        analysis_data = sanitize_visual_analysis_data(analysis_data)
 
-                    # Render HTML from cached JSON
-                    html = render_visual_analysis_html(analysis_data, is_from_cache=True)
+                        # Phase 3: Get history and analyze trend
+                        history = get_analysis_history(db, clean_code, analysis_type, limit=10)
+                        trend_data = analyze_trend(history)
 
-                    # Add trend comparison if available
-                    if trend_data.get("has_trend"):
-                        trend_html = render_trend_comparison_html(trend_data)
-                        html = trend_html + html
+                        # Render HTML from cached JSON
+                        html = render_visual_analysis_html(analysis_data, is_from_cache=True)
 
-                    return HTMLResponse(content=html)
+                        # Add trend comparison if available
+                        if trend_data.get("has_trend"):
+                            trend_html = render_trend_comparison_html(trend_data)
+                            html = trend_html + html
+
+                        return HTMLResponse(content=html)
                 except json.JSONDecodeError:
                     # Fallback: if cached data is old markdown format, regenerate
                     logger.warning(f"[Visual Cache] Invalid JSON for {clean_code}, regenerating")
