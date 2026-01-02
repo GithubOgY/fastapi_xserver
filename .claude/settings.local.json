@@ -10,7 +10,24 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(sqlite3:*)"
+      "Bash(sqlite3:*)",
+      "Bash(ssh:*)",
+      "Bash(ls:*)",
+      "Bash(git reset:*)",
+      "Bash(bash:*)",
+      "Bash(if [ -f \"sql_app.db\" ])",
+      "Bash(then echo \"✓ データベースファイル存在\")",
+      "Bash(else echo \"✗ データベースファイルなし\")",
+      "Bash(fi)",
+      "Bash(if [ -d \"uploads\" ])",
+      "Bash(then echo \"✓ uploadsディレクトリ存在\")",
+      "Bash(else echo \"✗ uploadsディレクトリなし\")",
+      "Bash(mkdir:*)",
+      "Bash(cd:*)",
+      "Bash(docker compose:*)",
+      "Bash(curl:*)",
+      "Bash(timeout 30 curl:*)",
+      "Bash(powershell -Command:*)"
     ]
   }
 }

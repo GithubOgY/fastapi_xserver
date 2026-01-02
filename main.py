@@ -4462,7 +4462,9 @@ async def get_advanced_metrics(
             <!-- ROE推移 -->
             <div style="background: rgba(30, 41, 59, 0.5); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
                 <h3 style="font-size: 1rem; color: #818cf8; margin-bottom: 1rem; text-align: center;">ROE 推移</h3>
-                <canvas id="roeChart" style="width: 100%; height: 150px;"></canvas>
+                <div style="height: 150px; position: relative; width: 100%;">
+                    <canvas id="roeChart"></canvas>
+                </div>
                 <p style="font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 0.5rem;">
                     最新: {metrics['latest_roe'] if metrics['latest_roe'] is not None else '-'}%
                 </p>
@@ -4471,7 +4473,9 @@ async def get_advanced_metrics(
             <!-- ROIC推移 -->
             <div style="background: rgba(30, 41, 59, 0.5); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
                 <h3 style="font-size: 1rem; color: #818cf8; margin-bottom: 1rem; text-align: center;">ROIC 推移</h3>
-                <canvas id="roicChart" style="width: 100%; height: 150px;"></canvas>
+                <div style="height: 150px; position: relative; width: 100%;">
+                    <canvas id="roicChart"></canvas>
+                </div>
                 <p style="font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 0.5rem;">
                     最新: {metrics['latest_roic'] if metrics['latest_roic'] is not None else '-'}%
                 </p>
@@ -4480,7 +4484,9 @@ async def get_advanced_metrics(
             <!-- 売上YoY成長率 -->
             <div style="background: rgba(30, 41, 59, 0.5); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
                 <h3 style="font-size: 1rem; color: #818cf8; margin-bottom: 1rem; text-align: center;">売上高 YoY成長率</h3>
-                <canvas id="revenueYoyChart" style="width: 100%; height: 150px;"></canvas>
+                <div style="height: 150px; position: relative; width: 100%;">
+                    <canvas id="revenueYoyChart"></canvas>
+                </div>
                 <p style="font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 0.5rem;">
                     最新: {metrics['latest_revenue_yoy'] if metrics['latest_revenue_yoy'] is not None else '-'}%
                 </p>
@@ -4489,7 +4495,9 @@ async def get_advanced_metrics(
             <!-- EPS YoY成長率 -->
             <div style="background: rgba(30, 41, 59, 0.5); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
                 <h3 style="font-size: 1rem; color: #818cf8; margin-bottom: 1rem; text-align: center;">EPS YoY成長率</h3>
-                <canvas id="epsYoyChart" style="width: 100%; height: 150px;"></canvas>
+                <div style="height: 150px; position: relative; width: 100%;">
+                    <canvas id="epsYoyChart"></canvas>
+                </div>
                 <p style="font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 0.5rem;">
                     最新: {metrics['latest_eps_yoy'] if metrics['latest_eps_yoy'] is not None else '-'}%
                 </p>
