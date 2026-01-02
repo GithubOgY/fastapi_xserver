@@ -404,7 +404,7 @@ ROE = (当期純利益 / ((期首純資産 + 期末純資産) / 2)) × 100
 #### 1. バックアップスクリプト (`scripts/backup.sh`)
 
 **機能**:
-- SQLiteデータベース (`xstock.db`) のバックアップ
+- SQLiteデータベース (`sql_app.db`) のバックアップ
 - アップロード画像ディレクトリ (`uploads/`) のバックアップ（tar.gz圧縮）
 - SHA256チェックサムによる整合性検証
 - バックアップメタデータの記録
@@ -415,8 +415,8 @@ ROE = (当期純利益 / ((期首純資産 + 期末純資産) / 2)) × 100
 ```
 /var/www/backups/
 ├── 20260101_030000/
-│   ├── xstock.db
-│   ├── xstock.db.sha256
+│   ├── sql_app.db
+│   ├── sql_app.db.sha256
 │   ├── uploads.tar.gz
 │   ├── uploads.tar.gz.sha256
 │   └── metadata.txt
@@ -503,7 +503,7 @@ ls -lh /var/www/backups/$(ls -t /var/www/backups/ | head -1)/
 
 # チェックサムの検証
 cd /var/www/backups/$(ls -t /var/www/backups/ | head -1)/
-sha256sum -c xstock.db.sha256
+sha256sum -c sql_app.db.sha256
 sha256sum -c uploads.tar.gz.sha256
 ```
 
