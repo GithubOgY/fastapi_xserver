@@ -4769,8 +4769,9 @@ async def get_advanced_metrics(
         // EPS YoY Chart with benchmark lines
         if ({eps_yoy_count} > 0) {{
             const epsYoyCtx = document.getElementById('epsYoyChart').getContext('2d');
-            const epsYoyMinLine = Array({eps_yoy_count}).fill(15);  // 最低合格ライン 15%
-            const epsYoyIdealLine = Array({eps_yoy_count}).fill(20);  // 理想的水準 20%
+            const epsYoyMinLine = Array({eps_yoy_count}).fill(15);  // 最低合格ライン 15%（市場平均＋αの最低限）
+            const epsYoyIdealLine = Array({eps_yoy_count}).fill(25);  // 理想的水準 25%（テンバガー候補のスイートスポット）
+            const epsYoyWarningLine = Array({eps_yoy_count}).fill(50);  // 要警戒ライン 50%超（出来すぎの疑いあり）
             new Chart(epsYoyCtx, {{
                 type: 'bar',
                 data: {{
@@ -4791,12 +4792,21 @@ async def get_advanced_metrics(
                         pointRadius: 0,
                         fill: false
                     }}, {{
-                        label: '理想ライン(20%)',
+                        label: '理想ライン(25%)',
                         data: epsYoyIdealLine,
                         type: 'line',
                         borderColor: '#10b981',
                         borderWidth: 1.5,
                         borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false
+                    }}, {{
+                        label: '要警戒ライン(50%)',
+                        data: epsYoyWarningLine,
+                        type: 'line',
+                        borderColor: '#ef4444',
+                        borderWidth: 2,
+                        borderDash: [10, 5],
                         pointRadius: 0,
                         fill: false
                     }}]
