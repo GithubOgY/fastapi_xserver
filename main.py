@@ -2007,6 +2007,7 @@ async def lookup_yahoo_finance(
         growth_rev_actual = []
         growth_rev_target = []
         
+        growth_rev_target_15 = []  # 15%成長目標ライン（理想的水準）
         if growth_analysis["history"]:
             # Use up to 5 years for the growth comparison
             hist = growth_analysis["history"][-5:]
@@ -2015,9 +2016,12 @@ async def lookup_yahoo_finance(
                 for i, h in enumerate(hist):
                     growth_labels.append(h["date"][:4])
                     growth_rev_actual.append(to_oku(h["revenue"]))
-                    # Target line: Start revenue * (1.10 ^ years)
+                    # Target line: Start revenue * (1.10 ^ years) - 10%成長目標（最低合格ライン）
                     target = start_rev * (1.10 ** i)
                     growth_rev_target.append(to_oku(target))
+                    # 15%成長目標ライン（理想的水準）
+                    target_15 = start_rev * (1.15 ** i)
+                    growth_rev_target_15.append(to_oku(target_15))
 
         # Sanitize lists for JSON dump (replace NaN with None/null)
         def clean_list(lst):
@@ -2035,9 +2039,34 @@ async def lookup_yahoo_finance(
         debt_data_js = json.dumps(clean_list(debt_data))
         roe_data_js = json.dumps(clean_list(roe_data))
         roa_data_js = json.dumps(clean_list(roa_data))
+        
+        # 純利益データ（営業CFの理想ライン用）
+        net_income_data = []
+        if not fin.empty:
+            dates = sorted(fin.columns, reverse=False)[-4:]
+            for date in dates:
+                net_income = get_val(fin, "Net Income", date)
+                net_income_data.append(to_oku(net_income))
+        net_income_data_js = json.dumps(clean_list(net_income_data))
+        
+        # 基準線データ（全期間で同じ値）
+        years_count = len(years_label)
+        op_margin_min_line = [10] * years_count  # 営業利益率 最低合格ライン 10%
+        op_margin_ideal_line = [20] * years_count  # 営業利益率 理想的水準 20%
+        roe_min_line = [8] * years_count  # ROE 最低合格ライン 8%
+        roe_ideal_line = [15] * years_count  # ROE 理想的水準 15%
+        zero_line = [0] * years_count  # 営業CF 0ライン
+        
+        # JSON形式に変換
+        op_margin_min_line_js = json.dumps(op_margin_min_line)
+        op_margin_ideal_line_js = json.dumps(op_margin_ideal_line)
+        roe_min_line_js = json.dumps(roe_min_line)
+        roe_ideal_line_js = json.dumps(roe_ideal_line)
+        zero_line_js = json.dumps(zero_line)
         growth_labels_js = json.dumps(growth_labels)
         growth_rev_actual_js = json.dumps(clean_list(growth_rev_actual))
         growth_rev_target_js = json.dumps(clean_list(growth_rev_target))
+        growth_rev_target_15_js = json.dumps(clean_list(growth_rev_target_15))
 
         # Generate unique chart IDs
         chart_id1 = f"perf_{code_input}_{int(time.time())}"
@@ -2711,7 +2740,9 @@ async def lookup_yahoo_finance(
                 <!-- Chart.js Scripts -->
                 <script>
                 (function() {{
-                    // Revenue/Profit Chart
+                    // Revenue/Profit Chart with benchmark lines
+                    const opMarginMinLine = {op_margin_min_line_js};
+                    const opMarginIdealLine = {op_margin_ideal_line_js};
                     new Chart(document.getElementById('{chart_id1}').getContext('2d'), {{
                         type: 'bar',
                         data: {{
@@ -2719,7 +2750,9 @@ async def lookup_yahoo_finance(
                             datasets: [
                                 {{ label: '売上高', data: {revenue_data_js}, backgroundColor: 'rgba(99,102,241,0.7)', borderColor: '#6366f1', borderWidth: 1 }},
                                 {{ label: '営業利益', data: {op_income_data_js}, backgroundColor: 'rgba(16,185,129,0.7)', borderColor: '#10b981', borderWidth: 1 }},
-                                {{ label: '営業利益率(%)', data: {op_margin_data_js}, type: 'line', borderColor: '#f59e0b', borderWidth: 2, yAxisID: 'y1', tension: 0.3, pointRadius: 4 }}
+                                {{ label: '営業利益率(%)', data: {op_margin_data_js}, type: 'line', borderColor: '#f59e0b', borderWidth: 2, yAxisID: 'y1', tension: 0.3, pointRadius: 4 }},
+                                {{ label: '合格ライン(10%)', data: opMarginMinLine, type: 'line', borderColor: '#ef4444', borderWidth: 1.5, borderDash: [5, 5], yAxisID: 'y1', pointRadius: 0, fill: false }},
+                                {{ label: '理想ライン(20%)', data: opMarginIdealLine, type: 'line', borderColor: '#10b981', borderWidth: 1.5, borderDash: [5, 5], yAxisID: 'y1', pointRadius: 0, fill: false }}
                             ]
                         }},
                         options: {{
@@ -2734,7 +2767,9 @@ async def lookup_yahoo_finance(
                         }}
                     }});
                     
-                    // Cash Flow Chart (Updated)
+                    // Cash Flow Chart with benchmark lines
+                    const zeroLine = {zero_line_js};
+                    const netIncomeLine = {net_income_data_js};
                     new Chart(document.getElementById('{chart_id2}').getContext('2d'), {{
                         type: 'bar',
                         data: {{
@@ -2744,7 +2779,9 @@ async def lookup_yahoo_finance(
                                 {{ label: '投資CF', data: {inv_cf_data_js}, backgroundColor: 'rgba(244,63,94,0.7)', borderColor: '#f43f5e', borderWidth: 1 }},
                                 {{ label: '財務CF', data: {fin_cf_data_js}, backgroundColor: 'rgba(59,130,246,0.7)', borderColor: '#3b82f6', borderWidth: 1 }},
                                 {{ label: 'フリーCF', data: {fcf_data_js}, type: 'line', borderColor: '#a855f7', borderWidth: 2, borderDash: [5, 5], tension: 0.3, pointRadius: 3, fill: false }},
-                                {{ label: 'ネットCF', data: {net_cf_data_js}, type: 'line', borderColor: '#f59e0b', borderWidth: 3, tension: 0.4, pointRadius: 4, fill: false }}
+                                {{ label: 'ネットCF', data: {net_cf_data_js}, type: 'line', borderColor: '#f59e0b', borderWidth: 3, tension: 0.4, pointRadius: 4, fill: false }},
+                                {{ label: '0ライン(黒字基準)', data: zeroLine, type: 'line', borderColor: '#fbbf24', borderWidth: 1.5, borderDash: [3, 3], pointRadius: 0, fill: false }},
+                                {{ label: '理想ライン(純利益)', data: netIncomeLine, type: 'line', borderColor: '#3b82f6', borderWidth: 1.5, borderDash: [5, 5], pointRadius: 0, fill: false }}
                             ]
                         }},
                         options: {{
@@ -2792,14 +2829,18 @@ async def lookup_yahoo_finance(
                         }}
                     }});
 
-                    // Financial Health & Efficiency Chart (ROE/ROA only)
+                    // Financial Health & Efficiency Chart (ROE/ROA) with benchmark lines
+                    const roeMinLine = {roe_min_line_js};
+                    const roeIdealLine = {roe_ideal_line_js};
                     new Chart(document.getElementById('{chart_id4}').getContext('2d'), {{
                         type: 'line',
                         data: {{
                             labels: {years_label_js},
                             datasets: [
                                 {{ label: 'ROE', data: {roe_data_js}, borderColor: '#818cf8', backgroundColor: 'rgba(129, 140, 248, 0.1)', borderWidth: 2, tension: 0.3, pointRadius: 4, fill: true }},
-                                {{ label: 'ROA', data: {roa_data_js}, borderColor: '#2dd4bf', backgroundColor: 'rgba(45, 212, 191, 0.1)', borderWidth: 2, tension: 0.3, pointRadius: 4, fill: true }}
+                                {{ label: 'ROA', data: {roa_data_js}, borderColor: '#2dd4bf', backgroundColor: 'rgba(45, 212, 191, 0.1)', borderWidth: 2, tension: 0.3, pointRadius: 4, fill: true }},
+                                {{ label: '合格ライン(8%)', data: roeMinLine, type: 'line', borderColor: '#ef4444', borderWidth: 1.5, borderDash: [5, 5], pointRadius: 0, fill: false }},
+                                {{ label: '理想ライン(15%)', data: roeIdealLine, type: 'line', borderColor: '#10b981', borderWidth: 1.5, borderDash: [5, 5], pointRadius: 0, fill: false }}
                             ]
                         }},
                         options: {{
@@ -2818,7 +2859,8 @@ async def lookup_yahoo_finance(
                         }}
                     }});
 
-                    // Growth Chart (Chart 3)
+                    // Growth Chart (Chart 3) with benchmark lines
+                    const growthTarget15 = {growth_rev_target_15_js};
                     new Chart(document.getElementById('{chart_id3}').getContext('2d'), {{
                         type: 'bar',
                         data: {{
@@ -2832,11 +2874,21 @@ async def lookup_yahoo_finance(
                                     borderWidth: 1
                                 }},
                                 {{
-                                    label: '10%成長目標',
+                                    label: '合格ライン(10%成長)',
                                     data: {growth_rev_target_js},
                                     type: 'line',
                                     borderColor: '#fbbf24',
                                     borderDash: [5, 5],
+                                    borderWidth: 2,
+                                    fill: false,
+                                    pointRadius: 0
+                                }},
+                                {{
+                                    label: '理想ライン(15%成長)',
+                                    data: growthTarget15,
+                                    type: 'line',
+                                    borderColor: '#10b981',
+                                    borderDash: [3, 3],
                                     borderWidth: 2,
                                     fill: false,
                                     pointRadius: 0
