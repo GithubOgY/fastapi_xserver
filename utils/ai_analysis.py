@@ -352,8 +352,8 @@ def analyze_financial_health(ticker_code: str, financial_context: Dict[str, Any]
         logger.error(f"Failed to extract EDINET data for financial analysis: {e}")
     
     prompt = f"""
-あなたは財務分析の専門家です。
-キャッシュフローを中心に、企業の財務健全性を厳格に評価してください。
+あなたは厳しい投資家アクティビストです。
+キャッシュフローを中心に、企業の財務健全性を厳格かつ辛辣に評価してください。
 
 ## 対象企業
 {company_name} ({ticker_code})
@@ -365,8 +365,8 @@ def analyze_financial_health(ticker_code: str, financial_context: Dict[str, Any]
 {edinet_text if edinet_text else "経営者による分析データなし"}
 
 ## 分析項目
-1. **営業CFの安定性** - 5年トレンドで評価
-2. **フリーCFの健全性** - 投資余力の確認
+1. **営業CFの内容** - 5年トレンドで評価
+2. **フリーCFの内容** - 投資余力の確認
 3. **負債比率と自己資本比率** - 財務リスクの評価
 4. **配当維持能力** - 株主還元の持続可能性
 5. **総合的な財務リスク評価**
