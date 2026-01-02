@@ -991,17 +991,36 @@ async def admin_users_page(request: Request, db: Session = Depends(get_db), curr
     })
 
 @app.post("/admin/users/{user_id}/delete")
-async def admin_delete_user(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def admin_delete_user(request: Request, user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if not current_user or not current_user.is_admin:
         raise HTTPException(status_code=403, detail="管理者権限が必要です")
-    
+
     target_user = db.query(User).filter(User.id == user_id).first()
     if not target_user:
         raise HTTPException(status_code=404, detail="ユーザーが見つかりません")
-    
+
     if target_user.id == current_user.id:
         raise HTTPException(status_code=400, detail="自分自身は削除できません")
-    
+
+    # 削除前に監査ログを記録（削除後はユーザー情報が取得できないため）
+    await create_audit_log(
+        db=db,
+        action_type="USER_DELETE",
+        action_category="ADMIN",
+        request=request,
+        user=current_user,
+        target_type="USER",
+        target_id=target_user.id,
+        target_description=target_user.username,
+        details={
+            "deleted_user_id": target_user.id,
+            "deleted_username": target_user.username,
+            "deleted_email": target_user.email,
+            "was_admin": target_user.is_admin,
+            "was_premium": target_user.is_premium
+        }
+    )
+
     db.delete(target_user)
     db.commit()
     return RedirectResponse(url="/admin/users", status_code=status.HTTP_303_SEE_OTHER)
