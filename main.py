@@ -28,6 +28,7 @@ from utils.ai_analysis import analyze_stock_with_ai, analyze_financial_health, a
 from utils.premium import get_user_tier, get_tier_display_name, get_tier_badge_html, has_feature_access, get_feature_limit, is_premium_active, get_ai_usage_today, increment_ai_usage, check_ai_usage_limit
 from utils.technical_analysis import calculate_all_indicators, get_latest_values
 from utils.chart_data import format_chartjs_data, calculate_period_days
+from utils.advanced_metrics import analyze_advanced_metrics
 
 # Load environment variables
 load_dotenv()
@@ -2043,6 +2044,7 @@ async def lookup_yahoo_finance(
         chart_id2 = f"cf_{code_input}_{int(time.time())}"
         chart_id3 = f"growth_{code_input}_{int(time.time())}"
         chart_id4 = f"fin_health_{code_input}_{int(time.time())}"
+        chart_id5 = f"debt_{code_input}_{int(time.time())}"  # 有利子負債専用グラフ
         
         # J-Quants Data Lookup
         code_str = symbol.replace(".T", "")
@@ -2552,9 +2554,17 @@ async def lookup_yahoo_finance(
                         </div>
                     </div>
 
-                    <!-- Financial Health & Efficiency Chart (New) -->
+                    <!-- Interest-bearing Debt Chart (Separate) -->
                     <div class="chart-full-width" style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem; max-width: 100%; overflow: hidden;">
-                        <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 0.75rem 0; text-align: center;">財務健全性・効率性 (ROE/ROA/有利子負債)</h4>
+                        <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 0.75rem 0; text-align: center;">有利子負債推移</h4>
+                        <div style="height: 220px; position: relative; width: 100%;">
+                            <canvas id="{chart_id5}"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Financial Health & Efficiency Chart (ROE/ROA only) -->
+                    <div class="chart-full-width" style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem; max-width: 100%; overflow: hidden;">
+                        <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 0.75rem 0; text-align: center;">財務効率性 (ROE/ROA)</h4>
                         <div style="height: 220px; position: relative; width: 100%;">
                             <canvas id="{chart_id4}"></canvas>
                         </div>
@@ -2662,23 +2672,60 @@ async def lookup_yahoo_finance(
                         }}
                     }});
 
-                    // Financial Health & Efficiency Chart (New)
-                    new Chart(document.getElementById('{chart_id4}').getContext('2d'), {{
+                    // Interest-bearing Debt Chart (Separate)
+                    new Chart(document.getElementById('{chart_id5}').getContext('2d'), {{
                         type: 'bar',
                         data: {{
                             labels: {years_label_js},
                             datasets: [
-                                {{ label: '有利子負債', data: {debt_data_js}, backgroundColor: 'rgba(251, 113, 133, 0.6)', borderColor: '#f43f5e', borderWidth: 1, yAxisID: 'y' }},
-                                {{ label: 'ROE', data: {roe_data_js}, type: 'line', borderColor: '#818cf8', borderWidth: 2, yAxisID: 'y1', tension: 0.3, pointRadius: 4 }},
-                                {{ label: 'ROA', data: {roa_data_js}, type: 'line', borderColor: '#2dd4bf', borderWidth: 2, yAxisID: 'y1', tension: 0.3, pointRadius: 4 }}
+                                {{ label: '有利子負債', data: {debt_data_js}, backgroundColor: 'rgba(251, 113, 133, 0.6)', borderColor: '#f43f5e', borderWidth: 2 }}
                             ]
                         }},
                         options: {{
                             responsive: true, maintainAspectRatio: false,
                             interaction: {{ mode: 'index', intersect: false }},
                             scales: {{
-                                y: {{ grid: {{ color: 'rgba(255,255,255,0.05)' }}, ticks: {{ color: '#64748b', font: {{ size: 10 }} }}, title: {{ display: true, text: '単位: 億円', color: '#64748b', font: {{ size: 10 }} }} }},
-                                y1: {{ position: 'right', grid: {{ display: false }}, ticks: {{ color: '#818cf8', font: {{ size: 10 }} }}, title: {{ display: true, text: '%', color: '#818cf8', font: {{ size: 10 }} }} }},
+                                y: {{ 
+                                    beginAtZero: true,
+                                    grid: {{ color: 'rgba(255,255,255,0.05)' }}, 
+                                    ticks: {{ color: '#64748b', font: {{ size: 11 }} }}, 
+                                    title: {{ display: true, text: '単位: 億円', color: '#64748b', font: {{ size: 11, weight: 'bold' }} }} 
+                                }},
+                                x: {{ grid: {{ display: false }}, ticks: {{ color: '#64748b', font: {{ size: 10 }} }} }}
+                            }},
+                            plugins: {{ 
+                                legend: {{ labels: {{ color: '#94a3b8', font: {{ size: 11 }} }} }},
+                                tooltip: {{
+                                    callbacks: {{
+                                        label: function(context) {{
+                                            return '有利子負債: ' + context.parsed.y.toLocaleString() + '億円';
+                                        }}
+                                    }}
+                                }}
+                            }}
+                        }}
+                    }});
+
+                    // Financial Health & Efficiency Chart (ROE/ROA only)
+                    new Chart(document.getElementById('{chart_id4}').getContext('2d'), {{
+                        type: 'line',
+                        data: {{
+                            labels: {years_label_js},
+                            datasets: [
+                                {{ label: 'ROE', data: {roe_data_js}, borderColor: '#818cf8', backgroundColor: 'rgba(129, 140, 248, 0.1)', borderWidth: 2, tension: 0.3, pointRadius: 4, fill: true }},
+                                {{ label: 'ROA', data: {roa_data_js}, borderColor: '#2dd4bf', backgroundColor: 'rgba(45, 212, 191, 0.1)', borderWidth: 2, tension: 0.3, pointRadius: 4, fill: true }}
+                            ]
+                        }},
+                        options: {{
+                            responsive: true, maintainAspectRatio: false,
+                            interaction: {{ mode: 'index', intersect: false }},
+                            scales: {{
+                                y: {{ 
+                                    beginAtZero: true,
+                                    grid: {{ color: 'rgba(255,255,255,0.05)' }}, 
+                                    ticks: {{ color: '#64748b', font: {{ size: 10 }} }}, 
+                                    title: {{ display: true, text: '単位: %', color: '#64748b', font: {{ size: 10 }} }} 
+                                }},
                                 x: {{ grid: {{ display: false }}, ticks: {{ color: '#64748b', font: {{ size: 10 }} }} }}
                             }},
                             plugins: {{ legend: {{ labels: {{ color: '#94a3b8', font: {{ size: 10 }} }} }} }}
