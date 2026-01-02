@@ -2830,7 +2830,7 @@ async def lookup_yahoo_finance(
                 <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; margin-bottom: 1rem; color: #818cf8; text-align: center;">
                     📊 高度な財務指標
                 </h2>
-                <div hx-get="/api/chart/advanced-metrics?ticker={ticker}" hx-trigger="load" hx-swap="innerHTML">
+                <div hx-get="/api/chart/advanced-metrics?ticker={symbol}" hx-trigger="load" hx-swap="innerHTML">
                     <div style="text-align: center; padding: 2rem; color: #64748b;">
                         <div style="display: inline-block; width: 20px; height: 20px; border: 2px solid #818cf8; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
                         <p style="margin-top: 1rem;">高度な指標を計算中...</p>
