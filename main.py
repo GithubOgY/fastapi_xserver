@@ -2825,6 +2825,19 @@ async def lookup_yahoo_finance(
                 </p>
             </div>
 
+            <!-- Advanced Metrics Section (OOB Swap) -->
+            <div id="advanced-metrics-section" class="section" hx-swap-oob="true" style="display: block;">
+                <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; margin-bottom: 1rem; color: #818cf8; text-align: center;">
+                    📊 高度な財務指標
+                </h2>
+                <div hx-get="/api/chart/advanced-metrics?ticker={symbol}" hx-trigger="load" hx-swap="innerHTML">
+                    <div style="text-align: center; padding: 2rem; color: #64748b;">
+                        <div style="display: inline-block; width: 20px; height: 20px; border: 2px solid #818cf8; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                        <p style="margin-top: 1rem;">高度な指標を計算中...</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Clear cashflow section since we now show it inline -->
             <div id="cashflow-section" class="section" hx-swap-oob="true" style="display: none;"></div>
 
@@ -4372,6 +4385,267 @@ async def get_technical_chart(
             "error": "server_error",
             "message": f"エラーが発生しました: {str(e)}"
         }
+
+
+@app.get("/api/chart/advanced-metrics", response_class=HTMLResponse)
+async def get_advanced_metrics(
+    ticker: str = Query(..., description="Stock ticker code (e.g., 7203.T)"),
+    current_user: User = Depends(get_current_user_optional)
+):
+    """
+    Get advanced financial metrics including PEG ratio, YoY/QoQ growth, ROE, ROIC
+    Returns HTML with charts
+    """
+    try:
+        # Ensure ticker has .T suffix for Tokyo Stock Exchange
+        if not ticker.endswith('.T'):
+            ticker = f"{ticker}.T"
+
+        # Fetch stock data from Yahoo Finance
+        stock = yf.Ticker(ticker)
+
+        # Analyze advanced metrics
+        metrics = analyze_advanced_metrics(stock)
+
+        # Add basic stock info
+        try:
+            info = stock.info
+            company_name = info.get('longName') or info.get('shortName') or ticker
+            current_price = info.get('currentPrice') or info.get('regularMarketPrice')
+            pe_ratio = info.get('trailingPE') or info.get('forwardPE')
+        except Exception as info_error:
+            logger.warning(f"Could not fetch stock info: {info_error}")
+            company_name = ticker
+            current_price = None
+            pe_ratio = None
+
+        # Prepare chart data
+        roe_years = [item["year"] for item in metrics["roe_history"]]
+        roe_values = [item["roe"] for item in metrics["roe_history"]]
+
+        roic_years = [item["year"] for item in metrics["roic_history"]]
+        roic_values = [item["roic"] for item in metrics["roic_history"]]
+
+        revenue_yoy_years = [item["year"] for item in metrics["revenue_yoy_history"]]
+        revenue_yoy_values = [item["yoy"] for item in metrics["revenue_yoy_history"]]
+
+        eps_yoy_years = [item["year"] for item in metrics["eps_yoy_history"]]
+        eps_yoy_values = [item["yoy"] for item in metrics["eps_yoy_history"]]
+
+        # Generate HTML with charts
+        html_content = f"""
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+            <!-- PEGレシオ -->
+            <div style="background: rgba(30, 41, 59, 0.5); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                <h3 style="font-size: 1rem; color: #818cf8; margin-bottom: 1rem; text-align: center;">PEGレシオ</h3>
+                <div style="font-size: 2rem; text-align: center; color: #e2e8f0; font-weight: 600;">
+                    {metrics['peg_ratio'] if metrics['peg_ratio'] is not None else '-'}
+                </div>
+                <p style="font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 0.5rem;">
+                    PER ÷ EPS成長率<br>
+                    <span style="color: #10b981;">目安: 1.0以下が割安</span>
+                </p>
+            </div>
+
+            <!-- ROE推移 -->
+            <div style="background: rgba(30, 41, 59, 0.5); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                <h3 style="font-size: 1rem; color: #818cf8; margin-bottom: 1rem; text-align: center;">ROE 推移</h3>
+                <canvas id="roeChart" style="width: 100%; height: 200px;"></canvas>
+                <p style="font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 0.5rem;">
+                    最新: {metrics['latest_roe'] if metrics['latest_roe'] is not None else '-'}%
+                </p>
+            </div>
+
+            <!-- ROIC推移 -->
+            <div style="background: rgba(30, 41, 59, 0.5); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                <h3 style="font-size: 1rem; color: #818cf8; margin-bottom: 1rem; text-align: center;">ROIC 推移</h3>
+                <canvas id="roicChart" style="width: 100%; height: 200px;"></canvas>
+                <p style="font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 0.5rem;">
+                    最新: {metrics['latest_roic'] if metrics['latest_roic'] is not None else '-'}%
+                </p>
+            </div>
+
+            <!-- 売上YoY成長率 -->
+            <div style="background: rgba(30, 41, 59, 0.5); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                <h3 style="font-size: 1rem; color: #818cf8; margin-bottom: 1rem; text-align: center;">売上高 YoY成長率</h3>
+                <canvas id="revenueYoyChart" style="width: 100%; height: 200px;"></canvas>
+                <p style="font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 0.5rem;">
+                    最新: {metrics['latest_revenue_yoy'] if metrics['latest_revenue_yoy'] is not None else '-'}%
+                </p>
+            </div>
+
+            <!-- EPS YoY成長率 -->
+            <div style="background: rgba(30, 41, 59, 0.5); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                <h3 style="font-size: 1rem; color: #818cf8; margin-bottom: 1rem; text-align: center;">EPS YoY成長率</h3>
+                <canvas id="epsYoyChart" style="width: 100%; height: 200px;"></canvas>
+                <p style="font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 0.5rem;">
+                    最新: {metrics['latest_eps_yoy'] if metrics['latest_eps_yoy'] is not None else '-'}%
+                </p>
+            </div>
+        </div>
+
+        <script>
+        // ROE Chart
+        if ({len(roe_values)} > 0) {{
+            const roeCtx = document.getElementById('roeChart').getContext('2d');
+            new Chart(roeCtx, {{
+                type: 'line',
+                data: {{
+                    labels: {roe_years},
+                    datasets: [{{
+                        label: 'ROE (%)',
+                        data: {roe_values},
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }}]
+                }},
+                options: {{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {{
+                        legend: {{ display: false }}
+                    }},
+                    scales: {{
+                        y: {{
+                            beginAtZero: true,
+                            ticks: {{ color: '#94a3b8' }},
+                            grid: {{ color: 'rgba(148, 163, 184, 0.1)' }}
+                        }},
+                        x: {{
+                            ticks: {{ color: '#94a3b8' }},
+                            grid: {{ color: 'rgba(148, 163, 184, 0.1)' }}
+                        }}
+                    }}
+                }}
+            }});
+        }}
+
+        // ROIC Chart
+        if ({len(roic_values)} > 0) {{
+            const roicCtx = document.getElementById('roicChart').getContext('2d');
+            new Chart(roicCtx, {{
+                type: 'line',
+                data: {{
+                    labels: {roic_years},
+                    datasets: [{{
+                        label: 'ROIC (%)',
+                        data: {roic_values},
+                        borderColor: '#818cf8',
+                        backgroundColor: 'rgba(129, 140, 248, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }}]
+                }},
+                options: {{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {{
+                        legend: {{ display: false }}
+                    }},
+                    scales: {{
+                        y: {{
+                            beginAtZero: true,
+                            ticks: {{ color: '#94a3b8' }},
+                            grid: {{ color: 'rgba(148, 163, 184, 0.1)' }}
+                        }},
+                        x: {{
+                            ticks: {{ color: '#94a3b8' }},
+                            grid: {{ color: 'rgba(148, 163, 184, 0.1)' }}
+                        }}
+                    }}
+                }}
+            }});
+        }}
+
+        // Revenue YoY Chart
+        if ({len(revenue_yoy_values)} > 0) {{
+            const revYoyCtx = document.getElementById('revenueYoyChart').getContext('2d');
+            new Chart(revYoyCtx, {{
+                type: 'bar',
+                data: {{
+                    labels: {revenue_yoy_years},
+                    datasets: [{{
+                        label: 'YoY (%)',
+                        data: {revenue_yoy_values},
+                        backgroundColor: {revenue_yoy_values}.map(v => v >= 0 ? 'rgba(16, 185, 129, 0.7)' : 'rgba(244, 63, 94, 0.7)'),
+                        borderColor: {revenue_yoy_values}.map(v => v >= 0 ? '#10b981' : '#f43f5e'),
+                        borderWidth: 1
+                    }}]
+                }},
+                options: {{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {{
+                        legend: {{ display: false }}
+                    }},
+                    scales: {{
+                        y: {{
+                            ticks: {{ color: '#94a3b8' }},
+                            grid: {{ color: 'rgba(148, 163, 184, 0.1)' }}
+                        }},
+                        x: {{
+                            ticks: {{ color: '#94a3b8' }},
+                            grid: {{ color: 'rgba(148, 163, 184, 0.1)' }}
+                        }}
+                    }}
+                }}
+            }});
+        }}
+
+        // EPS YoY Chart
+        if ({len(eps_yoy_values)} > 0) {{
+            const epsYoyCtx = document.getElementById('epsYoyChart').getContext('2d');
+            new Chart(epsYoyCtx, {{
+                type: 'bar',
+                data: {{
+                    labels: {eps_yoy_years},
+                    datasets: [{{
+                        label: 'YoY (%)',
+                        data: {eps_yoy_values},
+                        backgroundColor: {eps_yoy_values}.map(v => v >= 0 ? 'rgba(129, 140, 248, 0.7)' : 'rgba(244, 63, 94, 0.7)'),
+                        borderColor: {eps_yoy_values}.map(v => v >= 0 ? '#818cf8' : '#f43f5e'),
+                        borderWidth: 1
+                    }}]
+                }},
+                options: {{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {{
+                        legend: {{ display: false }}
+                    }},
+                    scales: {{
+                        y: {{
+                            ticks: {{ color: '#94a3b8' }},
+                            grid: {{ color: 'rgba(148, 163, 184, 0.1)' }}
+                        }},
+                        x: {{
+                            ticks: {{ color: '#94a3b8' }},
+                            grid: {{ color: 'rgba(148, 163, 184, 0.1)' }}
+                        }}
+                    }}
+                }}
+            }});
+        }}
+        </script>
+
+        <p style="font-size: 0.7rem; color: #475569; margin-top: 1.5rem; text-align: center;">
+            データソース: Yahoo Finance | PEGレシオ、ROE、ROIC、YoY成長率
+        </p>
+        """
+
+        return HTMLResponse(content=html_content)
+
+    except Exception as e:
+        logger.error(f"Advanced metrics error for {ticker}: {e}")
+        import traceback
+        traceback.print_exc()
+        return HTMLResponse(content=f"""
+            <div style="color: #fb7185; padding: 2rem; text-align: center; background: rgba(244, 63, 94, 0.1); border-radius: 8px;">
+                ❌ 高度な指標の計算に失敗しました: {str(e)}
+            </div>
+        """)
 
 
 # ==========================================
