@@ -2733,7 +2733,9 @@ async def lookup_yahoo_finance(
                             ]
                         }},
                         options: {{
-                            responsive: true, maintainAspectRatio: false,
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            aspectRatio: 2.5,
                             interaction: {{ mode: 'index', intersect: false }},
                             scales: {{
                                 y: {{ grid: {{ color: 'rgba(255,255,255,0.05)' }}, ticks: {{ color: '#64748b', font: {{ size: 10 }} }}, title: {{ display: true, text: '単位: 億円', color: '#64748b', font: {{ size: 10 }} }} }},
@@ -2758,7 +2760,9 @@ async def lookup_yahoo_finance(
                             ]
                         }},
                         options: {{
-                            responsive: true, maintainAspectRatio: false,
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            aspectRatio: 2.5,
                             interaction: {{ mode: 'index', intersect: false }},
                             scales: {{
                                 y: {{ grid: {{ color: 'rgba(255,255,255,0.05)' }}, ticks: {{ color: '#64748b', font: {{ size: 10 }} }}, title: {{ display: true, text: '単位: 億円', color: '#64748b', font: {{ size: 10 }} }} }},
@@ -2778,18 +2782,20 @@ async def lookup_yahoo_finance(
                             ]
                         }},
                         options: {{
-                            responsive: true, maintainAspectRatio: false,
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            aspectRatio: 2.5,
                             interaction: {{ mode: 'index', intersect: false }},
                             scales: {{
-                                y: {{ 
+                                y: {{
                                     beginAtZero: true,
-                                    grid: {{ color: 'rgba(255,255,255,0.05)' }}, 
-                                    ticks: {{ color: '#64748b', font: {{ size: 11 }} }}, 
-                                    title: {{ display: true, text: '単位: 億円', color: '#64748b', font: {{ size: 11, weight: 'bold' }} }} 
+                                    grid: {{ color: 'rgba(255,255,255,0.05)' }},
+                                    ticks: {{ color: '#64748b', font: {{ size: 11 }} }},
+                                    title: {{ display: true, text: '単位: 億円', color: '#64748b', font: {{ size: 11, weight: 'bold' }} }}
                                 }},
                                 x: {{ grid: {{ display: false }}, ticks: {{ color: '#64748b', font: {{ size: 10 }} }} }}
                             }},
-                            plugins: {{ 
+                            plugins: {{
                                 legend: {{ labels: {{ color: '#94a3b8', font: {{ size: 11 }} }} }},
                                 tooltip: {{
                                     callbacks: {{
@@ -2813,13 +2819,15 @@ async def lookup_yahoo_finance(
                             ]
                         }},
                         options: {{
-                            responsive: true, maintainAspectRatio: false,
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            aspectRatio: 2.5,
                             interaction: {{ mode: 'index', intersect: false }},
                             scales: {{
-                                y: {{ 
+                                y: {{
                                     beginAtZero: true,
-                                    grid: {{ color: 'rgba(255,255,255,0.05)' }}, 
-                                    ticks: {{ color: '#64748b', font: {{ size: 10 }} }}, 
+                                    grid: {{ color: 'rgba(255,255,255,0.05)' }},
+                                    ticks: {{ color: '#64748b', font: {{ size: 10 }} }},
                                     title: {{ display: true, text: '単位: %', color: '#64748b', font: {{ size: 10 }} }} 
                                 }},
                                 x: {{ grid: {{ display: false }}, ticks: {{ color: '#64748b', font: {{ size: 10 }} }} }}
@@ -2865,7 +2873,8 @@ async def lookup_yahoo_finance(
                         }},
                         options: {{
                             responsive: true,
-                            maintainAspectRatio: false,
+                            maintainAspectRatio: true,
+                    aspectRatio: 2.5,
                             scales: {{
                                 y: {{ 
                                     grid: {{ color: 'rgba(255,255,255,0.05)' }},
@@ -4067,7 +4076,8 @@ async def get_edinet_history(code: str, current_user: User = Depends(get_current
                             }},
                             options: {{
                                 responsive: true,
-                                maintainAspectRatio: false,
+                                maintainAspectRatio: true,
+                    aspectRatio: 2.5,
                                 interaction: {{
                                     mode: 'index',
                                     intersect: false,
@@ -4366,7 +4376,8 @@ async def get_edinet_ratios(code: str, current_user: User = Depends(get_current_
                             }},
                             options: {{
                                 responsive: true,
-                                maintainAspectRatio: false,
+                                maintainAspectRatio: true,
+                    aspectRatio: 2.5,
                                 interaction: {{
                                     mode: 'index',
                                     intersect: false,
@@ -4656,7 +4667,8 @@ async def get_advanced_metrics(
                 }},
                 options: {{
                     responsive: true,
-                    maintainAspectRatio: false,
+                    maintainAspectRatio: true,
+                    aspectRatio: 2.5,
                     plugins: {{
                         legend: {{ display: true, labels: {{ color: '#94a3b8', font: {{ size: 10 }} }} }}
                     }},
@@ -4711,7 +4723,8 @@ async def get_advanced_metrics(
                 }},
                 options: {{
                     responsive: true,
-                    maintainAspectRatio: false,
+                    maintainAspectRatio: true,
+                    aspectRatio: 2.5,
                     plugins: {{
                         legend: {{ display: true, labels: {{ color: '#94a3b8', font: {{ size: 10 }} }} }}
                     }},
@@ -4767,7 +4780,8 @@ async def get_advanced_metrics(
                 }},
                 options: {{
                     responsive: true,
-                    maintainAspectRatio: false,
+                    maintainAspectRatio: true,
+                    aspectRatio: 2.5,
                     plugins: {{
                         legend: {{ display: true, labels: {{ color: '#94a3b8', font: {{ size: 10 }} }} }}
                     }},
@@ -4832,7 +4846,8 @@ async def get_advanced_metrics(
                 }},
                 options: {{
                     responsive: true,
-                    maintainAspectRatio: false,
+                    maintainAspectRatio: true,
+                    aspectRatio: 2.5,
                     plugins: {{
                         legend: {{ display: true, labels: {{ color: '#94a3b8', font: {{ size: 10 }} }} }}
                     }},
