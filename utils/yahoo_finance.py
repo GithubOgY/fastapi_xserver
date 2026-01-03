@@ -96,6 +96,7 @@ def get_investment_data(code: str) -> dict:
 
         # === S優先度: バリュエーション ===
         data["株価"] = info.get("currentPrice") or info.get("regularMarketPrice")
+        data["前日終値"] = info.get("previousClose")
         data["時価総額"] = info.get("marketCap")
         data["PER"] = info.get("trailingPE") or info.get("forwardPE")
         data["PBR"] = info.get("priceToBook")
@@ -129,7 +130,8 @@ def get_investment_data(code: str) -> dict:
         data["アナリスト推奨"] = info.get("recommendationKey")
 
         # === B優先度: 株主還元 ===
-        data["配当利回り"] = info.get("dividendYield")
+        data["配当利回り"] = info.get("dividendYield") or info.get("trailingAnnualDividendYield")
+        data["配当金額"] = info.get("dividendRate") or info.get("trailingAnnualDividendRate")
         data["配当性向"] = info.get("payoutRatio")
 
         # === B優先度: 従業員 ===

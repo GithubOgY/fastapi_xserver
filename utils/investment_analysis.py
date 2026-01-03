@@ -90,12 +90,25 @@ def analyze_investment_decision(ticker_code: str, financial_context: Dict[str, A
                 return f"{val:,.2f}"
         return str(val)
 
+    # 株価変動の計算
+    current_price = yahoo_data.get('株価')
+    prev_close = yahoo_data.get('前日終値')
+    price_change = None
+    price_change_pct = None
+    if current_price and prev_close and prev_close > 0:
+        price_change = current_price - prev_close
+        price_change_pct = (price_change / prev_close) * 100
+
     yahoo_summary = f"""
 **⚠️ 注意：以下のYahoo Financeデータは参考値です。古い決算データが混在している可能性があります。**
 **財務数値についてはEDINETデータを優先してください。**
 
+【株価情報（リアルタイム）】
+- 現在株価: {format_value(yahoo_data.get('株価'), 'yen')}
+- 前日終値: {format_value(yahoo_data.get('前日終値'), 'yen')}
+- 変動: {format_value(price_change, 'yen') if price_change is not None else 'データなし'} ({f'+{price_change_pct:.2f}%' if price_change_pct and price_change_pct >= 0 else f'{price_change_pct:.2f}%' if price_change_pct else 'データなし'})
+
 【バリュエーション（参考値）】
-- 株価: {format_value(yahoo_data.get('株価'), 'yen')}
 - 時価総額: {format_value(yahoo_data.get('時価総額'), 'billion')} ⚠️ 要検証
 - PER: {format_value(yahoo_data.get('PER'))}倍 ⚠️ 要検証
 - PBR: {format_value(yahoo_data.get('PBR'))}倍 ⚠️ 要検証
@@ -115,6 +128,7 @@ def analyze_investment_decision(ticker_code: str, financial_context: Dict[str, A
 
 【株主還元】
 - 配当利回り: {format_value(yahoo_data.get('配当利回り'), 'percent')}
+- 配当金額: {format_value(yahoo_data.get('配当金額'), 'yen')}
 - 配当性向: {format_value(yahoo_data.get('配当性向'), 'percent')}
 
 【参考情報】
