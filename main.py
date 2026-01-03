@@ -3441,48 +3441,29 @@ async def search_edinet_company(
                     <span style="font-size: 1.25rem;">🤖</span>
                     <h4 style="font-size: 1rem; font-weight: 600; color: #e2e8f0; margin: 0;">AI投資分析</h4>
                 </div>
-                <p style="text-align: center; color: #64748b; font-size: 0.75rem; margin-bottom: 1rem;">3つの専門視点で企業を評価</p>
+                <p style="text-align: center; color: #64748b; font-size: 0.75rem; margin-bottom: 1rem;">包括的な投資判断分析</p>
                 <div id="ai-analysis-container">
                     <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center;">
-                        <button id="ai-fin-{code_only}" class="ai-btn ai-btn-blue"
-                            style="padding: 0.5rem 1rem; background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa; border-radius: 6px; font-weight: 500; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;"
-                            hx-post="/api/ai/analyze-financial"
+                        <button id="ai-invest-{code_only}" class="ai-btn ai-btn-purple"
+                            style="padding: 0.75rem 1.5rem; background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(99, 102, 241, 0.15)); border: 1px solid rgba(139, 92, 246, 0.4); color: #c084fc; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.3s; box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);"
+                            hx-post="/api/ai/analyze-investment"
                             hx-target="#ai-result"
                             hx-vals='{{"code": "{code_only}", "name": "{cname}"}}'
-                            data-original="💰 財務健全性"
+                            data-original="💎 投資判断分析"
                             onclick="this.innerText='⏳ 分析中...';"
                             hx-on::after-request="this.innerText=this.dataset.original">
-                            💰 財務健全性
-                        </button>
-                        
-                        <button id="ai-biz-{code_only}" class="ai-btn ai-btn-green"
-                            style="padding: 0.5rem 1rem; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; border-radius: 6px; font-weight: 500; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;"
-                            hx-post="/api/ai/analyze-business"
-                            hx-target="#ai-result"
-                            hx-vals='{{"code": "{code_only}", "name": "{cname}"}}'
-                            data-original="🚀 事業競争力"
-                            onclick="this.innerText='⏳ 分析中...';"
-                            hx-on::after-request="this.innerText=this.dataset.original">
-                            🚀 事業競争力
-                        </button>
-                        <button id="ai-rsk-{code_only}" class="ai-btn ai-btn-red"
-                            style="padding: 0.5rem 1rem; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; border-radius: 6px; font-weight: 500; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;"
-                            hx-post="/api/ai/analyze-risk"
-                            hx-target="#ai-result"
-                            hx-vals='{{"code": "{code_only}", "name": "{cname}"}}'
-                            data-original="⚠️ リスク分析"
-                            onclick="this.innerText='⏳ 分析中...';"
-                            hx-on::after-request="this.innerText=this.dataset.original">
-                            ⚠️ リスク分析
+                            💎 投資判断分析
                         </button>
                     </div>
                     <style>
-                        #ai-fin-{code_only}:hover {{ background: rgba(59, 130, 246, 0.2); }}
-                        #ai-biz-{code_only}:hover {{ background: rgba(16, 185, 129, 0.2); }}
-                        #ai-rsk-{code_only}:hover {{ background: rgba(239, 68, 68, 0.2); }}
+                        #ai-invest-{code_only}:hover {{
+                            background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(99, 102, 241, 0.25));
+                            transform: translateY(-2px);
+                            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+                        }}
                     </style>
                     <div id="ai-result" style="margin-top: 1rem; padding: 1rem; background: rgba(30, 41, 59, 0.4); border-radius: 8px; border: 1px solid rgba(71, 85, 105, 0.3); color: #94a3b8; line-height: 1.6; font-size: 0.875rem; min-height: 60px; text-align: left;">
-                        分析したい視点を選択してください
+                        💎 包括的な投資判断分析を開始してください（バリュエーション・財務・事業・ガバナンス・リスクを総合評価）
                     </div>
                     
                     <a href="#" onclick="window.open('/ai-policy', '_blank'); return false;" style="display: block; text-align: right; margin-top: 0.5rem; color: #64748b; font-size: 0.7rem; text-decoration: underline; cursor: pointer;" onmouseover="this.style.color='#94a3b8'" onmouseout="this.style.color='#64748b'">
@@ -3928,6 +3909,24 @@ def api_ai_analyze_risk(
         return _run_specialized_analysis(analyze_risk_governance, "risk", code, name, db, current_user)
     except Exception as e:
         logger.error(f"Risk analysis error: {e}")
+        return f"<div class='text-red-400'>エラー: {str(e)}</div>"
+
+@app.post("/api/ai/analyze-investment", response_class=HTMLResponse)
+def api_ai_analyze_investment(
+    code: str = Form(...),
+    name: str = Form(""),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """💎 Comprehensive investment decision analysis endpoint"""
+    from utils.investment_analysis import analyze_investment_decision
+
+    if not current_user:
+        return "<div class='text-red-400'>ログインが必要です</div>"
+    try:
+        return _run_specialized_analysis(analyze_investment_decision, "investment", code, name, db, current_user)
+    except Exception as e:
+        logger.error(f"Investment analysis error: {e}")
         return f"<div class='text-red-400'>エラー: {str(e)}</div>"
 
 
