@@ -4572,60 +4572,124 @@ async def get_advanced_metrics(
 
         # Generate HTML with charts
         html_content = f"""
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+        <style>
+            .metric-card {{
+                background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+                backdrop-filter: blur(16px);
+                padding: 1.5rem;
+                border-radius: 16px;
+                border: 1px solid rgba(129, 140, 248, 0.2);
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+                transition: all 0.3s ease;
+                position: relative;
+                overflow: hidden;
+            }}
+            .metric-card::before {{
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 3px;
+                background: linear-gradient(90deg, #818cf8, #c084fc, #818cf8);
+                background-size: 200% 100%;
+                animation: shimmer 3s linear infinite;
+            }}
+            @keyframes shimmer {{
+                0% {{ background-position: 200% 0; }}
+                100% {{ background-position: -200% 0; }}
+            }}
+            .metric-card:hover {{
+                transform: translateY(-4px);
+                box-shadow: 0 12px 48px rgba(129, 140, 248, 0.3);
+                border-color: rgba(129, 140, 248, 0.4);
+            }}
+            .metric-title {{
+                font-size: 0.9rem;
+                color: #c084fc;
+                margin-bottom: 1rem;
+                text-align: center;
+                font-weight: 600;
+                letter-spacing: 0.5px;
+                text-transform: uppercase;
+            }}
+            .metric-value {{
+                font-size: 2.5rem;
+                text-align: center;
+                background: linear-gradient(135deg, #818cf8, #c084fc);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                font-weight: 700;
+                text-shadow: 0 0 20px rgba(129, 140, 248, 0.5);
+            }}
+            .metric-subtitle {{
+                font-size: 0.7rem;
+                color: #94a3b8;
+                text-align: center;
+                margin-top: 0.5rem;
+            }}
+            .chart-wrapper {{
+                height: 180px;
+                position: relative;
+                width: 100%;
+                margin-top: 0.5rem;
+            }}
+        </style>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
             <!-- PEGレシオ -->
-            <div style="background: rgba(30, 41, 59, 0.5); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
-                <h3 style="font-size: 1rem; color: #818cf8; margin-bottom: 1rem; text-align: center;">PEGレシオ</h3>
-                <div style="font-size: 2rem; text-align: center; color: #e2e8f0; font-weight: 600;">
+            <div class="metric-card">
+                <h3 class="metric-title">📊 PEG Ratio</h3>
+                <div class="metric-value">
                     {metrics['peg_ratio'] if metrics['peg_ratio'] is not None else '-'}
                 </div>
-                <p style="font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 0.5rem;">
+                <p class="metric-subtitle">
                     PER ÷ EPS成長率<br>
-                    <span style="color: #10b981;">目安: 1.0以下が割安</span>
+                    <span style="color: #10b981; font-weight: 600;">✓ 1.0以下が割安</span>
                 </p>
             </div>
 
             <!-- ROE推移 -->
-            <div style="background: rgba(30, 41, 59, 0.5); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
-                <h3 style="font-size: 1rem; color: #818cf8; margin-bottom: 1rem; text-align: center;">ROE 推移</h3>
-                <div style="height: 150px; position: relative; width: 100%;">
+            <div class="metric-card">
+                <h3 class="metric-title">💎 ROE 推移</h3>
+                <div class="chart-wrapper">
                     <canvas id="roeChart"></canvas>
                 </div>
-                <p style="font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 0.5rem;">
-                    最新: {metrics['latest_roe'] if metrics['latest_roe'] is not None else '-'}%
+                <p class="metric-subtitle">
+                    最新: <span style="color: #10b981; font-weight: 600;">{metrics['latest_roe'] if metrics['latest_roe'] is not None else '-'}%</span>
                 </p>
             </div>
 
             <!-- ROIC推移 -->
-            <div style="background: rgba(30, 41, 59, 0.5); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
-                <h3 style="font-size: 1rem; color: #818cf8; margin-bottom: 1rem; text-align: center;">ROIC 推移</h3>
-                <div style="height: 150px; position: relative; width: 100%;">
+            <div class="metric-card">
+                <h3 class="metric-title">🎯 ROIC 推移</h3>
+                <div class="chart-wrapper">
                     <canvas id="roicChart"></canvas>
                 </div>
-                <p style="font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 0.5rem;">
-                    最新: {metrics['latest_roic'] if metrics['latest_roic'] is not None else '-'}%
+                <p class="metric-subtitle">
+                    最新: <span style="color: #818cf8; font-weight: 600;">{metrics['latest_roic'] if metrics['latest_roic'] is not None else '-'}%</span>
                 </p>
             </div>
 
             <!-- 売上YoY成長率 -->
-            <div style="background: rgba(30, 41, 59, 0.5); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
-                <h3 style="font-size: 1rem; color: #818cf8; margin-bottom: 1rem; text-align: center;">売上高 YoY成長率</h3>
-                <div style="height: 150px; position: relative; width: 100%;">
+            <div class="metric-card">
+                <h3 class="metric-title">📈 売上高 YoY成長率</h3>
+                <div class="chart-wrapper">
                     <canvas id="revenueYoyChart"></canvas>
                 </div>
-                <p style="font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 0.5rem;">
-                    最新: {metrics['latest_revenue_yoy'] if metrics['latest_revenue_yoy'] is not None else '-'}%
+                <p class="metric-subtitle">
+                    最新: <span style="color: #10b981; font-weight: 600;">{metrics['latest_revenue_yoy'] if metrics['latest_revenue_yoy'] is not None else '-'}%</span>
                 </p>
             </div>
 
             <!-- EPS YoY成長率 -->
-            <div style="background: rgba(30, 41, 59, 0.5); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
-                <h3 style="font-size: 1rem; color: #818cf8; margin-bottom: 1rem; text-align: center;">EPS YoY成長率</h3>
-                <div style="height: 150px; position: relative; width: 100%;">
+            <div class="metric-card">
+                <h3 class="metric-title">🚀 EPS YoY成長率</h3>
+                <div class="chart-wrapper">
                     <canvas id="epsYoyChart"></canvas>
                 </div>
-                <p style="font-size: 0.75rem; color: #94a3b8; text-align: center; margin-top: 0.5rem;">
-                    最新: {metrics['latest_eps_yoy'] if metrics['latest_eps_yoy'] is not None else '-'}%
+                <p class="metric-subtitle">
+                    最新: <span style="color: #818cf8; font-weight: 600;">{metrics['latest_eps_yoy'] if metrics['latest_eps_yoy'] is not None else '-'}%</span>
                 </p>
             </div>
         </div>
@@ -4634,33 +4698,47 @@ async def get_advanced_metrics(
         // ROE Chart with benchmark lines
         if ({roe_count} > 0) {{
             const roeCtx = document.getElementById('roeChart').getContext('2d');
-            const roeMinLine = Array({roe_count}).fill(8);  // 最低合格ライン 8%
-            const roeIdealLine = Array({roe_count}).fill(15);  // 理想的水準 15%
+            const roeMinLine = Array({roe_count}).fill(8);
+            const roeIdealLine = Array({roe_count}).fill(15);
+
+            const gradient = roeCtx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(16, 185, 129, 0.4)');
+            gradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+
             new Chart(roeCtx, {{
                 type: 'line',
                 data: {{
                     labels: {roe_years},
                     datasets: [{{
-                        label: 'ROE (%)',
+                        label: 'ROE',
                         data: {roe_values},
                         borderColor: '#10b981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        backgroundColor: gradient,
+                        borderWidth: 3,
                         tension: 0.4,
-                        fill: true
+                        fill: true,
+                        pointRadius: 5,
+                        pointHoverRadius: 8,
+                        pointBackgroundColor: '#10b981',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#10b981',
+                        pointHoverBorderWidth: 3
                     }}, {{
-                        label: '合格ライン(8%)',
+                        label: '合格(8%)',
                         data: roeMinLine,
-                        borderColor: '#ef4444',
-                        borderWidth: 1.5,
-                        borderDash: [5, 5],
+                        borderColor: 'rgba(239, 68, 68, 0.5)',
+                        borderWidth: 2,
+                        borderDash: [8, 4],
                         pointRadius: 0,
                         fill: false
                     }}, {{
-                        label: '理想ライン(15%)',
+                        label: '理想(15%)',
                         data: roeIdealLine,
-                        borderColor: '#10b981',
-                        borderWidth: 1.5,
-                        borderDash: [5, 5],
+                        borderColor: 'rgba(16, 185, 129, 0.5)',
+                        borderWidth: 2,
+                        borderDash: [8, 4],
                         pointRadius: 0,
                         fill: false
                     }}]
@@ -4668,20 +4746,60 @@ async def get_advanced_metrics(
                 options: {{
                     responsive: true,
                     maintainAspectRatio: true,
-                    aspectRatio: 2.5,
+                    aspectRatio: 2.2,
                     plugins: {{
-                        legend: {{ display: true, labels: {{ color: '#94a3b8', font: {{ size: 10 }} }} }}
+                        legend: {{
+                            display: true,
+                            position: 'bottom',
+                            labels: {{
+                                color: '#94a3b8',
+                                font: {{ size: 9 }},
+                                padding: 8,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }}
+                        }},
+                        tooltip: {{
+                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                            titleColor: '#c084fc',
+                            bodyColor: '#e2e8f0',
+                            borderColor: '#818cf8',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: true,
+                            callbacks: {{
+                                label: function(context) {{
+                                    return context.dataset.label + ': ' + context.parsed.y.toFixed(2) + '%';
+                                }}
+                            }}
+                        }}
                     }},
                     scales: {{
                         y: {{
                             beginAtZero: true,
-                            ticks: {{ color: '#94a3b8' }},
-                            grid: {{ color: 'rgba(148, 163, 184, 0.1)' }}
+                            ticks: {{
+                                color: '#94a3b8',
+                                font: {{ size: 10 }},
+                                callback: function(value) {{ return value + '%'; }}
+                            }},
+                            grid: {{
+                                color: 'rgba(148, 163, 184, 0.08)',
+                                drawBorder: false
+                            }}
                         }},
                         x: {{
-                            ticks: {{ color: '#94a3b8' }},
-                            grid: {{ color: 'rgba(148, 163, 184, 0.1)' }}
+                            ticks: {{
+                                color: '#94a3b8',
+                                font: {{ size: 10 }}
+                            }},
+                            grid: {{
+                                display: false
+                            }}
                         }}
+                    }},
+                    interaction: {{
+                        mode: 'index',
+                        intersect: false
                     }}
                 }}
             }});
@@ -4690,33 +4808,47 @@ async def get_advanced_metrics(
         // ROIC Chart with benchmark lines
         if ({roic_count} > 0) {{
             const roicCtx = document.getElementById('roicChart').getContext('2d');
-            const roicMinLine = Array({roic_count}).fill(8);  // 最低合格ライン 8%
-            const roicIdealLine = Array({roic_count}).fill(15);  // 理想的水準 15%
+            const roicMinLine = Array({roic_count}).fill(8);
+            const roicIdealLine = Array({roic_count}).fill(15);
+
+            const gradient2 = roicCtx.createLinearGradient(0, 0, 0, 300);
+            gradient2.addColorStop(0, 'rgba(129, 140, 248, 0.4)');
+            gradient2.addColorStop(1, 'rgba(129, 140, 248, 0.0)');
+
             new Chart(roicCtx, {{
                 type: 'line',
                 data: {{
                     labels: {roic_years},
                     datasets: [{{
-                        label: 'ROIC (%)',
+                        label: 'ROIC',
                         data: {roic_values},
                         borderColor: '#818cf8',
-                        backgroundColor: 'rgba(129, 140, 248, 0.1)',
+                        backgroundColor: gradient2,
+                        borderWidth: 3,
                         tension: 0.4,
-                        fill: true
+                        fill: true,
+                        pointRadius: 5,
+                        pointHoverRadius: 8,
+                        pointBackgroundColor: '#818cf8',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#818cf8',
+                        pointHoverBorderWidth: 3
                     }}, {{
-                        label: '合格ライン(8%)',
+                        label: '合格(8%)',
                         data: roicMinLine,
-                        borderColor: '#ef4444',
-                        borderWidth: 1.5,
-                        borderDash: [5, 5],
+                        borderColor: 'rgba(239, 68, 68, 0.5)',
+                        borderWidth: 2,
+                        borderDash: [8, 4],
                         pointRadius: 0,
                         fill: false
                     }}, {{
-                        label: '理想ライン(15%)',
+                        label: '理想(15%)',
                         data: roicIdealLine,
-                        borderColor: '#10b981',
-                        borderWidth: 1.5,
-                        borderDash: [5, 5],
+                        borderColor: 'rgba(16, 185, 129, 0.5)',
+                        borderWidth: 2,
+                        borderDash: [8, 4],
                         pointRadius: 0,
                         fill: false
                     }}]
@@ -4724,20 +4856,60 @@ async def get_advanced_metrics(
                 options: {{
                     responsive: true,
                     maintainAspectRatio: true,
-                    aspectRatio: 2.5,
+                    aspectRatio: 2.2,
                     plugins: {{
-                        legend: {{ display: true, labels: {{ color: '#94a3b8', font: {{ size: 10 }} }} }}
+                        legend: {{
+                            display: true,
+                            position: 'bottom',
+                            labels: {{
+                                color: '#94a3b8',
+                                font: {{ size: 9 }},
+                                padding: 8,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }}
+                        }},
+                        tooltip: {{
+                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                            titleColor: '#c084fc',
+                            bodyColor: '#e2e8f0',
+                            borderColor: '#818cf8',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: true,
+                            callbacks: {{
+                                label: function(context) {{
+                                    return context.dataset.label + ': ' + context.parsed.y.toFixed(2) + '%';
+                                }}
+                            }}
+                        }}
                     }},
                     scales: {{
                         y: {{
                             beginAtZero: true,
-                            ticks: {{ color: '#94a3b8' }},
-                            grid: {{ color: 'rgba(148, 163, 184, 0.1)' }}
+                            ticks: {{
+                                color: '#94a3b8',
+                                font: {{ size: 10 }},
+                                callback: function(value) {{ return value + '%'; }}
+                            }},
+                            grid: {{
+                                color: 'rgba(148, 163, 184, 0.08)',
+                                drawBorder: false
+                            }}
                         }},
                         x: {{
-                            ticks: {{ color: '#94a3b8' }},
-                            grid: {{ color: 'rgba(148, 163, 184, 0.1)' }}
+                            ticks: {{
+                                color: '#94a3b8',
+                                font: {{ size: 10 }}
+                            }},
+                            grid: {{
+                                display: false
+                            }}
                         }}
+                    }},
+                    interaction: {{
+                        mode: 'index',
+                        intersect: false
                     }}
                 }}
             }});
@@ -4746,34 +4918,37 @@ async def get_advanced_metrics(
         // Revenue YoY Chart with benchmark lines
         if ({revenue_yoy_count} > 0) {{
             const revYoyCtx = document.getElementById('revenueYoyChart').getContext('2d');
-            const revYoyMinLine = Array({revenue_yoy_count}).fill(10);  // 最低合格ライン 10%
-            const revYoyIdealLine = Array({revenue_yoy_count}).fill(15);  // 理想的水準 15%
+            const revYoyMinLine = Array({revenue_yoy_count}).fill(10);
+            const revYoyIdealLine = Array({revenue_yoy_count}).fill(15);
+
             new Chart(revYoyCtx, {{
                 type: 'bar',
                 data: {{
                     labels: {revenue_yoy_years},
                     datasets: [{{
-                        label: 'YoY (%)',
+                        label: 'YoY',
                         data: {revenue_yoy_values},
-                        backgroundColor: {revenue_yoy_values}.map(v => v >= 0 ? 'rgba(16, 185, 129, 0.7)' : 'rgba(244, 63, 94, 0.7)'),
+                        backgroundColor: {revenue_yoy_values}.map(v => v >= 15 ? '#10b981' : v >= 10 ? '#fbbf24' : v >= 0 ? '#f59e0b' : '#f43f5e'),
                         borderColor: {revenue_yoy_values}.map(v => v >= 0 ? '#10b981' : '#f43f5e'),
-                        borderWidth: 1
+                        borderWidth: 2,
+                        borderRadius: 6,
+                        borderSkipped: false
                     }}, {{
-                        label: '合格ライン(10%)',
+                        label: '合格(10%)',
                         data: revYoyMinLine,
                         type: 'line',
-                        borderColor: '#fbbf24',
-                        borderWidth: 1.5,
-                        borderDash: [5, 5],
+                        borderColor: 'rgba(251, 191, 36, 0.6)',
+                        borderWidth: 2,
+                        borderDash: [8, 4],
                         pointRadius: 0,
                         fill: false
                     }}, {{
-                        label: '理想ライン(15%)',
+                        label: '理想(15%)',
                         data: revYoyIdealLine,
                         type: 'line',
-                        borderColor: '#10b981',
-                        borderWidth: 1.5,
-                        borderDash: [5, 5],
+                        borderColor: 'rgba(16, 185, 129, 0.6)',
+                        borderWidth: 2,
+                        borderDash: [8, 4],
                         pointRadius: 0,
                         fill: false
                     }}]
@@ -4781,19 +4956,61 @@ async def get_advanced_metrics(
                 options: {{
                     responsive: true,
                     maintainAspectRatio: true,
-                    aspectRatio: 2.5,
+                    aspectRatio: 2.2,
                     plugins: {{
-                        legend: {{ display: true, labels: {{ color: '#94a3b8', font: {{ size: 10 }} }} }}
+                        legend: {{
+                            display: true,
+                            position: 'bottom',
+                            labels: {{
+                                color: '#94a3b8',
+                                font: {{ size: 9 }},
+                                padding: 8,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }}
+                        }},
+                        tooltip: {{
+                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                            titleColor: '#c084fc',
+                            bodyColor: '#e2e8f0',
+                            borderColor: '#818cf8',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: true,
+                            callbacks: {{
+                                label: function(context) {{
+                                    const value = context.parsed.y;
+                                    let status = value >= 15 ? '🚀 優秀' : value >= 10 ? '✓ 合格' : value >= 0 ? '⚠️ 要改善' : '❌ マイナス';
+                                    return context.dataset.label + ': ' + value.toFixed(2) + '% (' + status + ')';
+                                }}
+                            }}
+                        }}
                     }},
                     scales: {{
                         y: {{
-                            ticks: {{ color: '#94a3b8' }},
-                            grid: {{ color: 'rgba(148, 163, 184, 0.1)' }}
+                            ticks: {{
+                                color: '#94a3b8',
+                                font: {{ size: 10 }},
+                                callback: function(value) {{ return value + '%'; }}
+                            }},
+                            grid: {{
+                                color: 'rgba(148, 163, 184, 0.08)',
+                                drawBorder: false
+                            }}
                         }},
                         x: {{
-                            ticks: {{ color: '#94a3b8' }},
-                            grid: {{ color: 'rgba(148, 163, 184, 0.1)' }}
+                            ticks: {{
+                                color: '#94a3b8',
+                                font: {{ size: 10 }}
+                            }},
+                            grid: {{
+                                display: false
+                            }}
                         }}
+                    }},
+                    interaction: {{
+                        mode: 'index',
+                        intersect: false
                     }}
                 }}
             }});
@@ -4802,44 +5019,47 @@ async def get_advanced_metrics(
         // EPS YoY Chart with benchmark lines
         if ({eps_yoy_count} > 0) {{
             const epsYoyCtx = document.getElementById('epsYoyChart').getContext('2d');
-            const epsYoyMinLine = Array({eps_yoy_count}).fill(15);  // 最低合格ライン 15%（市場平均＋αの最低限）
-            const epsYoyIdealLine = Array({eps_yoy_count}).fill(25);  // 理想的水準 25%（テンバガー候補のスイートスポット）
-            const epsYoyWarningLine = Array({eps_yoy_count}).fill(50);  // 要警戒ライン 50%超（出来すぎの疑いあり）
+            const epsYoyMinLine = Array({eps_yoy_count}).fill(15);
+            const epsYoyIdealLine = Array({eps_yoy_count}).fill(25);
+            const epsYoyWarningLine = Array({eps_yoy_count}).fill(50);
+
             new Chart(epsYoyCtx, {{
                 type: 'bar',
                 data: {{
                     labels: {eps_yoy_years},
                     datasets: [{{
-                        label: 'YoY (%)',
+                        label: 'YoY',
                         data: {eps_yoy_values},
-                        backgroundColor: {eps_yoy_values}.map(v => v >= 0 ? 'rgba(129, 140, 248, 0.7)' : 'rgba(244, 63, 94, 0.7)'),
-                        borderColor: {eps_yoy_values}.map(v => v >= 0 ? '#818cf8' : '#f43f5e'),
-                        borderWidth: 1
+                        backgroundColor: {eps_yoy_values}.map(v => v >= 50 ? '#f59e0b' : v >= 25 ? '#10b981' : v >= 15 ? '#818cf8' : v >= 0 ? '#6366f1' : '#f43f5e'),
+                        borderColor: {eps_yoy_values}.map(v => v >= 25 ? '#10b981' : v >= 0 ? '#818cf8' : '#f43f5e'),
+                        borderWidth: 2,
+                        borderRadius: 6,
+                        borderSkipped: false
                     }}, {{
-                        label: '合格ライン(15%)',
+                        label: '合格(15%)',
                         data: epsYoyMinLine,
                         type: 'line',
-                        borderColor: '#fbbf24',
-                        borderWidth: 1.5,
-                        borderDash: [5, 5],
+                        borderColor: 'rgba(129, 140, 248, 0.6)',
+                        borderWidth: 2,
+                        borderDash: [8, 4],
                         pointRadius: 0,
                         fill: false
                     }}, {{
-                        label: '理想ライン(25%)',
+                        label: '理想(25%)',
                         data: epsYoyIdealLine,
                         type: 'line',
-                        borderColor: '#10b981',
-                        borderWidth: 1.5,
-                        borderDash: [5, 5],
+                        borderColor: 'rgba(16, 185, 129, 0.6)',
+                        borderWidth: 2,
+                        borderDash: [8, 4],
                         pointRadius: 0,
                         fill: false
                     }}, {{
-                        label: '要警戒ライン(50%)',
+                        label: '警戒(50%)',
                         data: epsYoyWarningLine,
                         type: 'line',
-                        borderColor: '#ef4444',
+                        borderColor: 'rgba(245, 158, 11, 0.6)',
                         borderWidth: 2,
-                        borderDash: [10, 5],
+                        borderDash: [8, 4],
                         pointRadius: 0,
                         fill: false
                     }}]
@@ -4847,19 +5067,61 @@ async def get_advanced_metrics(
                 options: {{
                     responsive: true,
                     maintainAspectRatio: true,
-                    aspectRatio: 2.5,
+                    aspectRatio: 2.2,
                     plugins: {{
-                        legend: {{ display: true, labels: {{ color: '#94a3b8', font: {{ size: 10 }} }} }}
+                        legend: {{
+                            display: true,
+                            position: 'bottom',
+                            labels: {{
+                                color: '#94a3b8',
+                                font: {{ size: 9 }},
+                                padding: 8,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }}
+                        }},
+                        tooltip: {{
+                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                            titleColor: '#c084fc',
+                            bodyColor: '#e2e8f0',
+                            borderColor: '#818cf8',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: true,
+                            callbacks: {{
+                                label: function(context) {{
+                                    const value = context.parsed.y;
+                                    let status = value >= 50 ? '⚠️ 出来すぎ?' : value >= 25 ? '🚀 理想的' : value >= 15 ? '✓ 合格' : value >= 0 ? '⚡ 要改善' : '❌ マイナス';
+                                    return context.dataset.label + ': ' + value.toFixed(2) + '% (' + status + ')';
+                                }}
+                            }}
+                        }}
                     }},
                     scales: {{
                         y: {{
-                            ticks: {{ color: '#94a3b8' }},
-                            grid: {{ color: 'rgba(148, 163, 184, 0.1)' }}
+                            ticks: {{
+                                color: '#94a3b8',
+                                font: {{ size: 10 }},
+                                callback: function(value) {{ return value + '%'; }}
+                            }},
+                            grid: {{
+                                color: 'rgba(148, 163, 184, 0.08)',
+                                drawBorder: false
+                            }}
                         }},
                         x: {{
-                            ticks: {{ color: '#94a3b8' }},
-                            grid: {{ color: 'rgba(148, 163, 184, 0.1)' }}
+                            ticks: {{
+                                color: '#94a3b8',
+                                font: {{ size: 10 }}
+                            }},
+                            grid: {{
+                                display: false
+                            }}
                         }}
+                    }},
+                    interaction: {{
+                        mode: 'index',
+                        intersect: false
                     }}
                 }}
             }});
