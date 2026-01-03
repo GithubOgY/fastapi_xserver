@@ -85,7 +85,8 @@ def analyze_investment_decision(ticker_code: str, financial_context: Dict[str, A
             elif fmt == "million":
                 return f"{val/1_000_000:,.0f}百万円"
             elif fmt == "billion":
-                return f"{val/1_000_000_000:,.2f}億円"
+                # 億円 = 100,000,000円（1億円）
+                return f"{val/100_000_000:,.2f}億円"
             else:
                 return f"{val:,.2f}"
         return str(val)
