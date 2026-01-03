@@ -3771,15 +3771,41 @@ def _run_specialized_analysis(
     ).first()
 
     if cached:
-        logger.info(f"[AI Cache HIT] {clean_code}/{analysis_type}")
-        cache_date = cached.created_at.strftime("%Y-%m-%d %H:%M") if cached.created_at else ""
-        return f"""
-        <div style='margin-bottom: 0.5rem;'>
-            <span style='background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem;'>⚡ キャッシュ ({cache_date})</span>
-            <button onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.innerText).then(()=>alert('コピーしました'))" style="margin-left: 0.5rem; background: rgba(99,102,241,0.2); color: #818cf8; border: none; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; cursor: pointer;">📋 コピー</button>
-        </div>
-        <div>{cached.analysis_html}</div>
-        """
+        # Check prompt version for investment analysis
+        if analysis_type == "investment":
+            from utils.investment_analysis import INVESTMENT_PROMPT_VERSION
+            # Check if cached HTML contains version marker or is from old prompt
+            cache_is_stale = False
+            
+            # Simple heuristic: new prompt outputs start with 【○：判定ランク】
+            # Old prompt outputs start with 💎 総合評価:
+            if "【" not in cached.analysis_html[:500] or "Step1" not in cached.analysis_html:
+                cache_is_stale = True
+                logger.info(f"[AI Cache STALE] {clean_code}/{analysis_type} - old prompt format detected")
+            
+            if cache_is_stale:
+                # Don't return cache, continue to regenerate
+                pass
+            else:
+                logger.info(f"[AI Cache HIT] {clean_code}/{analysis_type}")
+                cache_date = cached.created_at.strftime("%Y-%m-%d %H:%M") if cached.created_at else ""
+                return f"""
+                <div style='margin-bottom: 0.5rem;'>
+                    <span style='background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem;'>⚡ キャッシュ ({cache_date})</span>
+                    <button onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.innerText).then(()=>alert('コピーしました'))" style="margin-left: 0.5rem; background: rgba(99,102,241,0.2); color: #818cf8; border: none; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; cursor: pointer;">📋 コピー</button>
+                </div>
+                <div>{cached.analysis_html}</div>
+                """
+        else:
+            logger.info(f"[AI Cache HIT] {clean_code}/{analysis_type}")
+            cache_date = cached.created_at.strftime("%Y-%m-%d %H:%M") if cached.created_at else ""
+            return f"""
+            <div style='margin-bottom: 0.5rem;'>
+                <span style='background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem;'>⚡ キャッシュ ({cache_date})</span>
+                <button onclick="navigator.clipboard.writeText(this.parentElement.nextElementSibling.innerText).then(()=>alert('コピーしました'))" style="margin-left: 0.5rem; background: rgba(99,102,241,0.2); color: #818cf8; border: none; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.7rem; cursor: pointer;">📋 コピー</button>
+            </div>
+            <div>{cached.analysis_html}</div>
+            """
 
     # Check AI usage limit before generating new analysis
     if user and not check_ai_usage_limit(db, user):
