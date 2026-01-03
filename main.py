@@ -2569,7 +2569,8 @@ async def lookup_yahoo_finance(
                             }}
                         }});
 
-                        const imageData = canvas.toDataURL('image/png');
+                        // Convert to JPEG with compression for smaller file size
+                        const imageData = canvas.toDataURL('image/jpeg', 0.7);  // 70% quality
                         const tickerCode = '{code_only}';
                         const h3 = document.querySelector('h3');
                         const companyName = h3 ? h3.innerText : '';
