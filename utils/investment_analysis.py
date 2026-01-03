@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 # - プロンプト変更時は必ずこの値を更新する
 # - これによりキャッシュが自動的に無効化される
 # =========================================================
-INVESTMENT_PROMPT_VERSION = "2026-01-03-ultra-harsh-v2-no-fake-data"
+INVESTMENT_PROMPT_VERSION = "2026-01-03-v3-edinet-priority-data-validation"
 
 
 def analyze_investment_decision(ticker_code: str, financial_context: Dict[str, Any], company_name: str = "") -> str:
@@ -91,22 +91,25 @@ def analyze_investment_decision(ticker_code: str, financial_context: Dict[str, A
         return str(val)
 
     yahoo_summary = f"""
-【バリュエーション】
+**⚠️ 注意：以下のYahoo Financeデータは参考値です。古い決算データが混在している可能性があります。**
+**財務数値についてはEDINETデータを優先してください。**
+
+【バリュエーション（参考値）】
 - 株価: {format_value(yahoo_data.get('株価'), 'yen')}
-- 時価総額: {format_value(yahoo_data.get('時価総額'), 'billion')}
-- PER: {format_value(yahoo_data.get('PER'))}倍
-- PBR: {format_value(yahoo_data.get('PBR'))}倍
+- 時価総額: {format_value(yahoo_data.get('時価総額'), 'billion')} ⚠️ 要検証
+- PER: {format_value(yahoo_data.get('PER'))}倍 ⚠️ 要検証
+- PBR: {format_value(yahoo_data.get('PBR'))}倍 ⚠️ 要検証
 
-【資本効率】
-- ROE: {format_value(yahoo_data.get('ROE'))}%
-- ROA: {format_value(yahoo_data.get('ROA'))}%
+【資本効率（参考値・要検証）】
+- ROE: {format_value(yahoo_data.get('ROE'))}% ⚠️ EDINETデータと照合すること
+- ROA: {format_value(yahoo_data.get('ROA'))}% ⚠️ EDINETデータと照合すること
 
-【財務健全性】
+【財務健全性（参考値・要検証）】
 - 自己資本比率: {format_value(yahoo_data.get('自己資本比率'))}%
-- ネットキャッシュ: {format_value(yahoo_data.get('ネットキャッシュ'), 'billion')}
-- 有利子負債: {format_value(yahoo_data.get('有利子負債'), 'billion')}
+- ネットキャッシュ: {format_value(yahoo_data.get('ネットキャッシュ'), 'billion')} ⚠️ 要検証
+- 有利子負債: {format_value(yahoo_data.get('有利子負債'), 'billion')} ⚠️ 要検証
 
-【成長性】
+【成長性（参考値）】
 - 売上成長率: {format_value(yahoo_data.get('売上成長率'), 'percent')}
 - 利益成長率: {format_value(yahoo_data.get('利益成長率'), 'percent')}
 
@@ -134,10 +137,28 @@ def analyze_investment_decision(ticker_code: str, financial_context: Dict[str, A
 
 **あなたは以下に提供された実データのみを使用すること。数字を推測・創作することは厳禁。**
 
-- ✅ 使用OK：Yahoo Financeから取得した実際のPER、PBR、ROE、株価
-- ✅ 使用OK：EDINETから取得した実際の売上高、営業利益、キャッシュフロー
-- ❌ 絶対禁止：データがない項目について数字を推測・創作すること
-- ❌ 絶対禁止：「セクター平均PER」など、提供されていないデータを勝手に仮定すること
+### データ優先順位と使用ルール：
+
+**【優先度1】EDINET財務データ（最も信頼性が高い）**
+- ✅ 売上高、営業利益、純利益、営業CF、総資産、純資産
+- ✅ これらの数字はEDINET（有価証券報告書）から取得した公式データ
+- ✅ Yahoo Financeのデータと矛盾する場合、**EDINETを優先**すること
+
+**【優先度2】Yahoo Finance市場データ（参考値として使用）**
+- ⚠️ 株価、PER、PBR、ROEなどは**参考値**として扱う
+- ⚠️ Yahoo Financeのデータには**古い決算データが混在する可能性**がある
+- ⚠️ 時価総額は「株価 × 発行済株式数」で自分で計算することを推奨
+- ⚠️ ROEがマイナスなのにPERが存在する場合、**データの矛盾**を指摘すること
+
+**【データ整合性チェック必須】**
+- PER > 0 なら利益は黒字のはず → ROEがマイナスなら矛盾
+- PBR × ROE ≒ PER の関係が成立するか確認
+- 矛盾がある場合は「**Yahoo Financeのデータに矛盾があります。EDINETデータを優先します**」と明記
+
+**【絶対禁止】**
+- ❌ データがない項目について数字を推測・創作すること
+- ❌ 「セクター平均PER」など、提供されていないデータを勝手に仮定すること
+- ❌ 矛盾するデータをそのまま使用すること
 
 **データが不足している場合：**
 - 「このデータは取得できませんでした」と明記する
