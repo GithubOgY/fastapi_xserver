@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 # - プロンプト変更時は必ずこの値を更新する
 # - これによりキャッシュが自動的に無効化される
 # =========================================================
-INVESTMENT_PROMPT_VERSION = "2026-01-03-v3-edinet-priority-data-validation"
+INVESTMENT_PROMPT_VERSION = "2026-01-03-v4-inequality-validation"
 
 
 def analyze_investment_decision(ticker_code: str, financial_context: Dict[str, Any], company_name: str = "") -> str:
@@ -210,10 +210,19 @@ def analyze_investment_decision(ticker_code: str, financial_context: Dict[str, A
 - PBR × ROE ≒ PER の関係が成立するか確認
 - 矛盾がある場合は「**Yahoo Financeのデータに矛盾があります。EDINETデータを優先します**」と明記
 
+**【数値比較と不等号の正確性（超重要）】**
+- ❌ **絶対禁止**: 「1,000億円 ＞ 4,800億円」のような論理的に誤った不等号の使用
+- ✅ **必須**: 数値を比較する際は、必ず大小関係を正しく確認すること
+  - 例: 1,000億円 < 4,800億円（1,000は4,800より**小さい**）
+  - 例: 時価総額4,800億円 > 現金1,000億円（4,800は1,000より**大きい**）
+- ✅ **必須**: 不等号を書く前に、左辺と右辺の数値を必ず再確認すること
+- ⚠️ 不等号の間違いは、分析全体の信頼性を完全に失わせる致命的なミスである
+
 **【絶対禁止】**
 - ❌ データがない項目について数字を推測・創作すること
 - ❌ 「セクター平均PER」など、提供されていないデータを勝手に仮定すること
 - ❌ 矛盾するデータをそのまま使用すること
+- ❌ 数値の大小関係を間違えた不等号を使用すること
 
 **データが不足している場合：**
 - 「このデータは取得できませんでした」と明記する
