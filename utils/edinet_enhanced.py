@@ -1291,13 +1291,22 @@ def process_document(doc: Dict[str, Any]) -> Dict[str, Any]:
         ).first()
         
         if cached:
-            print(f"[CACHE HIT] {doc_id} - {doc.get('filerName')}")
-            db.close()
             result = json.loads(cached.data_json)
-            # Add cache flag to metadata
-            if "metadata" in result:
-                result["metadata"]["from_cache"] = True
-            return result
+            
+            # キャッシュに株主データがない場合は無効化して再取得
+            if "shareholder_data" not in result:
+                print(f"[CACHE STALE] {doc_id} - missing shareholder_data, re-fetching")
+                db.query(EdinetCache).filter(EdinetCache.doc_id == doc_id).delete()
+                db.commit()
+                db.close()
+                # キャッシュを削除したので、この後の処理で再取得される
+            else:
+                print(f"[CACHE HIT] {doc_id} - {doc.get('filerName')}")
+                db.close()
+                # Add cache flag to metadata
+                if "metadata" in result:
+                    result["metadata"]["from_cache"] = True
+                return result
         
         db.close()
     except Exception as e:
