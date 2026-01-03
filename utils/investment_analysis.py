@@ -100,18 +100,32 @@ def analyze_investment_decision(ticker_code: str, financial_context: Dict[str, A
         price_change_pct = (price_change / prev_close) * 100
 
     yahoo_summary = f"""
-**⚠️ 注意：以下のYahoo Financeデータは参考値です。古い決算データが混在している可能性があります。**
-**財務数値についてはEDINETデータを優先してください。**
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ 【重要】Yahoo Finance データの取り扱いについて
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-【株価情報（リアルタイム）】
+**以下のYahoo Financeデータには古い決算データや不正確な値が混在しています。**
+**時価総額・PER・ROEなどの財務指標は、EDINETの公式データと大きく乖離する場合があります。**
+
+**【データ使用ルール】**
+1. ✅ 株価情報（現在株価・前日終値・変動）→ リアルタイムデータのため信頼性高
+2. ⚠️ バリュエーション（時価総額・PER）→ 古い決算ベースの可能性あり
+3. ⚠️ 財務指標（ROE・ROA）→ EDINETデータと必ず照合すること
+4. ✅ アナリスト情報・52週高値安値 → 参考値として使用可
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【株価情報（リアルタイム）✅ 信頼性高】
 - 現在株価: {format_value(yahoo_data.get('株価'), 'yen')}
 - 前日終値: {format_value(yahoo_data.get('前日終値'), 'yen')}
 - 変動: {format_value(price_change, 'yen') if price_change is not None else 'データなし'} ({f'+{price_change_pct:.2f}%' if price_change_pct and price_change_pct >= 0 else f'{price_change_pct:.2f}%' if price_change_pct else 'データなし'})
 
-【バリュエーション（参考値）】
-- 時価総額: {format_value(yahoo_data.get('時価総額'), 'billion')} ⚠️ 要検証
-- PER: {format_value(yahoo_data.get('PER'))}倍 ⚠️ 要検証
-- PBR: {format_value(yahoo_data.get('PBR'))}倍 ⚠️ 要検証
+【バリュエーション ⚠️ 古いデータの可能性】
+- 時価総額: {format_value(yahoo_data.get('時価総額'), 'billion')}
+  ⚠️ 警告: 実際の値と大きく乖離する場合あり（株価×発行済株式数で自己計算推奨）
+- PER: {format_value(yahoo_data.get('PER'))}倍
+  ⚠️ 警告: EDINETの純利益から逆算して検証すること
+- PBR: {format_value(yahoo_data.get('PBR'))}倍
 
 【資本効率（参考値・要検証）】
 - ROE: {format_value(yahoo_data.get('ROE'))}% ⚠️ EDINETデータと照合すること
