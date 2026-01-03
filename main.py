@@ -2001,6 +2001,18 @@ async def lookup_yahoo_finance(
         # Growth & Quality Analysis
         # -------------------------------------------------------------------------
         growth_analysis = analyze_growth_quality(ticker)
+
+        # Profitability stability label for UI (latest)
+        _stability_map = {
+            "stable": "安定 ✅",
+            "moderate": "普通 ⚖️",
+            "volatile": "不安定 ⚠️",
+            "unknown": "データ不足",
+        }
+        _stability_key = growth_analysis.get("profitability_stability", "unknown")
+        profitability_stability_text = f"収益安定性: {_stability_map.get(_stability_key, 'データ不足')}"
+        if growth_analysis.get("margin_std_pp_3y") is not None:
+            profitability_stability_text += f"（σ={growth_analysis.get('margin_std_pp_3y')}%pt）"
         
         # Prepare growth chart data (10% target)
         growth_labels = []
@@ -2635,33 +2647,33 @@ async def lookup_yahoo_finance(
                 </style>
                 <div id="charts-only" class="chart-grid">
                     <!-- Revenue/Profit Chart -->
-                    <div class="chart-item" style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem; overflow: hidden;">
-                        <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 0.75rem 0; text-align: center;">売上 / 営業利益</h4>
-                        <div style="height: 220px; position: relative; width: 100%;">
+                    <div class="chart-item" style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 0.75rem 0.5rem 0.5rem 0.5rem; overflow: hidden;">
+                        <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 0.5rem 0; text-align: center;">売上 / 営業利益</h4>
+                        <div style="position: relative; width: 100%; height: 280px;">
                             <canvas id="{chart_id1}"></canvas>
                         </div>
                     </div>
-                    
+
                     <!-- Cash Flow Chart -->
-                    <div class="chart-item" style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem; overflow: hidden;">
-                        <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 0.75rem 0; text-align: center;">キャッシュフロー推移</h4>
-                        <div style="height: 220px; position: relative; width: 100%;">
+                    <div class="chart-item" style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 0.75rem 0.5rem 0.5rem 0.5rem; overflow: hidden;">
+                        <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 0.5rem 0; text-align: center;">キャッシュフロー推移</h4>
+                        <div style="position: relative; width: 100%; height: 280px;">
                             <canvas id="{chart_id2}"></canvas>
                         </div>
                     </div>
 
                     <!-- Interest-bearing Debt Chart (Separate) -->
                     <div class="chart-full-width" style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem; max-width: 100%; overflow: hidden;">
-                        <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 0.75rem 0; text-align: center;">有利子負債推移</h4>
-                        <div style="height: 220px; position: relative; width: 100%;">
+                        <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 0.5rem 0; text-align: center;">有利子負債推移</h4>
+                        <div style="position: relative; width: 100%; height: 240px;">
                             <canvas id="{chart_id5}"></canvas>
                         </div>
                     </div>
 
                     <!-- Financial Health & Efficiency Chart (ROE/ROA only) -->
                     <div class="chart-full-width" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%); backdrop-filter: blur(16px); border-radius: 16px; padding: 1.5rem; border: 1px solid rgba(129, 140, 248, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
-                        <h4 style="color: #c084fc; font-size: 0.9rem; margin: 0 0 1rem 0; text-align: center; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;">💎 財務効率性 (ROE/ROA)</h4>
-                        <div style="height: 200px; position: relative; width: 100%;">
+                        <h4 style="color: #c084fc; font-size: 0.9rem; margin: 0 0 0.75rem 0; text-align: center; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;">💎 財務効率性 (ROE/ROA)</h4>
+                        <div style="position: relative; width: 100%; height: 240px;">
                             <canvas id="{chart_id4}"></canvas>
                         </div>
                     </div>
@@ -2675,7 +2687,7 @@ async def lookup_yahoo_finance(
                             <!-- Growth vs Target Line Chart -->
                             <div style="background: rgba(15, 23, 42, 0.5); border-radius: 12px; padding: 1.25rem; border: 1px solid rgba(255,255,255,0.05);">
                                 <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 0.75rem 0; text-align: center; font-weight: 600;">売上高成長 vs 10%目標ライン</h4>
-                                <div style="height: 200px; position: relative;">
+                                <div style="position: relative;">
                                     <canvas id="{chart_id3}"></canvas>
                                 </div>
                                 <p style="font-size: 0.65rem; color: #64748b; margin-top: 0.5rem; text-align: center; font-style: italic;">
@@ -2686,7 +2698,7 @@ async def lookup_yahoo_finance(
                             <!-- Growth Scorecards -->
                             <div style="display: flex; flex-direction: column; gap: 0.75rem;">
                                 <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 1rem;">
-                                    <div style="color: #10b981; font-size: 0.75rem; font-weight: 600;">売上高 CAGR (3年)</div>
+                                    <div style="color: #10b981; font-size: 0.75rem; font-weight: 600;">売上高 CAGR（3年換算）</div>
                                     <div style="font-size: 1.5rem; font-weight: 700; color: #f8fafc; margin-top: 0.25rem;">
                                         {f'{growth_analysis["revenue_cagr_3y"]}%' if pd.notna(growth_analysis["revenue_cagr_3y"]) else '-'}
                                     </div>
@@ -2696,7 +2708,7 @@ async def lookup_yahoo_finance(
                                 </div>
                                 
                                 <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 1rem;">
-                                    <div style="color: #818cf8; font-size: 0.75rem; font-weight: 600;">EPS CAGR (3年)</div>
+                                    <div style="color: #818cf8; font-size: 0.75rem; font-weight: 600;">EPS CAGR（3年換算）</div>
                                     <div style="font-size: 1.5rem; font-weight: 700; color: #f8fafc; margin-top: 0.25rem;">
                                         {f'{growth_analysis["eps_cagr_3y"]}%' if pd.notna(growth_analysis["eps_cagr_3y"]) else '-'}
                                     </div>
@@ -2711,7 +2723,7 @@ async def lookup_yahoo_finance(
                                         {growth_analysis["margin_trend"]}
                                     </div>
                                     <div style="font-size: 0.7rem; color: #94a3b8; margin-top: 0.25rem;">
-                                        最新の収益安定性判定
+                                        {profitability_stability_text}
                                     </div>
                                 </div>
                             </div>
@@ -2734,15 +2746,22 @@ async def lookup_yahoo_finance(
                         }},
                         options: {{
                             responsive: true,
-                            maintainAspectRatio: true,
-                            aspectRatio: 2.5,
+                            maintainAspectRatio: false,
+                            layout: {{
+                                padding: {{ top: 5, right: 5, bottom: 5, left: 5 }}
+                            }},
                             interaction: {{ mode: 'index', intersect: false }},
                             scales: {{
                                 y: {{ grid: {{ color: 'rgba(255,255,255,0.05)' }}, ticks: {{ color: '#64748b', font: {{ size: 10 }} }}, title: {{ display: true, text: '単位: 億円', color: '#64748b', font: {{ size: 10 }} }} }},
                                 y1: {{ position: 'right', grid: {{ display: false }}, ticks: {{ color: '#f59e0b', font: {{ size: 10 }} }}, min: 0 }},
                                 x: {{ grid: {{ display: false }}, ticks: {{ color: '#64748b', font: {{ size: 10 }} }} }}
                             }},
-                            plugins: {{ legend: {{ labels: {{ color: '#94a3b8', font: {{ size: 10 }} }} }} }}
+                            plugins: {{
+                                legend: {{
+                                    position: 'bottom',
+                                    labels: {{ color: '#94a3b8', font: {{ size: 9 }}, padding: 6, boxWidth: 12 }}
+                                }}
+                            }}
                         }}
                     }});
                     
@@ -2761,14 +2780,21 @@ async def lookup_yahoo_finance(
                         }},
                         options: {{
                             responsive: true,
-                            maintainAspectRatio: true,
-                            aspectRatio: 2.5,
+                            maintainAspectRatio: false,
+                            layout: {{
+                                padding: {{ top: 5, right: 5, bottom: 5, left: 5 }}
+                            }},
                             interaction: {{ mode: 'index', intersect: false }},
                             scales: {{
                                 y: {{ grid: {{ color: 'rgba(255,255,255,0.05)' }}, ticks: {{ color: '#64748b', font: {{ size: 10 }} }}, title: {{ display: true, text: '単位: 億円', color: '#64748b', font: {{ size: 10 }} }} }},
                                 x: {{ grid: {{ display: false }}, ticks: {{ color: '#64748b', font: {{ size: 10 }} }} }}
                             }},
-                            plugins: {{ legend: {{ labels: {{ color: '#94a3b8', font: {{ size: 10 }} }} }} }}
+                            plugins: {{
+                                legend: {{
+                                    position: 'bottom',
+                                    labels: {{ color: '#94a3b8', font: {{ size: 9 }}, padding: 6, boxWidth: 12 }}
+                                }}
+                            }}
                         }}
                     }});
 
@@ -2783,8 +2809,8 @@ async def lookup_yahoo_finance(
                         }},
                         options: {{
                             responsive: true,
-                            maintainAspectRatio: true,
-                            aspectRatio: 2.5,
+                            maintainAspectRatio: false,
+                            aspectRatio: 1.0,
                             interaction: {{ mode: 'index', intersect: false }},
                             scales: {{
                                 y: {{
@@ -2863,8 +2889,8 @@ async def lookup_yahoo_finance(
                             }},
                             options: {{
                                 responsive: true,
-                                maintainAspectRatio: true,
-                                aspectRatio: 3.5,
+                                maintainAspectRatio: false,
+                                aspectRatio: 1.0,
                                 interaction: {{ mode: 'index', intersect: false }},
                                 scales: {{
                                     y: {{
@@ -2954,8 +2980,8 @@ async def lookup_yahoo_finance(
                         }},
                         options: {{
                             responsive: true,
-                            maintainAspectRatio: true,
-                            aspectRatio: 2.0,
+                            maintainAspectRatio: false,
+                            aspectRatio: 1.0,
                             interaction: {{ mode: 'index', intersect: false }},
                             scales: {{
                                 y: {{
@@ -4183,7 +4209,7 @@ async def get_edinet_history(code: str, current_user: User = Depends(get_current
                             }},
                             options: {{
                                 responsive: true,
-                                maintainAspectRatio: true,
+                                maintainAspectRatio: false,
                     aspectRatio: 2.5,
                                 interaction: {{
                                     mode: 'index',
@@ -4483,7 +4509,7 @@ async def get_edinet_ratios(code: str, current_user: User = Depends(get_current_
                             }},
                             options: {{
                                 responsive: true,
-                                maintainAspectRatio: true,
+                                maintainAspectRatio: false,
                     aspectRatio: 2.5,
                                 interaction: {{
                                     mode: 'index',
@@ -4852,8 +4878,8 @@ async def get_advanced_metrics(
                 }},
                 options: {{
                     responsive: true,
-                    maintainAspectRatio: true,
-                    aspectRatio: 2.2,
+                    maintainAspectRatio: false,
+                    aspectRatio: 1.0,
                     plugins: {{
                         legend: {{
                             display: true,
@@ -4962,8 +4988,8 @@ async def get_advanced_metrics(
                 }},
                 options: {{
                     responsive: true,
-                    maintainAspectRatio: true,
-                    aspectRatio: 2.2,
+                    maintainAspectRatio: false,
+                    aspectRatio: 1.0,
                     plugins: {{
                         legend: {{
                             display: true,
@@ -5062,8 +5088,8 @@ async def get_advanced_metrics(
                 }},
                 options: {{
                     responsive: true,
-                    maintainAspectRatio: true,
-                    aspectRatio: 2.2,
+                    maintainAspectRatio: false,
+                    aspectRatio: 1.0,
                     plugins: {{
                         legend: {{
                             display: true,
@@ -5173,8 +5199,8 @@ async def get_advanced_metrics(
                 }},
                 options: {{
                     responsive: true,
-                    maintainAspectRatio: true,
-                    aspectRatio: 2.2,
+                    maintainAspectRatio: false,
+                    aspectRatio: 1.0,
                     plugins: {{
                         legend: {{
                             display: true,
