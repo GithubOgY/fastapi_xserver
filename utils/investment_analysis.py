@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 # - プロンプト変更時は必ずこの値を更新する
 # - これによりキャッシュが自動的に無効化される
 # =========================================================
-INVESTMENT_PROMPT_VERSION = "2026-01-03-v4-inequality-validation"
+INVESTMENT_PROMPT_VERSION = "2026-01-03-v5-shareholder-data"
 
 
 def analyze_investment_decision(ticker_code: str, financial_context: Dict[str, Any], company_name: str = "") -> str:
@@ -179,6 +179,52 @@ def analyze_investment_decision(ticker_code: str, financial_context: Dict[str, A
 """
 
     # =====================================================
+    # 株主構成データの整形
+    # =====================================================
+    shareholder_summary = ""
+    shareholder_data = financial_context.get("edinet_data", {}).get("shareholder_data", [])
+    
+    if shareholder_data:
+        shareholder_lines = ["【大株主の状況】EDINET公式データ"]
+        shareholder_lines.append("| 順位 | 株主名 | 所有株式数 | 持株比率 |")
+        shareholder_lines.append("|------|--------|------------|----------|")
+        
+        total_ratio = 0.0
+        for i, sh in enumerate(shareholder_data[:10], 1):  # 上位10位まで表示
+            name = sh.get("name", "")
+            shares = sh.get("shares", 0)
+            ratio = sh.get("ratio", 0.0)
+            total_ratio += ratio
+            
+            # 株式数のフォーマット（万株/千株単位で表示）
+            if shares >= 10000:
+                shares_str = f"{shares / 10000:,.1f}万株"
+            elif shares >= 1000:
+                shares_str = f"{shares / 1000:,.1f}千株"
+            else:
+                shares_str = f"{shares:,}株"
+            
+            shareholder_lines.append(f"| {i} | {name} | {shares_str} | {ratio:.2f}% |")
+        
+        shareholder_lines.append(f"\n**上位{len(shareholder_data[:10])}位合計持株比率: {total_ratio:.2f}%**")
+        
+        # 株主構成の特徴分析メモを追加
+        shareholder_lines.append("\n【株主構成の特徴（分析時の参考）】")
+        
+        # 機関投資家・信託銀行の割合チェック
+        institutional_keywords = ["信託銀行", "信託口", "マスタートラスト", "カストディ", "TRUSTEE", "CUSTODY"]
+        institutional_ratio = sum(sh.get("ratio", 0) for sh in shareholder_data if any(kw in sh.get("name", "") for kw in institutional_keywords))
+        if institutional_ratio > 0:
+            shareholder_lines.append(f"- 機関投資家（信託口）推定比率: {institutional_ratio:.1f}%")
+        
+        # 創業家・経営者保有チェック（単純な推測用コメント）
+        shareholder_lines.append("- ※ 創業家・経営者の持分は有価証券報告書の「役員の状況」を参照")
+        
+        shareholder_summary = "\n".join(shareholder_lines)
+    else:
+        shareholder_summary = "【大株主の状況】データなし（EDINETから取得できませんでした）"
+
+    # =====================================================
     # 超辛口プロトコル v2.0
     # =====================================================
     prompt = f"""
@@ -285,6 +331,9 @@ AIの「総合判断」でこれを覆すことは**禁止**。
 
 ## ■ 経営者・企業情報 (EDINET詳細)
 {edinet_text if edinet_text else "EDINETデータなし"}
+
+## ■ 株主構成 (EDINET)
+{shareholder_summary}
 
 ---
 

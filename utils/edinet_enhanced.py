@@ -586,7 +586,11 @@ def extract_financial_data(xbrl_dir: str) -> Dict[str, Any]:
             "従業員の状況": ["InformationAboutEmployeesTextBlock", "EmployeesTextBlock"],
             "コーポレートガバナンス": ["CorporateGovernanceTextBlock", "StatusOfCorporateGovernanceTextBlock"],
             "役員の状況": ["InformationAboutOfficersTextBlock", "DirectorsAndExecutiveOfficersTextBlock", "DirectorsTextBlock"],
-            "サステナビリティ": ["SustainabilityInformationTextBlock", "SustainabilityTextBlock", "EnvironmentalConservationActivitiesTextBlock"]
+            "サステナビリティ": ["SustainabilityInformationTextBlock", "SustainabilityTextBlock", "EnvironmentalConservationActivitiesTextBlock"],
+            # 株主構成情報
+            "大株主の状況": ["MajorShareholdersTextBlock", "StatusOfMajorShareholdersTextBlock", "InformationAboutMajorShareholdersTextBlock", "MajorShareholders"],
+            "株式の状況": ["StockInformationTextBlock", "StatusOfSharesTextBlock", "ShareInformationTextBlock"],
+            "所有者別状況": ["StateOfShareholdingByOwnershipTextBlock", "ShareholdingByOwnershipTextBlock", "OwnershipOfSharesTextBlock"],
         }
         
         # Try to find text blocks
@@ -715,6 +719,19 @@ def extract_financial_data(xbrl_dir: str) -> Dict[str, Any]:
              assets = norm.get("総資産")
              if isinstance(net_income, (int, float)) and isinstance(assets, (int, float)) and assets != 0:
                  norm["ROA"] = (net_income / assets) * 100
+        
+        # ============================================================
+        # 株主構成データの抽出
+        # ============================================================
+        shareholder_data = []
+        
+        # 大株主の状況テキストブロックから株主情報をパース
+        major_shareholders_html = text_data.get("大株主の状況", "")
+        if major_shareholders_html:
+            shareholder_data = parse_shareholder_table(major_shareholders_html)
+            logger.info(f"Extracted {len(shareholder_data)} major shareholders")
+        
+        result["shareholder_data"] = shareholder_data
                  
         # Format large numbers
         result["formatted_data"] = format_financial_data(result["raw_data"])
@@ -727,6 +744,212 @@ def extract_financial_data(xbrl_dir: str) -> Dict[str, Any]:
         traceback.print_exc()
     
     return result
+
+
+def parse_shareholder_table(html_content: str) -> List[Dict[str, Any]]:
+    """
+    大株主の状況 HTMLテーブルから株主データを抽出
+    
+    Returns:
+        List of dicts with:
+        - name: 株主名
+        - shares: 所有株式数（株）- 整数
+        - ratio: 持株比率（%）- 0-100のfloat
+        - notes: 備考（あれば）
+    
+    注意事項:
+    - 持株比率: EDINETでは通常パーセント値で記載（例: 10.5 = 10.5%）
+    - 所有株式数: 千株単位で記載される場合あり（ヘッダーを確認）
+    """
+    shareholders = []
+    
+    if not html_content:
+        return shareholders
+    
+    try:
+        soup = BeautifulSoup(html_content, "html.parser")
+        
+        # Find all tables
+        tables = soup.find_all("table")
+        
+        for table in tables:
+            rows = table.find_all("tr")
+            if not rows:
+                continue
+            
+            # Find header row to identify column structure
+            header_row = None
+            header_cols = []
+            
+            for row in rows:
+                ths = row.find_all("th")
+                tds = row.find_all("td")
+                
+                # ヘッダー行の特定（株主名、持株数、比率などのキーワードを探す）
+                cells = ths if ths else tds
+                cell_texts = [cell.get_text(strip=True) for cell in cells]
+                
+                # 株主名関連のキーワードを探す
+                has_name_col = any(any(kw in t for kw in ["氏名", "名称", "株主", "所有者"]) for t in cell_texts)
+                # 株式数関連のキーワードを探す
+                has_shares_col = any(any(kw in t for kw in ["株式数", "持株数", "所有株式", "保有株数"]) for t in cell_texts)
+                
+                if has_name_col and has_shares_col:
+                    header_row = row
+                    header_cols = cell_texts
+                    break
+            
+            if not header_row:
+                continue
+            
+            # カラムインデックスを特定
+            name_col_idx = -1
+            shares_col_idx = -1
+            ratio_col_idx = -1
+            
+            for i, header in enumerate(header_cols):
+                header_lower = header.lower()
+                if name_col_idx == -1 and any(kw in header for kw in ["氏名", "名称", "株主", "所有者"]):
+                    name_col_idx = i
+                elif shares_col_idx == -1 and any(kw in header for kw in ["株式数", "持株数", "所有株式", "保有株数"]):
+                    shares_col_idx = i
+                elif ratio_col_idx == -1 and any(kw in header for kw in ["割合", "比率", "持株比率", "議決権"]):
+                    ratio_col_idx = i
+            
+            # 千株単位かどうか確認
+            is_thousand_unit = "千株" in "".join(header_cols) or "（千株）" in "".join(header_cols)
+            
+            # データ行を処理
+            header_passed = False
+            for row in rows:
+                if row == header_row:
+                    header_passed = True
+                    continue
+                if not header_passed:
+                    continue
+                
+                cells = row.find_all(["td", "th"])
+                if len(cells) <= max(name_col_idx, shares_col_idx, ratio_col_idx):
+                    continue
+                
+                try:
+                    # 株主名を取得
+                    name_text = cells[name_col_idx].get_text(strip=True) if name_col_idx >= 0 else ""
+                    
+                    # 空の行やヘッダー風の行をスキップ
+                    if not name_text or name_text in ["計", "合計", "その他", "自己名義"]:
+                        continue
+                    if any(kw in name_text for kw in ["株主名", "氏名又は名称"]):
+                        continue
+                    
+                    # 所有株式数を取得
+                    shares_raw = cells[shares_col_idx].get_text(strip=True) if shares_col_idx >= 0 else "0"
+                    shares = parse_share_number(shares_raw, is_thousand_unit)
+                    
+                    # 持株比率を取得
+                    ratio_raw = cells[ratio_col_idx].get_text(strip=True) if ratio_col_idx >= 0 else "0"
+                    ratio = parse_ratio_percentage(ratio_raw)
+                    
+                    # 有効なデータのみ追加
+                    if name_text and (shares > 0 or ratio > 0):
+                        shareholders.append({
+                            "name": name_text,
+                            "shares": shares,  # 株数（整数）
+                            "ratio": ratio,    # パーセント値（0-100）
+                        })
+                        
+                except (IndexError, ValueError) as e:
+                    logger.debug(f"Skipping row due to parse error: {e}")
+                    continue
+            
+            # 1つのテーブルから株主を取得できたら終了
+            if shareholders:
+                break
+        
+    except Exception as e:
+        logger.error(f"Failed to parse shareholder table: {e}")
+    
+    return shareholders
+
+
+def parse_share_number(raw_text: str, is_thousand_unit: bool = False) -> int:
+    """
+    株式数をパース（整数で返す）
+    
+    Args:
+        raw_text: 生のテキスト（例: "1,234,567", "1234千株"）
+        is_thousand_unit: 千株単位かどうか
+    
+    Returns:
+        株式数（株単位の整数）
+    """
+    if not raw_text:
+        return 0
+    
+    # 数値以外の文字を除去（カンマ、スペース、千株など）
+    cleaned = raw_text.replace(",", "").replace("，", "").replace(" ", "")
+    cleaned = cleaned.replace("千株", "").replace("株", "").replace("千", "")
+    
+    # 数値を抽出
+    import re
+    match = re.search(r'([\d.]+)', cleaned)
+    if not match:
+        return 0
+    
+    try:
+        num = float(match.group(1))
+        
+        # 千株単位の場合は1000倍
+        if is_thousand_unit:
+            num = num * 1000
+        
+        return int(num)
+    except ValueError:
+        return 0
+
+
+def parse_ratio_percentage(raw_text: str) -> float:
+    """
+    持株比率をパース（パーセント値として返す: 0-100）
+    
+    Args:
+        raw_text: 生のテキスト（例: "10.5", "10.5%", "0.105"）
+    
+    Returns:
+        パーセント値（0-100のfloat）
+        例: 入力が "10.5" or "10.5%" → 返り値 10.5
+            入力が "0.105"（小数形式）→ 返り値 10.5
+    """
+    if not raw_text:
+        return 0.0
+    
+    # %記号とスペースを除去
+    cleaned = raw_text.replace("%", "").replace("％", "").replace(" ", "")
+    
+    # 数値を抽出
+    import re
+    match = re.search(r'([\d.]+)', cleaned)
+    if not match:
+        return 0.0
+    
+    try:
+        num = float(match.group(1))
+        
+        # 0-1の範囲（小数形式）の場合は100倍してパーセントに変換
+        # 例: 0.105 → 10.5%
+        # ただし、1未満かつ0.5未満の値は小数形式と判断
+        # （50%以上の持株比率は単独で過半数なので稀）
+        if 0 < num < 1:
+            num = num * 100
+        
+        # 最大100%を超える場合はエラー（ありえない）
+        if num > 100:
+            logger.warning(f"Ratio {num}% exceeds 100%, capping at 100")
+            num = 100.0
+        
+        return round(num, 2)
+    except ValueError:
+        return 0.0
 
 
 def clean_text_block(html_content: str) -> str:

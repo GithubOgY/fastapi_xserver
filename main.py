@@ -3880,6 +3880,7 @@ def _run_specialized_analysis(
         normalized = data.get("normalized_data", {})
         text_data = data.get("text_data", {})
         metadata = data.get("metadata", {})
+        shareholder_data = data.get("shareholder_data", [])  # 株主構成データ
         
         # Build comprehensive context for AI
         financial_context = {
@@ -3887,10 +3888,11 @@ def _run_specialized_analysis(
             "summary_text": _format_summary(normalized),  # Create summary text
             "edinet_data": {
                 "text_data": text_data,
-                "metadata": metadata
+                "metadata": metadata,
+                "shareholder_data": shareholder_data  # 株主構成データを追加
             }
         }
-        logger.info(f"Financial context built with {len(normalized)} metrics and {len(text_data)} text blocks")
+        logger.info(f"Financial context built with {len(normalized)} metrics, {len(text_data)} text blocks, {len(shareholder_data)} shareholders")
     
     # Call the specific analysis function
     result_html = analysis_func(clean_code, financial_context, name)
