@@ -3420,6 +3420,81 @@ async def search_edinet_company(
                 </details>
                 """
         
+        # ============================================
+        # 株主構成セクション（構造化データ）
+        # ============================================
+        shareholder_data = result.get("shareholder_data", [])
+        if shareholder_data:
+            # 機関投資家を識別するキーワード
+            institutional_keywords = ["信託銀行", "信託口", "マスタートラスト", "カストディ", "TRUSTEE", "CUSTODY"]
+            
+            # 比率計算
+            institutional_ratio = 0.0
+            other_ratio = 0.0
+            
+            for sh in shareholder_data:
+                name = sh.get("name", "")
+                ratio = sh.get("ratio", 0)
+                
+                if any(kw in name for kw in institutional_keywords):
+                    institutional_ratio += ratio
+                else:
+                    other_ratio += ratio
+            
+            # 株主リストHTML生成
+            shareholder_list_html = ""
+            for i, sh in enumerate(shareholder_data[:10], 1):
+                name = sh.get("name", "")[:30]  # 長い名前は切り詰め
+                ratio = sh.get("ratio", 0)
+                is_institutional = any(kw in sh.get("name", "") for kw in institutional_keywords)
+                badge = "🏦" if is_institutional else "👤"
+                badge_color = "color: #60a5fa;" if is_institutional else "color: #fbbf24;"
+                
+                shareholder_list_html += f'''
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.3rem 0; border-bottom: 1px solid rgba(71, 85, 105, 0.3);">
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="color: #64748b; font-size: 0.75rem;">{i}.</span>
+                            <span style="{badge_color}">{badge}</span>
+                            <span style="color: #e2e8f0;">{name}</span>
+                        </div>
+                        <span style="font-weight: 600; color: #94a3b8;">{ratio:.2f}%</span>
+                    </div>
+                '''
+            
+            sections_html += f'''
+            <details class="bg-gray-900/30 rounded-lg border border-amber-500/30 overflow-hidden" style="height: fit-content;" open>
+                <summary class="cursor-pointer px-4 py-3 bg-amber-900/20 hover:bg-amber-800/30 transition-colors font-medium text-amber-200 list-none flex items-center gap-3">
+                    <span style="font-size: 0.9rem;">👥 大株主の状況</span>
+                </summary>
+                <div class="p-4 text-sm text-gray-200 leading-relaxed border-t border-amber-700/30 bg-gray-900/50">
+                    <!-- 機関投資家 vs その他 比率 -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div style="background: rgba(59, 130, 246, 0.1); padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.2);">
+                            <div style="font-size: 0.7rem; color: #60a5fa; margin-bottom: 0.25rem;">🏦 機関投資家（信託口）</div>
+                            <div style="font-size: 1.25rem; font-weight: bold; color: #93c5fd;">{institutional_ratio:.1f}%</div>
+                            <div style="background: rgba(59, 130, 246, 0.2); height: 4px; border-radius: 2px; margin-top: 0.5rem;">
+                                <div style="background: linear-gradient(90deg, #3b82f6, #60a5fa); height: 100%; border-radius: 2px; width: {min(institutional_ratio, 100)}%;"></div>
+                            </div>
+                        </div>
+                        <div style="background: rgba(245, 158, 11, 0.1); padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.2);">
+                            <div style="font-size: 0.7rem; color: #fbbf24; margin-bottom: 0.25rem;">👤 事業法人/個人他</div>
+                            <div style="font-size: 1.25rem; font-weight: bold; color: #fcd34d;">{other_ratio:.1f}%</div>
+                            <div style="background: rgba(245, 158, 11, 0.2); height: 4px; border-radius: 2px; margin-top: 0.5rem;">
+                                <div style="background: linear-gradient(90deg, #f59e0b, #fbbf24); height: 100%; border-radius: 2px; width: {min(other_ratio, 100)}%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 大株主リスト -->
+                    <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.5rem;">📋 大株主TOP10</div>
+                    <div style="font-size: 0.8rem;">
+                        {shareholder_list_html}
+                    </div>
+                    <p style="font-size: 0.65rem; color: #64748b; margin-top: 0.75rem; text-align: center;">※ 有価証券報告書「大株主の状況」より</p>
+                </div>
+            </details>
+            '''
+        
         # Close Grid Container
         sections_html += '</div>'
 
