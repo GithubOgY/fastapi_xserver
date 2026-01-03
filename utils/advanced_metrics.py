@@ -21,12 +21,18 @@ def calculate_yoy_growth(current: float, previous: float) -> Optional[float]:
 
     Returns:
         成長率（%）、計算できない場合はNone
+
+    Examples:
+        - 前期100 → 当期120: (120-100)/100 * 100 = 20%
+        - 前期100 → 当期80: (80-100)/100 * 100 = -20%
+        - 前期-50 → 当期-30: (-30-(-50))/(-50) * 100 = -40% (赤字が改善)
+        - 前期-50 → 当期10: (10-(-50))/(-50) * 100 = -120% (黒字転換)
     """
     if previous is None or previous == 0 or current is None:
         return None
 
     try:
-        growth = ((current - previous) / abs(previous)) * 100
+        growth = ((current - previous) / previous) * 100
         return round(growth, 2)
     except Exception as e:
         logger.error(f"YoY calculation error: {e}")
