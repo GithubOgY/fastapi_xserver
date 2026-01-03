@@ -748,29 +748,35 @@ def extract_financial_data(xbrl_dir: str) -> Dict[str, Any]:
 
 def parse_shareholder_table(html_content: str) -> List[Dict[str, Any]]:
     """
-    大株主の状況 HTMLテーブルから株主データを抽出
-    
+    大株主の状況 HTMLテーブル/プレーンテキストから株主データを抽出
+
     Returns:
         List of dicts with:
         - name: 株主名
         - shares: 所有株式数（株）- 整数
         - ratio: 持株比率（%）- 0-100のfloat
         - notes: 備考（あれば）
-    
+
     注意事項:
     - 持株比率: EDINETでは通常パーセント値で記載（例: 10.5 = 10.5%）
     - 所有株式数: 千株単位で記載される場合あり（ヘッダーを確認）
+    - テーブル形式とプレーンテキスト形式の両方に対応
     """
     shareholders = []
-    
+
     if not html_content:
         return shareholders
-    
+
     try:
         soup = BeautifulSoup(html_content, "html.parser")
-        
+
         # Find all tables
         tables = soup.find_all("table")
+
+        # テーブル形式が存在しない場合、プレーンテキスト形式としてパース
+        if not tables:
+            logger.info("No HTML table found, attempting plain text parsing")
+            return parse_shareholder_plain_text(html_content)
         
         for table in tables:
             rows = table.find_all("tr")
@@ -868,8 +874,218 @@ def parse_shareholder_table(html_content: str) -> List[Dict[str, Any]]:
         
     except Exception as e:
         logger.error(f"Failed to parse shareholder table: {e}")
-    
+
     return shareholders
+
+
+def parse_shareholder_plain_text(text_content: str) -> List[Dict[str, Any]]:
+    """
+    プレーンテキスト形式の大株主情報をパース
+
+    例:
+    日本マスタートラスト信託銀行㈱東京都港区赤坂一丁目８番１号1,805,60513.84
+    ㈱豊田自動織機愛知県刈谷市豊田町二丁目１番地1,192,3319.14
+
+    パターン:
+    [株主名][住所][所有株式数(千株)][持株比率(%)]
+    """
+    import re
+
+    shareholders = []
+
+    if not text_content:
+        return shareholders
+
+    try:
+        # BeautifulSoupでHTMLタグを除去してプレーンテキスト化
+        soup = BeautifulSoup(text_content, "html.parser")
+        plain_text = soup.get_text()
+
+        # 千株単位かどうか確認
+        is_thousand_unit = "千株" in plain_text or "（千株）" in plain_text
+
+        # 超シンプルなアプローチ: 都道府県名で分割して、その前を株主名とする
+        # パターン: [株主名](都道府県...)[数字][数字]
+        # 例: 日本マスタートラスト信託銀行㈱東京都...1,805,60513.84
+
+        prefecture_pattern = r'(東京都|北海道|(?:京都|大阪)府|青森県|岩手県|宮城県|秋田県|山形県|福島県|茨城県|栃木県|群馬県|埼玉県|千葉県|神奈川県|新潟県|富山県|石川県|福井県|山梨県|長野県|岐阜県|静岡県|愛知県|三重県|滋賀県|兵庫県|奈良県|和歌山県|鳥取県|島根県|岡山県|広島県|山口県|徳島県|香川県|愛媛県|高知県|福岡県|佐賀県|長崎県|熊本県|大分県|宮崎県|鹿児島県|沖縄県)'
+
+        # 全角改行・スペースを除去
+        clean_text = plain_text.replace('\u3000', '').replace(' ', '')
+
+        # 都道府県名で分割
+        parts = re.split(prefecture_pattern, clean_text)
+
+        i = 0
+        while i < len(parts) - 2:
+            # parts[i] = 株主名の可能性
+            # parts[i+1] = 都道府県名
+            # parts[i+2] = 住所+数値データ
+
+            if i + 2 >= len(parts):
+                break
+
+            potential_name = parts[i].strip()
+            prefecture = parts[i + 1]
+            rest = parts[i + 2]
+
+            # 都道府県名がマッチした場合のみ処理
+            if not prefecture:
+                i += 1
+                continue
+
+            # 残りの部分から数字（株式数と比率）を抽出
+            # パターン: [住所...]カンマ付き株式数+比率（小数点以下2桁）
+            # 例: 1,805,60513.84 → shares=1,805,605, ratio=13.84 (literal concatenation, no sharing)
+            # 例: 1,192,3319.14 → shares=1,192,331, ratio=9.14
+
+            # Find decimal point in rest
+            decimal_pos = rest.rfind('.')
+            if decimal_pos == -1:
+                i += 2
+                continue
+
+            # Try to extract ratio (X.XX or XX.XX format, value < 100)
+            shares_raw = None
+            ratio_raw = None
+
+            logger.debug(f"Extracting numbers from rest: {rest[:100]}")
+
+            # Try 2-digit ratio first, then 1-digit
+            for ratio_digits in [2, 1]:
+                ratio_start = decimal_pos - ratio_digits
+                if ratio_start < 0:
+                    continue
+
+                ratio_candidate = rest[ratio_start:decimal_pos+3]  # Include .XX
+
+                try:
+                    ratio_value = float(ratio_candidate)
+                    if not (0 < ratio_value < 100):
+                        logger.debug(f"  Ratio {ratio_candidate} out of range (0-100)")
+                        continue
+
+                    # Extract shares part (everything before ratio)
+                    # This contains address + shares number, we need to extract just the shares
+                    before_ratio = rest[:ratio_start]
+
+                    logger.debug(f"  Trying {ratio_digits}-digit ratio: ratio={ratio_candidate}, before_ratio='{before_ratio}'")
+
+                    # Extract the LAST occurrence of comma-separated number from before_ratio
+                    # Pattern: one or more groups of digits separated by commas
+                    # Example: "港区赤坂一丁目８番１号1,805,605" → extract "1,805,605"
+                    shares_match = re.search(r'([\d,]+)$', before_ratio)
+                    if not shares_match:
+                        logger.debug(f"    No number pattern found at end")
+                        continue
+
+                    shares_candidate = shares_match.group(1)
+                    logger.debug(f"    Extracted shares: '{shares_candidate}'")
+
+                    # Validate shares has comma pattern
+                    if ',' not in shares_candidate:
+                        logger.debug(f"    No comma in shares_candidate")
+                        continue
+
+                    parts_share = shares_candidate.split(',')
+                    # First part: 1-3 digits, other parts: exactly 3 digits each
+                    if len(parts_share) > 1:
+                        if not (1 <= len(parts_share[0]) <= 3):
+                            logger.debug(f"    First part '{parts_share[0]}' has {len(parts_share[0])} digits (need 1-3)")
+                            continue
+                        if not all(len(p) == 3 for p in parts_share[1:]):
+                            logger.debug(f"    Not all parts are 3 digits: {[len(p) for p in parts_share[1:]]}")
+                            continue
+
+                    # Valid candidate found
+                    shares_raw = shares_candidate
+                    ratio_raw = ratio_candidate
+                    logger.debug(f"  ✅ Valid match found!")
+                    break
+
+                except ValueError as e:
+                    logger.debug(f"  ValueError: {e}")
+                    continue
+
+            if shares_raw and ratio_raw:
+                try:
+                    # Extract shareholder name
+                    # For first shareholder (i=0), name is at END of parts[0]
+                    # For subsequent shareholders, name is at END of rest (after ratio)
+
+                    # Calculate where the ratio ends in rest
+                    ratio_end_pos = decimal_pos + 3  # ratio is XX.XX (5 chars) or X.XX (4 chars)
+
+                    # Get text after ratio (this might be empty or contain next shareholder name)
+                    after_ratio_text = rest[ratio_end_pos:].strip()
+
+                    # Extract THIS shareholder's name from parts[i] (potential_name)
+                    # parts[i] contains text ending with this shareholder's name
+                    # But for i>0, it also contains previous shareholder's address+numbers
+                    name_candidate = potential_name
+
+                    # For first shareholder, remove header text
+                    if i == 0:
+                        for header_keyword in ["大株主の状況", "氏名又は名称", "住所", "所有株式数", "発行済株式", "総数に対する", "割合", "現在"]:
+                            name_candidate = name_candidate.replace(header_keyword, "")
+                        # Clean up extra characters
+                        name_candidate = re.sub(r'[（）【】\d年月日\s]+', '', name_candidate)
+                    else:
+                        # For subsequent shareholders, parts[i] contains previous shareholder's data
+                        # Format: "...address+numbers+THIS_SHAREHOLDER_NAME"
+                        # Extract name by finding text AFTER the last ratio pattern (X.XX or XX.XX)
+                        # Split by ratio pattern and take last part
+                        ratio_split = re.split(r'\d{1,2}\.\d{2}', name_candidate)
+                        if len(ratio_split) > 1:
+                            name_candidate = ratio_split[-1]  # Take part after last ratio
+
+                    # Clean up name
+                    name_candidate = name_candidate.split('\n')[-1]  # Get last line
+                    name = name_candidate.strip()
+
+                    logger.debug(f"  Extracted name: '{name}'")
+
+                    # スキップ条件
+                    skip_keywords = ["氏名", "名称", "住所", "株式数", "発行済", "総数", "割合", "計", "合計", "注", "（", "）", "自己株式", "除く"]
+                    if any(kw in name for kw in skip_keywords) or len(name) < 2:
+                        logger.debug(f"  Skipping name due to keyword or length")
+                        i += 2
+                        continue
+
+                    # 株式数と比率をパース
+                    shares = parse_share_number(shares_raw, is_thousand_unit)
+                    ratio = parse_ratio_percentage(ratio_raw)
+
+                    # 有効なデータのみ追加
+                    if name and (shares > 0 or ratio > 0):
+                        shareholders.append({
+                            "name": name,
+                            "shares": shares,
+                            "ratio": ratio,
+                        })
+
+                except (ValueError, IndexError) as e:
+                    logger.debug(f"Skipping due to parse error: {e}")
+
+            i += 2  # 都道府県名と住所部分をスキップ
+
+        # 重複削除（株主名で判定）
+        seen_names = set()
+        unique_shareholders = []
+        for sh in shareholders:
+            if sh["name"] not in seen_names:
+                seen_names.add(sh["name"])
+                unique_shareholders.append(sh)
+
+        # 持株比率でソート（降順）
+        unique_shareholders.sort(key=lambda x: x.get("ratio", 0), reverse=True)
+
+        logger.info(f"Parsed {len(unique_shareholders)} shareholders from plain text")
+        return unique_shareholders[:20]  # 上位20位まで
+
+    except Exception as e:
+        logger.error(f"Failed to parse shareholder plain text: {e}")
+        return []
 
 
 def parse_share_number(raw_text: str, is_thousand_unit: bool = False) -> int:
