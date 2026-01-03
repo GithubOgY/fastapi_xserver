@@ -274,14 +274,29 @@ def analyze_advanced_metrics(ticker_obj: Any) -> Dict[str, Any]:
             info = ticker_obj.info
             per = info.get('trailingPE') or info.get('forwardPE')
 
-            # EPS CAGRを計算（3年）
+            # EPS CAGRを計算（3年換算：決算期変更などのズレを吸収）
             if eps_key and len(df_income[eps_key].dropna()) >= 4:
                 eps_values = df_income[eps_key].dropna()
                 start_eps = eps_values.iloc[-4]
                 end_eps = eps_values.iloc[-1]
 
                 if start_eps > 0 and end_eps > 0:
-                    eps_cagr = ((end_eps / start_eps) ** (1/3) - 1) * 100
+                    # indexが日付なら差分で年数を推定。取れなければ3年固定。
+                    years = 3
+                    try:
+                        start_date = eps_values.index[-4]
+                        end_date = eps_values.index[-1]
+                        if hasattr(start_date, "to_pydatetime"):
+                            start_date = start_date.to_pydatetime()
+                        if hasattr(end_date, "to_pydatetime"):
+                            end_date = end_date.to_pydatetime()
+                        delta_days = (end_date - start_date).days
+                        if delta_days > 0:
+                            years = delta_days / 365.25
+                    except Exception:
+                        years = 3
+
+                    eps_cagr = ((end_eps / start_eps) ** (1 / years) - 1) * 100
                     results["peg_ratio"] = calculate_peg_ratio(per, eps_cagr)
         except Exception as e:
             logger.error(f"PEG ratio calculation failed: {e}")

@@ -27,7 +27,14 @@
       "Bash(docker compose:*)",
       "Bash(curl:*)",
       "Bash(timeout 30 curl:*)",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(netstat:*)",
+      "Bash(iconv:*)",
+      "Bash(git checkout:*)",
+      "Bash(del nul)"
     ]
   }
 }

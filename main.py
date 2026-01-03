@@ -3706,49 +3706,86 @@ def api_ai_analyze(
 def _format_summary(normalized: dict) -> str:
     """Format normalized financial data into readable summary text for AI"""
     lines = []
-    
-    # Key metrics mapping
-    key_metrics = {
-        "売上高": "revenue",
-        "営業利益": "operating_income", 
-        "経常利益": "ordinary_income",
-        "当期純利益": "net_income",
-        "営業CF": "operating_cf",
-        "投資CF": "investing_cf",
-        "財務CF": "financing_cf",
-        "フリーCF": "free_cf",
-        "自己資本比率": "equity_ratio",
-        "ROE": "roe",
-        "ROA": "roa",
-        "EPS": "eps",
-    }
-    
-    for label, _ in key_metrics.items():
-        val = normalized.get(label)
-        if val is not None:
-            if isinstance(val, (int, float)):
-                if abs(val) >= 100000000:  # 1億以上
-                    lines.append(f"{label}: {val/100000000:.1f}億円")
-                elif isinstance(val, float) and abs(val) < 10:  # 割合っぽい (e.g. 0.318) - changed condition to < 10 to catch single digit ratios
-                    # Note: formatted_data in extract uses < 100 condition.
-                    # Here we want to handle raw values.
-                    # Ratios in normalized_data are usually raw floats (0.15) or percentage strings ("15%")?
-                    # extract_financial_data sets them as raw values from XBRL.
-                    # If XBRL says 0.15, it's 0.15.
-                    if 0 < abs(val) < 1: # Decimal like 0.3
-                         lines.append(f"{label}: {val*100:.1f}%")
-                    elif 1 <= abs(val) < 100: # Percentage like 15.0? Or small number?
-                         # Difficulty: EPS is small number. ROE is small number.
-                         if label in ["ROE", "ROA", "自己資本比率", "配当性向"]:
-                              lines.append(f"{label}: {val:.1f}%")
-                         else:
-                              lines.append(f"{label}: {val}")
-                else:
-                    lines.append(f"{label}: {val:,.0f}")
-            else:
-                lines.append(f"{label}: {val}")
-    
+
+    # すべてのnormalized_dataを処理（順序を定義して見やすく）
+    # 損益計算書
+    pl_items = ["売上高", "営業利益", "経常利益", "当期純利益"]
+    # キャッシュフロー
+    cf_items = ["営業CF", "投資CF", "財務CF", "フリーCF"]
+    # バランスシート
+    bs_items = ["総資産", "純資産", "流動資産", "流動負債", "棚卸資産", "現金同等物", "有形固定資産", "無形固定資産"]
+    # 比率・指標
+    ratio_items = ["自己資本比率", "ROE", "ROA", "EPS", "PER", "PBR", "配当金", "配当性向"]
+    # その他
+    other_items = ["従業員数", "平均年齢", "平均年収"]
+
+    all_categories = [
+        ("【損益計算書】", pl_items),
+        ("【キャッシュフロー】", cf_items),
+        ("【バランスシート】", bs_items),
+        ("【財務指標】", ratio_items),
+        ("【企業情報】", other_items)
+    ]
+
+    for category_name, item_list in all_categories:
+        category_lines = []
+        for label in item_list:
+            val = normalized.get(label)
+            if val is not None:
+                formatted = _format_financial_value(label, val)
+                if formatted:
+                    category_lines.append(formatted)
+
+        if category_lines:
+            lines.append(category_name)
+            lines.extend(category_lines)
+            lines.append("")  # 空行で区切る
+
+    # 上記のカテゴリに含まれていないデータも追加
+    processed_keys = set()
+    for _, item_list in all_categories:
+        processed_keys.update(item_list)
+
+    other_data = []
+    for key, val in normalized.items():
+        if key not in processed_keys:
+            formatted = _format_financial_value(key, val)
+            if formatted:
+                other_data.append(formatted)
+
+    if other_data:
+        lines.append("【その他のデータ】")
+        lines.extend(other_data)
+
     return "\n".join(lines) if lines else "財務データなし"
+
+
+def _format_financial_value(label: str, val) -> str:
+    """個別の財務データ値をフォーマット"""
+    if val is None:
+        return ""
+
+    if isinstance(val, (int, float)):
+        # 金額系（1億以上）
+        if abs(val) >= 100000000:
+            return f"{label}: {val/100000000:.1f}億円"
+        # 割合・比率系
+        elif isinstance(val, float) and abs(val) < 10:
+            if 0 < abs(val) < 1:  # 0.696 → 69.6%
+                return f"{label}: {val*100:.1f}%"
+            elif 1 <= abs(val) < 100:
+                # ROE, ROA, 自己資本比率などは%として表示
+                if label in ["ROE", "ROA", "自己資本比率", "配当性向", "売上総利益率", "営業利益率"]:
+                    return f"{label}: {val:.1f}%"
+                else:
+                    # EPS, PER, PBRなどはそのまま
+                    return f"{label}: {val:.2f}" if isinstance(val, float) else f"{label}: {val}"
+        else:
+            # その他の数値
+            return f"{label}: {val:,.0f}"
+    else:
+        # 文字列など
+        return f"{label}: {val}"
 
 # Helper function for specialized AI analysis with caching
 def _run_specialized_analysis(
