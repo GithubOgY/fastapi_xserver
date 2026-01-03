@@ -428,7 +428,133 @@ AIの「総合判断」でこれを覆すことは**禁止**。
         api_key = os.getenv("GEMINI_API_KEY")
         model_name = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
         response_text = generate_with_fallback(prompt, api_key, model_name)
-        return markdown.markdown(response_text, extensions=['extra', 'nl2br', 'tables'])
+
+        # MarkdownをHTMLに変換
+        html_content = markdown.markdown(response_text, extensions=['extra', 'nl2br', 'tables'])
+
+        # スタイリッシュなHTMLラッパーを追加
+        styled_html = f"""
+        <style>
+            .investment-analysis {{
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                line-height: 1.8;
+                color: #e2e8f0;
+            }}
+            .investment-analysis h2 {{
+                color: #818cf8;
+                font-size: 1.5rem;
+                font-weight: 700;
+                margin: 2rem 0 1rem 0;
+                padding-bottom: 0.5rem;
+                border-bottom: 2px solid rgba(129, 140, 248, 0.3);
+            }}
+            .investment-analysis h3 {{
+                color: #a5b4fc;
+                font-size: 1.2rem;
+                font-weight: 600;
+                margin: 1.5rem 0 0.75rem 0;
+            }}
+            .investment-analysis h4 {{
+                color: #c084fc;
+                font-size: 1rem;
+                font-weight: 600;
+                margin: 1rem 0 0.5rem 0;
+            }}
+            .investment-analysis p {{
+                margin: 0.75rem 0;
+                color: #cbd5e1;
+            }}
+            .investment-analysis strong {{
+                color: #f8fafc;
+                font-weight: 600;
+            }}
+            .investment-analysis em {{
+                color: #fbbf24;
+                font-style: normal;
+            }}
+            .investment-analysis ul, .investment-analysis ol {{
+                margin: 0.75rem 0;
+                padding-left: 1.5rem;
+            }}
+            .investment-analysis li {{
+                margin: 0.5rem 0;
+                color: #cbd5e1;
+            }}
+            .investment-analysis table {{
+                width: 100%;
+                border-collapse: collapse;
+                margin: 1.5rem 0;
+                background: rgba(30, 41, 59, 0.5);
+                border-radius: 8px;
+                overflow: hidden;
+            }}
+            .investment-analysis th {{
+                background: linear-gradient(135deg, rgba(129, 140, 248, 0.2), rgba(192, 132, 252, 0.2));
+                color: #a5b4fc;
+                padding: 0.75rem 1rem;
+                text-align: left;
+                font-weight: 600;
+                font-size: 0.9rem;
+            }}
+            .investment-analysis td {{
+                padding: 0.75rem 1rem;
+                border-top: 1px solid rgba(148, 163, 184, 0.2);
+                color: #cbd5e1;
+            }}
+            .investment-analysis tr:hover {{
+                background: rgba(129, 140, 248, 0.05);
+            }}
+            .investment-analysis code {{
+                background: rgba(129, 140, 248, 0.1);
+                color: #818cf8;
+                padding: 0.2rem 0.4rem;
+                border-radius: 4px;
+                font-family: 'Fira Code', monospace;
+                font-size: 0.9em;
+            }}
+            .investment-analysis pre {{
+                background: rgba(15, 23, 42, 0.8);
+                border: 1px solid rgba(129, 140, 248, 0.2);
+                border-radius: 8px;
+                padding: 1rem;
+                overflow-x: auto;
+                margin: 1rem 0;
+            }}
+            .investment-analysis blockquote {{
+                border-left: 4px solid #818cf8;
+                padding-left: 1rem;
+                margin: 1rem 0;
+                color: #94a3b8;
+                font-style: italic;
+            }}
+            .investment-analysis hr {{
+                border: none;
+                border-top: 1px solid rgba(148, 163, 184, 0.2);
+                margin: 2rem 0;
+            }}
+            /* ランク別カラーリング */
+            .investment-analysis :is(h2, h3):has(+ *:contains("【S")) {{
+                color: #fbbf24;
+            }}
+            .investment-analysis :is(h2, h3):has(+ *:contains("【A")) {{
+                color: #10b981;
+            }}
+            .investment-analysis :is(h2, h3):has(+ *:contains("【B")) {{
+                color: #818cf8;
+            }}
+            .investment-analysis :is(h2, h3):has(+ *:contains("【C")) {{
+                color: #f59e0b;
+            }}
+            .investment-analysis :is(h2, h3):has(+ *:contains("【D")) {{
+                color: #ef4444;
+            }}
+        </style>
+        <div class="investment-analysis">
+            {html_content}
+        </div>
+        """
+
+        return styled_html
     except Exception as e:
         logger.error(f"Investment analysis failed: {e}")
         return f"<p class='error' style='color: #fb7185;'>投資判断分析エラー: {str(e)}</p>"
