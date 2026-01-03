@@ -34,6 +34,30 @@ def analyze_investment_decision(ticker_code: str, financial_context: Dict[str, A
     # Yahoo Financeから投資判断データを取得
     yahoo_data = get_investment_data(ticker_code)
 
+    # EDINETのnormalized_dataからPER/ROEを取得（Yahoo Financeより優先）
+    edinet_per = None
+    edinet_roe = None
+    edinet_pbr = None
+
+    # financial_contextから直接normalized_dataを取得
+    if "PER" in financial_context:
+        edinet_per = financial_context.get("PER")
+    if "ROE" in financial_context:
+        edinet_roe = financial_context.get("ROE")
+        # EDINETのROEは小数形式（0.025 = 2.5%）なので、パーセント換算
+        if edinet_roe and edinet_roe < 1:
+            edinet_roe = edinet_roe * 100
+    if "PBR" in financial_context:
+        edinet_pbr = financial_context.get("PBR")
+
+    # EDINETデータが存在する場合、Yahoo Financeデータを上書き
+    if edinet_per is not None:
+        yahoo_data["PER"] = edinet_per
+    if edinet_roe is not None:
+        yahoo_data["ROE"] = edinet_roe
+    if edinet_pbr is not None:
+        yahoo_data["PBR"] = edinet_pbr
+
     # EDINETデータから必要なテキストを抽出
     edinet_text = ""
     try:
@@ -121,16 +145,18 @@ def analyze_investment_decision(ticker_code: str, financial_context: Dict[str, A
 - 前日終値: {format_value(yahoo_data.get('前日終値'), 'yen')}
 - 変動: {format_value(price_change, 'yen') if price_change is not None else 'データなし'} ({f'+{price_change_pct:.2f}%' if price_change_pct and price_change_pct >= 0 else f'{price_change_pct:.2f}%' if price_change_pct else 'データなし'})
 
-【バリュエーション ⚠️ 古いデータの可能性】
+【バリュエーション】
 - 時価総額: {format_value(yahoo_data.get('時価総額'), 'billion')}
-  ⚠️ 警告: 実際の値と大きく乖離する場合あり（株価×発行済株式数で自己計算推奨）
+  ⚠️ 警告: Yahoo Financeの値は古い可能性あり
 - PER: {format_value(yahoo_data.get('PER'))}倍
-  ⚠️ 警告: EDINETの純利益から逆算して検証すること
+  {'✅ EDINETデータ使用（信頼性高）' if edinet_per is not None else '⚠️ Yahoo Finance予想PER（要注意）'}
 - PBR: {format_value(yahoo_data.get('PBR'))}倍
+  {'✅ EDINETデータ使用（信頼性高）' if edinet_pbr is not None else ''}
 
-【資本効率（参考値・要検証）】
-- ROE: {format_value(yahoo_data.get('ROE'))}% ⚠️ EDINETデータと照合すること
-- ROA: {format_value(yahoo_data.get('ROA'))}% ⚠️ EDINETデータと照合すること
+【資本効率】
+- ROE: {format_value(yahoo_data.get('ROE'))}%
+  {'✅ EDINETデータ使用（信頼性高）' if edinet_roe is not None else '⚠️ Yahoo Financeデータ（要検証）'}
+- ROA: {format_value(yahoo_data.get('ROA'))}% ⚠️ Yahoo Financeデータ（参考値）
 
 【財務健全性（参考値・要検証）】
 - 自己資本比率: {format_value(yahoo_data.get('自己資本比率'))}%
