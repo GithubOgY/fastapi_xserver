@@ -4512,6 +4512,99 @@ async def get_edinet_ratios(code: str, current_user: User = Depends(get_current_
                     </div>
                 </div>
             """
+            
+            # --- 株主構成セクション ---
+            shareholder_html = ""
+            if history and len(history) > 0:
+                latest_data = history[0]
+                shareholder_data = latest_data.get("shareholder_data", [])
+                
+                if shareholder_data:
+                    # 機関投資家を識別するキーワード
+                    institutional_keywords = ["信託銀行", "信託口", "マスタートラスト", "カストディ", "TRUSTEE", "CUSTODY", "信託（信託口）"]
+                    
+                    # 比率計算
+                    institutional_ratio = 0.0
+                    individual_ratio = 0.0
+                    other_ratio = 0.0
+                    
+                    for sh in shareholder_data:
+                        name = sh.get("name", "")
+                        ratio = sh.get("ratio", 0)
+                        
+                        if any(kw in name for kw in institutional_keywords):
+                            institutional_ratio += ratio
+                        else:
+                            other_ratio += ratio
+                    
+                    # 上位株主の合計
+                    total_top_ratio = institutional_ratio + other_ratio
+                    
+                    shareholder_html = f'''
+                    <div class="mt-6 bg-slate-900/80 rounded-xl p-6 border border-amber-500/30 backdrop-blur-sm shadow-xl">
+                        <h4 class="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-300 mb-4 flex items-center gap-2">
+                            <span>👥</span> 株主構成 <span class="text-sm font-normal text-gray-400 ml-2">(EDINET)</span>
+                        </h4>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                            <!-- 機関投資家比率 -->
+                            <div class="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm text-gray-300">🏦 機関投資家（信託口）</span>
+                                    <span class="text-lg font-bold text-blue-400">{institutional_ratio:.1f}%</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-2">
+                                    <div class="bg-gradient-to-r from-blue-500 to-cyan-400 h-2 rounded-full transition-all duration-500" style="width: {min(institutional_ratio, 100)}%"></div>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-2">信託銀行名義（日本マスタートラスト等）</p>
+                            </div>
+                            
+                            <!-- その他大株主 -->
+                            <div class="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm text-gray-300">👤 事業法人/個人他</span>
+                                    <span class="text-lg font-bold text-amber-400">{other_ratio:.1f}%</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-2">
+                                    <div class="bg-gradient-to-r from-amber-500 to-yellow-400 h-2 rounded-full transition-all duration-500" style="width: {min(other_ratio, 100)}%"></div>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-2">創業家・親会社・事業パートナー等</p>
+                            </div>
+                        </div>
+                        
+                        <!-- 上位株主リスト -->
+                        <div class="mt-4">
+                            <div class="text-xs text-gray-400 mb-2">📋 大株主TOP5</div>
+                            <div class="space-y-1">
+                    '''
+                    
+                    for i, sh in enumerate(shareholder_data[:5], 1):
+                        name = sh.get("name", "")[:25]  # 長い名前は切り詰め
+                        ratio = sh.get("ratio", 0)
+                        is_institutional = any(kw in sh.get("name", "") for kw in institutional_keywords)
+                        badge_color = "bg-blue-500/20 text-blue-300" if is_institutional else "bg-amber-500/20 text-amber-300"
+                        badge_text = "機関" if is_institutional else "他"
+                        
+                        shareholder_html += f'''
+                                <div class="flex items-center justify-between py-1 px-2 hover:bg-gray-700/30 rounded text-xs">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-gray-500">{i}.</span>
+                                        <span class="text-gray-300">{name}</span>
+                                        <span class="{badge_color} px-1.5 py-0.5 rounded text-[10px]">{badge_text}</span>
+                                    </div>
+                                    <span class="font-medium text-gray-200">{ratio:.2f}%</span>
+                                </div>
+                        '''
+                    
+                    shareholder_html += '''
+                            </div>
+                        </div>
+                        
+                        <p class="text-xs text-gray-500 mt-3 text-center">※ 有価証券報告書「大株主の状況」より</p>
+                    </div>
+                    '''
+            
+            analysis_html += shareholder_html
 
         return HTMLResponse(content=f"""
             <div class="mt-6 bg-gray-900/50 rounded-xl p-4 border border-purple-700/50 transition-all duration-500">
