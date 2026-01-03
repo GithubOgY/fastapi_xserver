@@ -2659,26 +2659,26 @@ async def lookup_yahoo_finance(
                     </div>
 
                     <!-- Financial Health & Efficiency Chart (ROE/ROA only) -->
-                    <div class="chart-full-width" style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem; max-width: 100%; overflow: hidden;">
-                        <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 0.75rem 0; text-align: center;">財務効率性 (ROE/ROA)</h4>
-                        <div style="height: 220px; position: relative; width: 100%;">
+                    <div class="chart-full-width" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%); backdrop-filter: blur(16px); border-radius: 16px; padding: 1.5rem; border: 1px solid rgba(129, 140, 248, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
+                        <h4 style="color: #c084fc; font-size: 0.9rem; margin: 0 0 1rem 0; text-align: center; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;">💎 財務効率性 (ROE/ROA)</h4>
+                        <div style="height: 200px; position: relative; width: 100%;">
                             <canvas id="{chart_id4}"></canvas>
                         </div>
                     </div>
-                    
+
                     <!-- Growth & Quality Analysis (Moved from OOB) -->
-                    <div class="chart-full-width" style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem; max-width: 100%; overflow: hidden;">
-                        <h4 style="color: #10b981; font-size: 0.95rem; margin: 0 0 1rem 0; text-align: center; font-weight: 600;">🚀 成長性・クオリティ分析 (年率10%目標)</h4>
-                        
+                    <div class="chart-full-width" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%); backdrop-filter: blur(16px); border-radius: 16px; padding: 1.5rem; border: 1px solid rgba(16, 185, 129, 0.2); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);">
+                        <h4 style="color: #10b981; font-size: 1rem; margin: 0 0 1rem 0; text-align: center; font-weight: 700; letter-spacing: 0.5px;">🚀 成長性・クオリティ分析 (年率10%目標)</h4>
+
                         <!-- Growth Charts & Scorecards (Copied Content) -->
                         <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
                             <!-- Growth vs Target Line Chart -->
-                            <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 1rem;">
-                                <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 0.75rem 0; text-align: center;">売上高成長 vs 10%目標ライン</h4>
-                                <div style="height: 250px; position: relative;">
+                            <div style="background: rgba(15, 23, 42, 0.5); border-radius: 12px; padding: 1.25rem; border: 1px solid rgba(255,255,255,0.05);">
+                                <h4 style="color: #94a3b8; font-size: 0.85rem; margin: 0 0 0.75rem 0; text-align: center; font-weight: 600;">売上高成長 vs 10%目標ライン</h4>
+                                <div style="height: 200px; position: relative;">
                                     <canvas id="{chart_id3}"></canvas>
                                 </div>
-                                <p style="font-size: 0.7rem; color: #475569; margin-top: 0.5rem; text-align: center;">
+                                <p style="font-size: 0.65rem; color: #64748b; margin-top: 0.5rem; text-align: center; font-style: italic;">
                                     ※点線は5年前(または開始点)からの年率10%成長のシミュレーション
                                 </p>
                             </div>
@@ -2809,32 +2809,107 @@ async def lookup_yahoo_finance(
                     }});
 
                     // Financial Health & Efficiency Chart (ROE/ROA only)
-                    new Chart(document.getElementById('{chart_id4}').getContext('2d'), {{
-                        type: 'line',
-                        data: {{
-                            labels: {years_label_js},
-                            datasets: [
-                                {{ label: 'ROE', data: {roe_data_js}, borderColor: '#818cf8', backgroundColor: 'rgba(129, 140, 248, 0.1)', borderWidth: 2, tension: 0.3, pointRadius: 4, fill: true }},
-                                {{ label: 'ROA', data: {roa_data_js}, borderColor: '#2dd4bf', backgroundColor: 'rgba(45, 212, 191, 0.1)', borderWidth: 2, tension: 0.3, pointRadius: 4, fill: true }}
-                            ]
-                        }},
-                        options: {{
-                            responsive: true,
-                            maintainAspectRatio: true,
-                            aspectRatio: 2.5,
-                            interaction: {{ mode: 'index', intersect: false }},
-                            scales: {{
-                                y: {{
-                                    beginAtZero: true,
-                                    grid: {{ color: 'rgba(255,255,255,0.05)' }},
-                                    ticks: {{ color: '#64748b', font: {{ size: 10 }} }},
-                                    title: {{ display: true, text: '単位: %', color: '#64748b', font: {{ size: 10 }} }} 
-                                }},
-                                x: {{ grid: {{ display: false }}, ticks: {{ color: '#64748b', font: {{ size: 10 }} }} }}
+                    (function() {{
+                        const ctx4 = document.getElementById('{chart_id4}').getContext('2d');
+
+                        const roeGradient = ctx4.createLinearGradient(0, 0, 0, 200);
+                        roeGradient.addColorStop(0, 'rgba(129, 140, 248, 0.4)');
+                        roeGradient.addColorStop(1, 'rgba(129, 140, 248, 0.0)');
+
+                        const roaGradient = ctx4.createLinearGradient(0, 0, 0, 200);
+                        roaGradient.addColorStop(0, 'rgba(45, 212, 191, 0.4)');
+                        roaGradient.addColorStop(1, 'rgba(45, 212, 191, 0.0)');
+
+                        new Chart(ctx4, {{
+                            type: 'line',
+                            data: {{
+                                labels: {years_label_js},
+                                datasets: [
+                                    {{
+                                        label: 'ROE',
+                                        data: {roe_data_js},
+                                        borderColor: '#818cf8',
+                                        backgroundColor: roeGradient,
+                                        borderWidth: 3,
+                                        tension: 0.4,
+                                        pointRadius: 5,
+                                        pointHoverRadius: 8,
+                                        pointBackgroundColor: '#818cf8',
+                                        pointBorderColor: '#fff',
+                                        pointBorderWidth: 2,
+                                        pointHoverBackgroundColor: '#fff',
+                                        pointHoverBorderColor: '#818cf8',
+                                        pointHoverBorderWidth: 3,
+                                        fill: true
+                                    }},
+                                    {{
+                                        label: 'ROA',
+                                        data: {roa_data_js},
+                                        borderColor: '#2dd4bf',
+                                        backgroundColor: roaGradient,
+                                        borderWidth: 3,
+                                        tension: 0.4,
+                                        pointRadius: 5,
+                                        pointHoverRadius: 8,
+                                        pointBackgroundColor: '#2dd4bf',
+                                        pointBorderColor: '#fff',
+                                        pointBorderWidth: 2,
+                                        pointHoverBackgroundColor: '#fff',
+                                        pointHoverBorderColor: '#2dd4bf',
+                                        pointHoverBorderWidth: 3,
+                                        fill: true
+                                    }}
+                                ]
                             }},
-                            plugins: {{ legend: {{ labels: {{ color: '#94a3b8', font: {{ size: 10 }} }} }} }}
-                        }}
-                    }});
+                            options: {{
+                                responsive: true,
+                                maintainAspectRatio: true,
+                                aspectRatio: 3.5,
+                                interaction: {{ mode: 'index', intersect: false }},
+                                scales: {{
+                                    y: {{
+                                        beginAtZero: true,
+                                        grid: {{ color: 'rgba(148, 163, 184, 0.08)', drawBorder: false }},
+                                        ticks: {{
+                                            color: '#94a3b8',
+                                            font: {{ size: 10 }},
+                                            callback: function(value) {{ return value + '%'; }}
+                                        }}
+                                    }},
+                                    x: {{
+                                        grid: {{ display: false }},
+                                        ticks: {{ color: '#94a3b8', font: {{ size: 10 }} }}
+                                    }}
+                                }},
+                                plugins: {{
+                                    legend: {{
+                                        position: 'bottom',
+                                        labels: {{
+                                            color: '#94a3b8',
+                                            font: {{ size: 10 }},
+                                            padding: 10,
+                                            usePointStyle: true,
+                                            pointStyle: 'circle'
+                                        }}
+                                    }},
+                                    tooltip: {{
+                                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                        titleColor: '#c084fc',
+                                        bodyColor: '#e2e8f0',
+                                        borderColor: '#818cf8',
+                                        borderWidth: 1,
+                                        padding: 12,
+                                        displayColors: true,
+                                        callbacks: {{
+                                            label: function(context) {{
+                                                return context.dataset.label + ': ' + context.parsed.y.toFixed(2) + '%';
+                                            }}
+                                        }}
+                                    }}
+                                }}
+                            }}
+                        }});
+                    }})();
 
                     // Growth Chart (Chart 3)
                     new Chart(document.getElementById('{chart_id3}').getContext('2d'), {{
@@ -2845,17 +2920,19 @@ async def lookup_yahoo_finance(
                                 {{
                                     label: '実績売上高',
                                     data: {growth_rev_actual_js},
-                                    backgroundColor: 'rgba(16, 185, 129, 0.6)',
+                                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
                                     borderColor: '#10b981',
-                                    borderWidth: 1
+                                    borderWidth: 2,
+                                    borderRadius: 6,
+                                    borderSkipped: false
                                 }},
                                 {{
                                     label: '10%成長目標',
                                     data: {growth_rev_target_js},
                                     type: 'line',
                                     borderColor: '#fbbf24',
-                                    borderDash: [5, 5],
-                                    borderWidth: 2,
+                                    borderDash: [8, 4],
+                                    borderWidth: 3,
                                     fill: false,
                                     pointRadius: 0
                                 }},
@@ -2864,33 +2941,63 @@ async def lookup_yahoo_finance(
                                     data: {roe_data_js},
                                     type: 'line',
                                     borderColor: '#818cf8',
-                                    borderWidth: 2,
+                                    borderWidth: 3,
                                     yAxisID: 'y1',
-                                    tension: 0.3,
-                                    pointRadius: 4
+                                    tension: 0.4,
+                                    pointRadius: 5,
+                                    pointHoverRadius: 7,
+                                    pointBackgroundColor: '#818cf8',
+                                    pointBorderColor: '#fff',
+                                    pointBorderWidth: 2
                                 }}
                             ]
                         }},
                         options: {{
                             responsive: true,
                             maintainAspectRatio: true,
-                    aspectRatio: 2.5,
+                            aspectRatio: 2.0,
+                            interaction: {{ mode: 'index', intersect: false }},
                             scales: {{
-                                y: {{ 
-                                    grid: {{ color: 'rgba(255,255,255,0.05)' }},
-                                    ticks: {{ color: '#64748b' }},
-                                    title: {{ display: true, text: '億円', color: '#64748b' }}
+                                y: {{
+                                    grid: {{ color: 'rgba(148, 163, 184, 0.08)', drawBorder: false }},
+                                    ticks: {{
+                                        color: '#94a3b8',
+                                        font: {{ size: 10 }}
+                                    }},
+                                    title: {{ display: true, text: '億円', color: '#94a3b8', font: {{ size: 10 }} }}
                                 }},
-                                y1: {{ 
-                                    position: 'right', 
-                                    grid: {{ display: false }}, 
-                                    ticks: {{ color: '#818cf8' }}, 
-                                    title: {{ display: true, text: '% (ROE)', color: '#818cf8' }} 
+                                y1: {{
+                                    position: 'right',
+                                    grid: {{ display: false }},
+                                    ticks: {{
+                                        color: '#818cf8',
+                                        font: {{ size: 10 }},
+                                        callback: function(value) {{ return value + '%'; }}
+                                    }},
+                                    title: {{ display: true, text: 'ROE (%)', color: '#818cf8', font: {{ size: 10 }} }} 
                                 }},
                                 x: {{ grid: {{ display: false }}, ticks: {{ color: '#64748b' }} }}
                             }},
                             plugins: {{
-                                legend: {{ labels: {{ color: '#94a3b8' }} }}
+                                legend: {{
+                                    position: 'bottom',
+                                    labels: {{
+                                        color: '#94a3b8',
+                                        font: {{ size: 10 }},
+                                        padding: 10,
+                                        usePointStyle: true,
+                                        pointStyle: 'circle'
+                                    }}
+                                }},
+                                tooltip: {{
+                                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                    titleColor: '#10b981',
+                                    bodyColor: '#e2e8f0',
+                                    borderColor: '#10b981',
+                                    borderWidth: 1,
+                                    padding: 12,
+                                    displayColors: true
+                                }}
                             }}
                         }}
                     }});
