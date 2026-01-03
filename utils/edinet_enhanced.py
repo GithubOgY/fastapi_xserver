@@ -585,6 +585,7 @@ def extract_financial_data(xbrl_dir: str) -> Dict[str, Any]:
             "設備投資の状況": ["OverviewOfCapitalExpendituresEtcTextBlock", "CapitalExpendituresTextBlock"],
             "従業員の状況": ["InformationAboutEmployeesTextBlock", "EmployeesTextBlock"],
             "コーポレートガバナンス": ["CorporateGovernanceTextBlock", "StatusOfCorporateGovernanceTextBlock"],
+            "役員の状況": ["InformationAboutOfficersTextBlock", "DirectorsAndExecutiveOfficersTextBlock", "DirectorsTextBlock"],
             "サステナビリティ": ["SustainabilityInformationTextBlock", "SustainabilityTextBlock", "EnvironmentalConservationActivitiesTextBlock"]
         }
         
