@@ -140,6 +140,14 @@ FALLBACK_MAPPING = {
     "CapitalExpendituresOverviewOfCapitalExpendituresEtc": "設備投資額",
     "DepreciationAndAmortization": "減価償却費",
     "ResearchAndDevelopmentExpenses": "研究開発費",
+    
+    # ========== 役員情報 (Officer Information) ==========
+    "NameOfficer": "役員氏名",
+    "TitleOfficer": "役職名",
+    "BirthDateOfficer": "生年月日",
+    "TermOfOfficeOfficer": "任期",
+    "NumberOfSharesHeldOfficer": "所有株式数（役員）",
+    "BriefPersonalHistoryOfficer": "略歴",
 }
 
 
@@ -357,6 +365,43 @@ CONCEPT_GROUPS = {
     "臨時従業員数": [
         "AverageNumberOfTemporaryWorkers",
         "AverageNumberOfTemporaryWorkersInformationAboutReportingCompanyInformationAboutEmployees",
+    ],
+    
+    # ============================================
+    # 役員情報 (jpcrp_cor 名前空間)
+    # ============================================
+    # 役員氏名
+    "役員氏名": [
+        "NameOfficer",
+        "NameInformationAboutOfficers",
+        "NameDirector",
+    ],
+    # 役職名（代表取締役社長、社外取締役など）
+    "役職名": [
+        "TitleOfficer",
+        "TitleInformationAboutOfficers",
+        "PositionOfficer",
+    ],
+    # 生年月日（YYYY-MM-DD形式）
+    "生年月日": [
+        "BirthDateOfficer",
+        "DateOfBirthInformationAboutOfficers",
+    ],
+    # 任期（(注)1 のような参照文字あり）
+    "任期": [
+        "TermOfOfficeOfficer",
+        "TermOfOfficeInformationAboutOfficers",
+    ],
+    # 所有株式数（千株か株か単位に注意）
+    "所有株式数（役員）": [
+        "NumberOfSharesHeldOfficer",
+        "NumberOfSharesHeldInformationAboutOfficers",
+    ],
+    # 略歴（長文テキスト）
+    "略歴": [
+        "BriefPersonalHistoryOfficer",
+        "BriefPersonalHistoryInformationAboutOfficers",
+        "CareerSummaryOfficer",
     ],
 }
 
