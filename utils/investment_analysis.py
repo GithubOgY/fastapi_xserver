@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 # - プロンプト変更時は必ずこの値を更新する
 # - これによりキャッシュが自動的に無効化される
 # =========================================================
-INVESTMENT_PROMPT_VERSION = "2026-01-04-v6-employee-productivity"
+INVESTMENT_PROMPT_VERSION = "2026-01-04-v7-fix-output-format"
 
 
 def analyze_investment_decision(ticker_code: str, financial_context: Dict[str, Any], company_name: str = "") -> str:
@@ -500,6 +500,11 @@ AIの「総合判断」でこれを覆すことは**禁止**。
 | Step3 CF質 | ○○ | ... |
 | Step4 機会費用 | ○○ | ... |
 | Step5 出口戦略 | 設定済 | 損切○○%/利食○○% |
+
+■ 従業員生産性・人的資本分析
+- 一人当たり営業利益 vs 平均年収: (利益 > 年収 / 利益 < 年収)
+- 評価: (黒字構造 / 低収益 / 赤字高コスト)
+- コメント: (1行で評価)
 
 ■ 各Step詳細分析
 【Step1】...
