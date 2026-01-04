@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 # - プロンプト変更時は必ずこの値を更新する
 # - これによりキャッシュが自動的に無効化される
 # =========================================================
-INVESTMENT_PROMPT_VERSION = "2026-01-04-v8-profit-ratio-analysis"
+INVESTMENT_PROMPT_VERSION = "2026-01-04-v9-remove-productivity"
 
 
 def analyze_investment_decision(ticker_code: str, financial_context: Dict[str, Any], company_name: str = "") -> str:
@@ -224,64 +224,7 @@ def analyze_investment_decision(ticker_code: str, financial_context: Dict[str, A
     else:
         shareholder_summary = "【大株主の状況】データなし（EDINETから取得できませんでした）"
 
-    # =====================================================
-    # 従業員生産性・人的資本分析データの整形
-    # =====================================================
-    employee_summary = ""
-    normalized_data = financial_context.get("edinet_data", {}).get("normalized_data", {})
-    
-    emp_count = normalized_data.get("従業員数")
-    avg_salary = normalized_data.get("平均年収")
-    
-    # 財務データの取得（単位: 円）
-    revenue = normalized_data.get("売上高")
-    op_income = normalized_data.get("営業利益")
-    net_income = normalized_data.get("当期純利益")
-    
-    if emp_count and emp_count > 0 and avg_salary:
-        productivity_lines = ["【従業員生産性分析】(EDINETデータに基づく計算値)"]
-        
-        # 1. 一人当たり指標の計算（全て円単位）
-        rev_per_emp = revenue / emp_count if revenue else 0
-        op_per_emp = op_income / emp_count if op_income else 0
-        net_per_emp = net_income / emp_count if net_income else 0
-        
-        # 2. 給与対比の生産性（労働分配率の逆数的な視点）
-        # 従業員一人当たり営業利益 - 平均年収
-        profit_salary_gap = op_per_emp - avg_salary
-        # 給与倍率（営業利益ベース）
-        profit_salary_ratio = op_per_emp / avg_salary if avg_salary > 0 else 0
-        
-        # フォーマット関数
-        def fmt_yen(val):
-            return f"¥{val:,.0f}"
-            
-        def fmt_man(val):
-            return f"{val/10000:,.0f}万円"
-        
-        productivity_lines.append(f"- 従業員数: {emp_count:,}人")
-        productivity_lines.append(f"- 平均年収: {fmt_man(avg_salary)} ({fmt_yen(avg_salary)})")
-        productivity_lines.append("")
-        productivity_lines.append("**生産性指標（一人当たり）:**")
-        productivity_lines.append(f"- 売上高: {fmt_man(rev_per_emp)}")
-        productivity_lines.append(f"- 営業利益: {fmt_man(op_per_emp)}")
-        productivity_lines.append(f"- 当期純利益: {fmt_man(net_per_emp)}")
-        productivity_lines.append("")
-        productivity_lines.append("**人的資本ROI分析:**")
-        productivity_lines.append(f"- 給与倍率 (売上/給与): {rev_per_emp/avg_salary:.2f}倍")
-        productivity_lines.append(f"- 利益倍率 (営業利益/給与): {profit_salary_ratio:.2f}倍")
-        
-        # 判定コメント
-        if op_per_emp > avg_salary:
-            productivity_lines.append(f"- ✅ **黒字構造**: 給与の{profit_salary_ratio:.2f}倍の利益を稼いでいる (+{fmt_man(profit_salary_gap)})")
-        elif op_per_emp > 0:
-            productivity_lines.append(f"- ⚠️ **低収益構造**: 営業利益({fmt_man(op_per_emp)})が給与({fmt_man(avg_salary)})を下回っている")
-        else:
-            productivity_lines.append(f"- ❌ **赤字構造**: 一人で{fmt_man(abs(op_per_emp))}の営業赤字を出している")
-            
-        employee_summary = "\n".join(productivity_lines)
-    else:
-        employee_summary = "【従業員生産性分析】データ不足により計算不可"
+
 
     # =====================================================
     # 超辛口プロトコル v2.0
@@ -375,11 +318,7 @@ AIの「総合判断」でこれを覆すことは**禁止**。
 - 甘い見通しには「**それは妄想です**」「**市場のカモにされます**」と容赦なく指摘
 - 「買い」推奨する場合でも、必ずリスクを先に述べる
 
-### 4. 従業員生産性評価（追加基準）
-- **「一人当たり営業利益」と「平均年収」を比較**せよ
-- ✅ **合格ライン**: 一人当たり営業利益 > 平均年収
-- ❌ **警告ライン**: 一人当たり営業利益 < 平均年収
-- 警告ラインを下回る場合、「自分が稼ぐ以上に給料をもらっている高コスト体質」として厳しく評価すること
+
 
 ---
 
@@ -400,8 +339,7 @@ AIの「総合判断」でこれを覆すことは**禁止**。
 ## ■ 株主構成 (EDINET)
 {shareholder_summary}
 
-## ■ 従業員生産性・人的資本 (EDINET)
-{employee_summary}
+
 
 ---
 
@@ -504,10 +442,7 @@ AIの「総合判断」でこれを覆すことは**禁止**。
 | Step4 機会費用 | ○○ | ... |
 | Step5 出口戦略 | 設定済 | 損切○○%/利食○○% |
 
-■ 従業員生産性・人的資本分析
-- 一人当たり営業利益 vs 平均年収: (利益 > 年収 / 利益 < 年収)
-- 評価: (黒字構造 / 低収益 / 赤字高コスト)
-- コメント: (1行で評価)
+
 
 ■ 各Step詳細分析
 【Step1】...
