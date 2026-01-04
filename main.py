@@ -3512,6 +3512,57 @@ async def search_edinet_company(
             </details>
             '''
         
+        # ============================================
+        # 従業員情報セクション（normalized_dataから抽出）
+        # ============================================
+        normalized_data = result.get("normalized_data", {})
+        employee_count = normalized_data.get("従業員数")
+        avg_age = normalized_data.get("平均年齢")
+        avg_tenure = normalized_data.get("平均勤続年数")
+        avg_salary = normalized_data.get("平均年収")
+        
+        # 従業員データが1つでもあれば表示
+        if employee_count or avg_age or avg_tenure or avg_salary:
+            # 給与をフォーマット
+            salary_display = ""
+            if avg_salary:
+                if isinstance(avg_salary, (int, float)):
+                    if avg_salary > 10000:  # 円単位
+                        salary_display = f"{avg_salary / 10000:.0f}万円"
+                    else:
+                        salary_display = f"{avg_salary:.0f}万円"
+                else:
+                    salary_display = str(avg_salary)
+            
+            sections_html += f'''
+            <details class="bg-gray-900/30 rounded-lg border border-green-500/30 overflow-hidden" style="height: fit-content;" open>
+                <summary class="cursor-pointer px-4 py-3 bg-green-900/20 hover:bg-green-800/30 transition-colors font-medium text-green-200 list-none flex items-center gap-3">
+                    <span style="font-size: 0.9rem;">👥 従業員の状況</span>
+                </summary>
+                <div class="p-4 text-sm text-gray-200 leading-relaxed border-t border-green-700/30 bg-gray-900/50">
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                        <div style="background: rgba(16, 185, 129, 0.1); padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.2);">
+                            <div style="font-size: 0.7rem; color: #6ee7b7; margin-bottom: 0.25rem;">👤 従業員数</div>
+                            <div style="font-size: 1.25rem; font-weight: bold; color: #a7f3d0;">{employee_count if employee_count else "―"}人</div>
+                        </div>
+                        <div style="background: rgba(59, 130, 246, 0.1); padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.2);">
+                            <div style="font-size: 0.7rem; color: #93c5fd; margin-bottom: 0.25rem;">🎂 平均年齢</div>
+                            <div style="font-size: 1.25rem; font-weight: bold; color: #bfdbfe;">{avg_age if avg_age else "―"}歳</div>
+                        </div>
+                        <div style="background: rgba(168, 85, 247, 0.1); padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(168, 85, 247, 0.2);">
+                            <div style="font-size: 0.7rem; color: #c4b5fd; margin-bottom: 0.25rem;">📅 平均勤続年数</div>
+                            <div style="font-size: 1.25rem; font-weight: bold; color: #ddd6fe;">{avg_tenure if avg_tenure else "―"}年</div>
+                        </div>
+                        <div style="background: rgba(245, 158, 11, 0.1); padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.2);">
+                            <div style="font-size: 0.7rem; color: #fcd34d; margin-bottom: 0.25rem;">💰 平均年収</div>
+                            <div style="font-size: 1.25rem; font-weight: bold; color: #fef3c7;">{salary_display if salary_display else "―"}</div>
+                        </div>
+                    </div>
+                    <p style="font-size: 0.65rem; color: #64748b; margin-top: 0.75rem; text-align: center;">※ 有価証券報告書「従業員の状況」より</p>
+                </div>
+            </details>
+            '''
+        
         # Close Grid Container
         sections_html += '</div>'
 
