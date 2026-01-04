@@ -318,6 +318,39 @@ CONCEPT_GROUPS = {
         "RateOfReturnOnAssetsSummaryOfBusinessResults",
         "ReturnOnAssets",
     ],
+    # ============================================
+    # 従業員関連
+    # ============================================
+    # 従業員数
+    "従業員数": [
+        "NumberOfEmployees",
+        "NumberOfEmployeesIFRS",
+        "NumberOfEmployeesSummaryOfBusinessResults",
+        "NumberOfEmployeesOfSubmittingCompanyInformationAboutEmployees",
+        "NumberOfEmployeesConsolidated",
+    ],
+    # 平均年齢
+    "平均年齢": [
+        "AverageAgeOfEmployees",
+        "AverageAgeOfEmployeesInformationAboutEmployees",
+        "AverageAgeYearsOfEmployeesOfSubmittingCompanyInformationAboutEmployees",
+        "AverageAgeYearsOfEmployees",
+    ],
+    # 平均勤続年数
+    "平均勤続年数": [
+        "AverageYearsOfServiceOfEmployees",
+        "AverageLengthOfServiceOfEmployeesInformationAboutEmployees",
+        "AverageLengthOfServiceYearsOfEmployeesOfSubmittingCompanyInformationAboutEmployees",
+        "AverageLengthOfServiceYearsOfEmployees",
+    ],
+    # 平均年収
+    "平均年収": [
+        "AverageAnnualSalaryOfEmployees",
+        "AverageAnnualSalaryOfEmployeesInformationAboutEmployees",
+        "AverageAnnualSalaryYenOfEmployeesOfSubmittingCompanyInformationAboutEmployees",
+        "AverageWagesAndSalary",
+        "AverageSalaryOfEmployees",
+    ],
 }
 
 # Elements that represent ratios/percentages (value is 0-1 scale)
@@ -336,6 +369,12 @@ PER_SHARE_ELEMENTS = [
 # Elements that represent counts (should not have 円 suffix)
 COUNT_ELEMENTS = [
     "NumberOfEmployees", "NumberOfShares", "従業員数",
+    "AverageAgeOfEmployees", "AverageYearsOfServiceOfEmployees", "平均年齢", "平均勤続年数",
+]
+
+# Elements that represent salary/wage (should be formatted as 円, not 億円)
+SALARY_ELEMENTS = [
+    "AverageAnnualSalary", "AverageWages", "平均年収",
 ]
 
 

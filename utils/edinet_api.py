@@ -6,28 +6,33 @@ from typing import Any, Dict, Iterable, Optional
 SCHEMA_VERSION = "1.0"
 
 _FINANCIAL_KEY_MAP = {
-    "revenue": ("\u58f2\u4e0a\u9ad8",),
-    "operating_income": ("\u55b6\u696d\u5229\u76ca",),
-    "ordinary_income": ("\u7d4c\u5e38\u5229\u76ca",),
-    "net_income": ("\u5f53\u671f\u7d14\u5229\u76ca",),
-    "total_assets": ("\u7dcf\u8cc7\u7523",),
-    "net_assets": ("\u7d14\u8cc7\u7523",),
+    "revenue": ("売上高",),
+    "operating_income": ("営業利益",),
+    "ordinary_income": ("経常利益",),
+    "net_income": ("当期純利益",),
+    "total_assets": ("総資産",),
+    "net_assets": ("純資産",),
     "cash_and_equivalents": (
-        "\u73fe\u91d1\u540c\u7b49\u7269",
-        "\u73fe\u91d1\u53ca\u3073\u73fe\u91d1\u540c\u7b49\u7269",
+        "現金同等物",
+        "現金及び現金同等物",
     ),
-    "operating_cf": ("\u55b6\u696dCF",),
-    "investing_cf": ("\u6295\u8cc7CF",),
-    "financing_cf": ("\u8ca1\u52d9CF",),
-    "free_cf": ("\u30d5\u30ea\u30fcCF",),
+    "operating_cf": ("営業CF",),
+    "investing_cf": ("投資CF",),
+    "financing_cf": ("財務CF",),
+    "free_cf": ("フリーCF",),
     "eps": ("EPS",),
     "dividend_per_share": (
-        "\u914d\u5f53\u91d1",
-        "\u0031\u682a\u5f53\u305f\u308a\u914d\u5f53\u91d1",
+        "配当金",
+        "1株当たり配当金",
     ),
     "roe": ("ROE",),
-    "equity_ratio": ("\u81ea\u5df1\u8cc7\u672c\u6bd4\u7387",),
+    "equity_ratio": ("自己資本比率",),
     "per": ("PER",),
+    # 従業員関連
+    "employee_count": ("従業員数",),
+    "average_age": ("平均年齢",),
+    "average_tenure": ("平均勤続年数",),
+    "average_salary": ("平均年収",),
 }
 
 _TEXT_KEY_MAP = {
@@ -94,21 +99,42 @@ def build_public_edinet_payload(result: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def build_essential_edinet_payload(
-    latest_result: Dict[str, Any], history: Iterable[Dict[str, Any]]
+    latest_result: Dict[str, Any], 
+    history: Iterable[Dict[str, Any]],
+    metrics: Optional[Iterable[str]] = None
 ) -> Dict[str, Any]:
+    """
+    essentialビュー用のペイロードを構築
+    
+    Args:
+        latest_result: 最新の財務データ
+        history: 過去の財務データリスト
+        metrics: 取得する指標のリスト（例: ["revenue", "operating_income", "roe"]）
+                 Noneの場合はすべての主要指標を含む
+    """
     metadata = latest_result.get("metadata", {}) or {}
     as_of = metadata.get("period_end") or date.today().isoformat()
 
-    revenue_trend = _build_revenue_trend(history)
-    if not revenue_trend:
+    # デフォルト指標
+    if metrics is None:
+        metrics = ["revenue", "operating_income", "net_income", "operating_cf", "roe", "equity_ratio"]
+    
+    # 指標ごとの推移データを構築
+    trends = _build_metric_trends(history, metrics)
+    
+    # ヒストリーがない場合はlatestから取得
+    if not trends:
         latest_norm = latest_result.get("normalized_data", {}) or {}
-        revenue = _to_number(_pick_first(latest_norm, _FINANCIAL_KEY_MAP["revenue"]))
-        revenue_trend = [
-            {
-                "period_end": metadata.get("period_end"),
-                "revenue": revenue,
-            }
-        ]
+        trends = []
+        trend_entry = {"period_end": metadata.get("period_end")}
+        for metric in metrics:
+            if metric in _FINANCIAL_KEY_MAP:
+                raw_value = _pick_first(latest_norm, _FINANCIAL_KEY_MAP[metric])
+                if metric in _RATIO_KEYS:
+                    trend_entry[metric] = _ratio_to_decimal(raw_value)
+                else:
+                    trend_entry[metric] = _to_number(raw_value)
+        trends = [trend_entry]
 
     payload = {
         "schema_version": SCHEMA_VERSION,
@@ -123,7 +149,8 @@ def build_essential_edinet_payload(
             "from_cache": metadata.get("from_cache"),
         },
         "essential": {
-            "revenue_trend": revenue_trend,
+            "metrics": list(metrics),
+            "trends": trends,
         },
     }
 
@@ -158,14 +185,40 @@ def _extract_text(text_data: Dict[str, Any]) -> Dict[str, Optional[str]]:
     return output
 
 
-def _build_revenue_trend(history: Iterable[Dict[str, Any]]) -> list[Dict[str, Optional[float]]]:
-    trend: list[Dict[str, Optional[float]]] = []
+def _build_metric_trends(
+    history: Iterable[Dict[str, Any]], 
+    metrics: Iterable[str]
+) -> list[Dict[str, Any]]:
+    """
+    複数の指標の推移データを構築
+    
+    Args:
+        history: 財務データの履歴リスト
+        metrics: 取得する指標のリスト（例: ["revenue", "operating_income", "roe"]）
+    
+    Returns:
+        [{"period_end": "2023-03-31", "revenue": 123456, "operating_income": 12345, ...}, ...]
+    """
+    trend: list[Dict[str, Any]] = []
+    metrics_list = list(metrics)
+    
     for item in history:
         meta = item.get("metadata", {}) or {}
         period_end = meta.get("period_end")
         normalized = item.get("normalized_data", {}) or {}
-        revenue = _to_number(_pick_first(normalized, _FINANCIAL_KEY_MAP["revenue"]))
-        trend.append({"period_end": period_end, "revenue": revenue})
+        
+        entry = {"period_end": period_end}
+        
+        for metric in metrics_list:
+            if metric in _FINANCIAL_KEY_MAP:
+                raw_value = _pick_first(normalized, _FINANCIAL_KEY_MAP[metric])
+                if metric in _RATIO_KEYS:
+                    entry[metric] = _ratio_to_decimal(raw_value)
+                else:
+                    entry[metric] = _to_number(raw_value)
+        
+        trend.append(entry)
+    
     return trend
 
 

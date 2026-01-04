@@ -3642,12 +3642,41 @@ async def search_edinet_company(
 
 @app.get("/api/v1/edinet/search", response_class=JSONResponse)
 async def search_edinet_company_v1(
-    query: str = Query(..., min_length=1),
-    view: str = Query("full"),
-    trend_years: int = Query(5, ge=1, le=10),
+    query: str = Query(..., min_length=1, description="企業コード（例: 7203）または企業名"),
+    view: str = Query("full", description="full（全データ）または essential（推移データ）"),
+    trend_years: int = Query(5, ge=1, le=10, description="推移データの年数（view=essential時のみ）"),
+    metrics: str = Query(
+        None, 
+        description="取得する指標（カンマ区切り）。例: revenue,operating_income,roe。省略時は主要6指標"
+    ),
+    pretty: bool = Query(False, description="JSONを整形して出力（インデント付き）"),
     request: Request = None,
 ):
-    """Public EDINET search API (JSON) - Rate limited: 10 requests/minute"""
+    """
+    Public EDINET search API (JSON) - Rate limited: 10 requests/minute
+    
+    指定可能な指標（metrics）:
+    - revenue: 売上高
+    - operating_income: 営業利益
+    - ordinary_income: 経常利益
+    - net_income: 当期純利益
+    - total_assets: 総資産
+    - net_assets: 純資産
+    - operating_cf: 営業キャッシュフロー
+    - investing_cf: 投資キャッシュフロー
+    - financing_cf: 財務キャッシュフロー
+    - free_cf: フリーキャッシュフロー
+    - eps: 1株当たり利益
+    - roe: 自己資本利益率
+    - equity_ratio: 自己資本比率
+    - per: 株価収益率
+    - employee_count: 従業員数
+    - average_age: 平均年齢
+    - average_tenure: 平均勤続年数
+    - average_salary: 平均年収
+    """
+    import json as json_module
+    
     # レート制限チェック
     client_ip = request.client.host if request and request.client else "unknown"
     allowed, retry_after = public_api_limiter.check(client_ip)
@@ -3764,9 +3793,21 @@ async def search_edinet_company_v1(
                     company_code=sec_code,
                     years=trend_years,
                 )
-            payload = build_essential_edinet_payload(result, history)
+            # metricsパラメータをパース
+            metrics_list = None
+            if metrics:
+                metrics_list = [m.strip() for m in metrics.split(",") if m.strip()]
+            
+            payload = build_essential_edinet_payload(result, history, metrics_list)
         else:
             payload = build_public_edinet_payload(result)
+        
+        # Pretty JSON出力
+        if pretty:
+            return Response(
+                content=json_module.dumps(payload, ensure_ascii=False, indent=2),
+                media_type="application/json; charset=utf-8"
+            )
         return JSONResponse(content=payload)
     except Exception as e:
         logger.error(f"EDINET public API error: {e}")
