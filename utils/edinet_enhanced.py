@@ -319,37 +319,41 @@ CONCEPT_GROUPS = {
         "ReturnOnAssets",
     ],
     # ============================================
-    # 従業員関連
+    # 従業員関連 (2019年以降のタクソノミ)
     # ============================================
-    # 従業員数
+    # 従業員数 (連結/単独)
     "従業員数": [
         "NumberOfEmployees",
         "NumberOfEmployeesIFRS",
         "NumberOfEmployeesSummaryOfBusinessResults",
-        "NumberOfEmployeesOfSubmittingCompanyInformationAboutEmployees",
-        "NumberOfEmployeesConsolidated",
+        # 単独従業員数
+        "NumberOfEmployeesInformationAboutReportingCompanyInformationAboutEmployees",
     ],
-    # 平均年齢
+    # 平均年齢 (2019年以降のタグ)
     "平均年齢": [
-        "AverageAgeOfEmployees",
-        "AverageAgeOfEmployeesInformationAboutEmployees",
+        "AverageAgeYearsInformationAboutReportingCompanyInformationAboutEmployees",
         "AverageAgeYearsOfEmployeesOfSubmittingCompanyInformationAboutEmployees",
-        "AverageAgeYearsOfEmployees",
+        "AverageAgeOfEmployees",
+        "AverageAgeInformationAboutEmployees",
     ],
-    # 平均勤続年数
+    # 平均勤続年数 (2019年以降のタグ)
     "平均勤続年数": [
-        "AverageYearsOfServiceOfEmployees",
-        "AverageLengthOfServiceOfEmployeesInformationAboutEmployees",
+        "AverageLengthOfServiceYearsInformationAboutReportingCompanyInformationAboutEmployees",
         "AverageLengthOfServiceYearsOfEmployeesOfSubmittingCompanyInformationAboutEmployees",
-        "AverageLengthOfServiceYearsOfEmployees",
+        "AverageLengthOfServiceOfEmployees",
+        "AverageLengthOfServiceInformationAboutEmployees",
     ],
-    # 平均年収
+    # 平均年収 (2019年以降のタグ)
     "平均年収": [
-        "AverageAnnualSalaryOfEmployees",
-        "AverageAnnualSalaryOfEmployeesInformationAboutEmployees",
+        "AverageAnnualSalaryInformationAboutReportingCompanyInformationAboutEmployees",
         "AverageAnnualSalaryYenOfEmployeesOfSubmittingCompanyInformationAboutEmployees",
-        "AverageWagesAndSalary",
-        "AverageSalaryOfEmployees",
+        "AverageAnnualSalaryOfEmployees",
+        "AverageAnnualSalaryInformationAboutEmployees",
+    ],
+    # 臨時従業員数
+    "臨時従業員数": [
+        "AverageNumberOfTemporaryWorkers",
+        "AverageNumberOfTemporaryWorkersInformationAboutReportingCompanyInformationAboutEmployees",
     ],
 }
 

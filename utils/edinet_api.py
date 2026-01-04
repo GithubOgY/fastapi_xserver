@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from datetime import date
+import re
+import unicodedata
 from typing import Any, Dict, Iterable, Optional
 
 SCHEMA_VERSION = "1.0"
@@ -54,6 +56,7 @@ _TEXT_KEY_MAP = {
 }
 
 _RATIO_KEYS = {"roe", "equity_ratio"}
+_EMPLOYEE_METRICS = {"employee_count", "average_age", "average_tenure", "average_salary"}
 
 
 def normalize_edinet_query(query: str) -> str:
@@ -125,11 +128,21 @@ def build_essential_edinet_payload(
     # ヒストリーがない場合はlatestから取得
     if not trends:
         latest_norm = latest_result.get("normalized_data", {}) or {}
+        latest_raw = latest_result.get("raw_data", {}) or {}
+        latest_text = latest_result.get("text_data", {}) or {}
+        metrics_list = list(metrics)
+        employee_fallback = None
+        if any(metric in _EMPLOYEE_METRICS for metric in metrics_list):
+            employee_fallback = _extract_employee_metrics_from_text(latest_text)
         trends = []
         trend_entry = {"period_end": metadata.get("period_end")}
-        for metric in metrics:
+        for metric in metrics_list:
             if metric in _FINANCIAL_KEY_MAP:
                 raw_value = _pick_first(latest_norm, _FINANCIAL_KEY_MAP[metric])
+                if raw_value is None:
+                    raw_value = _pick_first(latest_raw, _FINANCIAL_KEY_MAP[metric])
+                if raw_value is None and employee_fallback:
+                    raw_value = employee_fallback.get(metric)
                 if metric in _RATIO_KEYS:
                     trend_entry[metric] = _ratio_to_decimal(raw_value)
                 else:
@@ -185,6 +198,52 @@ def _extract_text(text_data: Dict[str, Any]) -> Dict[str, Optional[str]]:
     return output
 
 
+def _extract_employee_metrics_from_text(text_data: Dict[str, Any]) -> Dict[str, Optional[float]]:
+    text = _get_employee_text(text_data)
+    if not text or not isinstance(text, str):
+        return {}
+
+    normalized = unicodedata.normalize("NFKC", text)
+    metrics: Dict[str, Optional[float]] = {}
+
+    count_match = re.search(r"従業員数[^0-9]{0,10}([0-9][0-9,]*)", normalized)
+    if count_match:
+        metrics["employee_count"] = _to_number(count_match.group(1))
+
+    age_match = re.search(r"平均年齢[^0-9]{0,10}([0-9]+(?:\.[0-9]+)?)", normalized)
+    if age_match:
+        metrics["average_age"] = _to_number(age_match.group(1))
+
+    tenure_match = re.search(r"平均勤続年数[^0-9]{0,10}([0-9]+(?:\.[0-9]+)?)", normalized)
+    if tenure_match:
+        metrics["average_tenure"] = _to_number(tenure_match.group(1))
+
+    salary_match = re.search(
+        r"(平均年間給与|平均年収|平均給与)[^0-9]{0,10}([0-9][0-9,]*(?:\.[0-9]+)?)\s*(円|千円|万円|百万円|億円)?",
+        normalized,
+    )
+    if salary_match:
+        value = _to_number(salary_match.group(2))
+        metrics["average_salary"] = _apply_unit_multiplier(value, salary_match.group(3))
+
+    return metrics
+
+
+def _get_employee_text(text_data: Dict[str, Any]) -> str:
+    if not text_data:
+        return ""
+    for key, value in text_data.items():
+        if "従業員" in key and isinstance(value, str):
+            return value
+    return ""
+
+
+def _apply_unit_multiplier(value: Optional[float], unit: Optional[str]) -> Optional[float]:
+    if value is None:
+        return None
+    return value
+
+
 def _build_metric_trends(
     history: Iterable[Dict[str, Any]], 
     metrics: Iterable[str]
@@ -206,12 +265,21 @@ def _build_metric_trends(
         meta = item.get("metadata", {}) or {}
         period_end = meta.get("period_end")
         normalized = item.get("normalized_data", {}) or {}
+        raw_data = item.get("raw_data", {}) or {}
+        text_data = item.get("text_data", {}) or {}
+        employee_fallback = None
+        if any(metric in _EMPLOYEE_METRICS for metric in metrics_list):
+            employee_fallback = _extract_employee_metrics_from_text(text_data)
         
         entry = {"period_end": period_end}
         
         for metric in metrics_list:
             if metric in _FINANCIAL_KEY_MAP:
                 raw_value = _pick_first(normalized, _FINANCIAL_KEY_MAP[metric])
+                if raw_value is None:
+                    raw_value = _pick_first(raw_data, _FINANCIAL_KEY_MAP[metric])
+                if raw_value is None and employee_fallback:
+                    raw_value = employee_fallback.get(metric)
                 if metric in _RATIO_KEYS:
                     entry[metric] = _ratio_to_decimal(raw_value)
                 else:

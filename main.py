@@ -297,6 +297,15 @@ def get_db():
     finally:
         db.close()
 
+
+def _pretty_json_response(payload: dict, status_code: int = 200, headers: dict | None = None) -> Response:
+    return Response(
+        content=json.dumps(payload, ensure_ascii=False, indent=2),
+        status_code=status_code,
+        media_type="application/json",
+        headers=headers,
+    )
+
 def fetch_edinet_background(ticker_code: str):
     """
     Background task to fetch and cache EDINET data.
@@ -3649,7 +3658,7 @@ async def search_edinet_company_v1(
         None, 
         description="取得する指標（カンマ区切り）。例: revenue,operating_income,roe。省略時は主要6指標"
     ),
-    pretty: bool = Query(False, description="JSONを整形して出力（インデント付き）"),
+    pretty: bool = Query(True, description="JSONを整形して出力（インデント付き）"),
     request: Request = None,
 ):
     """
@@ -3675,28 +3684,31 @@ async def search_edinet_company_v1(
     - average_tenure: 平均勤続年数
     - average_salary: 平均年収
     """
-    import json as json_module
+    def _respond(payload: dict, status_code: int = 200, headers: dict | None = None):
+        if pretty:
+            return _pretty_json_response(payload, status_code=status_code, headers=headers)
+        return JSONResponse(content=payload, status_code=status_code, headers=headers)
     
     # レート制限チェック
     client_ip = request.client.host if request and request.client else "unknown"
     allowed, retry_after = public_api_limiter.check(client_ip)
 
     if not allowed:
-        return JSONResponse(
-            content={
+        return _respond(
+            {
                 "error": {
                     "code": "rate_limit_exceeded",
                     "message": f"Rate limit exceeded. Please retry after {retry_after} seconds.",
-                    "retry_after": retry_after
+                    "retry_after": retry_after,
                 }
             },
             status_code=429,
-            headers={"Retry-After": str(retry_after)}
+            headers={"Retry-After": str(retry_after)},
         )
 
     if view not in {"full", "essential"}:
-        return JSONResponse(
-            content={
+        return _respond(
+            {
                 "error": {
                     "code": "invalid_view",
                     "message": "view must be 'full' or 'essential'.",
@@ -3707,8 +3719,8 @@ async def search_edinet_company_v1(
 
     clean_query = normalize_edinet_query(query)
     if not clean_query:
-        return JSONResponse(
-            content={"error": {"code": "invalid_query", "message": "Query is required."}},
+        return _respond(
+            {"error": {"code": "invalid_query", "message": "Query is required."}},
             status_code=400,
         )
 
@@ -3757,8 +3769,8 @@ async def search_edinet_company_v1(
                     )
 
             if not docs:
-                return JSONResponse(
-                    content={
+                return _respond(
+                    {
                         "error": {
                             "code": "not_found",
                             "message": "No EDINET documents found for the query.",
@@ -3769,8 +3781,8 @@ async def search_edinet_company_v1(
 
             result = await run_in_threadpool(process_document, docs[0])
             if not result:
-                return JSONResponse(
-                    content={
+                return _respond(
+                    {
                         "error": {
                             "code": "processing_failed",
                             "message": "Failed to process the EDINET document.",
@@ -3802,17 +3814,11 @@ async def search_edinet_company_v1(
         else:
             payload = build_public_edinet_payload(result)
         
-        # Pretty JSON出力
-        if pretty:
-            return Response(
-                content=json_module.dumps(payload, ensure_ascii=False, indent=2),
-                media_type="application/json; charset=utf-8"
-            )
-        return JSONResponse(content=payload)
+        return _respond(payload)
     except Exception as e:
         logger.error(f"EDINET public API error: {e}")
-        return JSONResponse(
-            content={"error": {"code": "internal_error", "message": "Server error."}},
+        return _respond(
+            {"error": {"code": "internal_error", "message": "Server error."}},
             status_code=500,
         )
 
