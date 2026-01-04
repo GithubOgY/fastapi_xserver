@@ -57,6 +57,15 @@ def normalize_edinet_query(query: str) -> str:
     return query.strip().replace(".T", "").replace("\uff34", "")
 
 
+def normalize_securities_code(code: str) -> str:
+    if not code:
+        return ""
+    cleaned = code.strip()
+    if len(cleaned) == 5 and cleaned.endswith("0"):
+        cleaned = cleaned[:-1]
+    return cleaned
+
+
 def build_public_edinet_payload(result: Dict[str, Any]) -> Dict[str, Any]:
     metadata = result.get("metadata", {}) or {}
     normalized = result.get("normalized_data", {}) or {}
@@ -79,6 +88,43 @@ def build_public_edinet_payload(result: Dict[str, Any]) -> Dict[str, Any]:
         "financials": _extract_financials(normalized),
         "text": _extract_text(text_data),
         "website_url": result.get("website_url"),
+    }
+
+    return payload
+
+
+def build_essential_edinet_payload(
+    latest_result: Dict[str, Any], history: Iterable[Dict[str, Any]]
+) -> Dict[str, Any]:
+    metadata = latest_result.get("metadata", {}) or {}
+    as_of = metadata.get("period_end") or date.today().isoformat()
+
+    revenue_trend = _build_revenue_trend(history)
+    if not revenue_trend:
+        latest_norm = latest_result.get("normalized_data", {}) or {}
+        revenue = _to_number(_pick_first(latest_norm, _FINANCIAL_KEY_MAP["revenue"]))
+        revenue_trend = [
+            {
+                "period_end": metadata.get("period_end"),
+                "revenue": revenue,
+            }
+        ]
+
+    payload = {
+        "schema_version": SCHEMA_VERSION,
+        "as_of": as_of,
+        "metadata": {
+            "company_name": metadata.get("company_name"),
+            "securities_code": normalize_securities_code(metadata.get("securities_code")),
+            "period_end": metadata.get("period_end"),
+            "submit_date": metadata.get("submit_date"),
+            "document_type": metadata.get("document_type"),
+            "doc_id": metadata.get("doc_id"),
+            "from_cache": metadata.get("from_cache"),
+        },
+        "essential": {
+            "revenue_trend": revenue_trend,
+        },
     }
 
     return payload
@@ -110,6 +156,17 @@ def _extract_text(text_data: Dict[str, Any]) -> Dict[str, Optional[str]]:
             output[key] = None
 
     return output
+
+
+def _build_revenue_trend(history: Iterable[Dict[str, Any]]) -> list[Dict[str, Optional[float]]]:
+    trend: list[Dict[str, Optional[float]]] = []
+    for item in history:
+        meta = item.get("metadata", {}) or {}
+        period_end = meta.get("period_end")
+        normalized = item.get("normalized_data", {}) or {}
+        revenue = _to_number(_pick_first(normalized, _FINANCIAL_KEY_MAP["revenue"]))
+        trend.append({"period_end": period_end, "revenue": revenue})
+    return trend
 
 
 def _pick_first(data: Dict[str, Any], keys: Iterable[str]) -> Optional[Any]:

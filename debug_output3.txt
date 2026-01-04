@@ -1,0 +1,832 @@
+INFO: Searching 365 days in parallel...
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-28&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2026-01-02&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-31&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-30&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-29&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-27&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2026-01-03&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2026-01-01&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-25&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-26&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-23&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-24&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-15&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-22&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-18&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-21&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-20&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-19&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-16&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-17&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-14&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-13&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-12&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-07&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-11&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-09&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-10&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-06&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-08&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-05&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-03&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-04&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-02&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-12-01&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-30&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-29&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-28&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-25&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-26&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-27&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-24&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-23&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-22&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-19&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-20&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-18&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-17&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-15&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-16&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-21&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-13&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-14&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-12&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-11&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-10&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-09&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-08&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-06&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-05&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-07&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-03&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-04&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-02&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-11-01&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-31&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-30&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-29&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-28&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-26&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-27&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-25&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-23&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-24&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-22&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-19&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-20&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-21&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-16&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-17&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-18&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-15&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-14&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-13&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-12&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-09&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-08&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-10&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-06&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-07&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-05&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-04&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-03&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-02&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-11&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-10-01&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-30&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-28&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-29&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-27&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-25&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-26&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-24&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Progress: 100/365 days checked
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-23&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-22&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-21&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-20&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-18&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-17&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-19&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-15&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-16&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-14&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-13&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-12&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-11&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-09&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-08&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-10&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-07&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-06&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-05&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-04&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-03&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-02&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-09-01&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-30&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-31&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-28&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-29&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-27&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-26&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-24&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-25&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-23&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-22&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-21&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-20&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-19&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-18&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-16&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-17&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-15&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-13&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-14&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-12&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-11&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-10&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-08&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-09&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-06&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-07&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-05&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-03&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-04&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-02&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-08-01&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-31&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-29&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-30&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-27&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-28&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-26&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-25&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-24&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-23&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-22&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-21&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-20&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-19&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-18&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-17&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-16&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-15&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-14&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-13&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-12&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-11&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-10&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-09&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-08&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-06&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-07&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-05&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-04&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-03&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-02&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-07-01&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-29&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-30&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-28&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-27&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-26&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-25&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-24&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-22&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-23&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-21&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-20&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-19&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-18&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-15&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Progress: 200/365 days checked
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-16&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-17&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-14&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-12&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-13&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-11&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-09&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-10&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-08&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-07&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-06&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-05&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-04&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-03&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-02&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-06-01&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-31&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-30&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-29&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-28&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-25&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-26&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-27&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-24&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-23&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-22&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-21&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-20&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-19&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-18&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-17&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-16&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-15&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-14&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-13&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-12&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-11&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-10&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-09&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-08&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-07&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-06&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-05&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-04&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-03&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-02&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-05-01&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-30&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-29&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-28&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-27&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-26&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-25&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-24&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-23&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-22&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-21&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-20&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-19&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-18&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-17&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-16&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-15&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-13&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-12&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-14&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-11&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-10&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-09&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-08&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-07&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-06&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-05&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-03&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-04&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-02&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-04-01&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-31&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-27&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-28&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-30&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-23&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-29&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-25&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-24&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-26&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-22&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-21&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-20&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-19&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-18&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-16&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-17&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-15&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-12&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-14&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-13&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-11&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-10&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-09&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Progress: 300/365 days checked
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-06&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-08&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-07&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-02&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-05&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-01&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-03&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-03-04&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-27&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-28&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-25&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-26&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-24&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-22&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-23&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-21&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-19&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-20&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-18&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-17&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-16&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-15&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-13&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-14&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-12&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-11&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-09&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-10&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-08&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-06&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-05&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-07&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-04&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-01&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-02&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-02-03&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-31&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-30&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-29&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-28&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-27&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-25&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-26&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-22&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-24&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-23&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-21&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-20&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-19&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-18&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-17&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-12&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-13&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-15&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-16&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: Starting new HTTPS connection (1): api.edinet-fsa.go.jp:443
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-14&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-11&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-10&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-09&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-08&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-07&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-04&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-05&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+DEBUG: https://api.edinet-fsa.go.jp:443 "GET /api/v2/documents.json?date=2025-01-06&type=2&Subscription-Key=3e79a8bd50094c18bb9dd77d8afc833e HTTP/1.1" 200 None
+INFO: Found 1 documents
+INFO: No HTML table found, attempting plain text parsing
+DEBUG: Extracting numbers from rest: ç`ãÊê‘ç‚àÍíöñ⁄ÇWî‘ÇPçÜ1,805,60513.84áäñLìcé©ìÆêDã@
+DEBUG:   Trying 2-digit ratio: ratio=13.84, before_ratio='ç`ãÊê‘ç‚àÍíöñ⁄ÇWî‘ÇPçÜ1,805,605'
+DEBUG:     Extracted shares: '1,805,605'
+DEBUG:   \u2705 Valid match found!
+DEBUG:   Extracted name: '(êÁäî)(é©å»äîéÆÇèúÇ≠)ÇÃÇÃ(Åì)ñ{É}ÉXÉ^Å[ÉgÉâÉXÉgêMëıã‚çsáä'
+DEBUG:   Skipping name due to keyword or length
+DEBUG: Extracting numbers from rest: ä†íJésñLìcí¨ìÒíöñ⁄ÇPî‘ín1,192,3319.14áäì˙ñ{ÉJÉXÉgÉfÉBã‚çs
+DEBUG:   Trying 2-digit ratio: ratio=19.14, before_ratio='ä†íJésñLìcí¨ìÒíöñ⁄ÇPî‘ín1,192,33'
+DEBUG:     Extracted shares: '1,192,33'
+DEBUG:     Not all parts are 3 digits: [3, 2]
+DEBUG:   Trying 1-digit ratio: ratio=9.14, before_ratio='ä†íJésñLìcí¨ìÒíöñ⁄ÇPî‘ín1,192,331'
+DEBUG:     Extracted shares: '1,192,331'
+DEBUG:   \u2705 Valid match found!
+DEBUG:   Extracted name: 'ç`ãÊê‘ç‚àÍíöñ⁄ÇWî‘ÇPçÜ1,805,60513.84áäñLìcé©ìÆêDã@'
+DEBUG: Extracting numbers from rest: íÜâõãÊê∞äCàÍíöñ⁄ÇWî‘12çÜ811,6476.22ì˙ñ{ê∂ñΩï€åØÅiëäÅj
+DEBUG:   Trying 2-digit ratio: ratio=76.22, before_ratio='íÜâõãÊê∞äCàÍíöñ⁄ÇWî‘12çÜ811,64'
+DEBUG:     Extracted shares: '811,64'
+DEBUG:     Not all parts are 3 digits: [2]
+DEBUG:   Trying 1-digit ratio: ratio=6.22, before_ratio='íÜâõãÊê∞äCàÍíöñ⁄ÇWî‘12çÜ811,647'
+DEBUG:     Extracted shares: '811,647'
+DEBUG:   \u2705 Valid match found!
+DEBUG:   Extracted name: 'ä†íJésñLìcí¨ìÒíöñ⁄ÇPî‘ín1,192,3319.14áäì˙ñ{ÉJÉXÉgÉfÉBã‚çs'
+DEBUG: Extracting numbers from rest: ëÂç„ésíÜâõãÊç°ã¥éOíöñ⁄ÇTî‘12çÜ633,2214.85ÉXÉeÅ[ÉgÉXÉgÉäÅ[ÉgÉoÉìÉNÉAÉìÉhÉgÉâÉXÉgÉJÉìÉpÉjÅ[ÅièÌîCë„óùêláäÇ›Ç∏ÇŸã‚çsåàçœâcã∆ïîÅjP.O.BOX351BostonMassachusetts02
+DEBUG:   ValueError: could not convert string to float: '.A.Åi'
+DEBUG:   ValueError: could not convert string to float: 'A.Åi'
+DEBUG: Extracting numbers from rest: ç`ãÊç`ìÏìÒíöñ⁄15î‘ÇPçÜÅj572,1484.38ÉWÉFÅ[ÉsÅ[ÉÇÉãÉKÉìÉ`ÉFÅ[ÉXÉoÉìÉNÅièÌîCë„óùêláäÇ›Ç∏ÇŸã‚çsåàçœâcã∆ïîÅj25BankStreet,CanaryWharf,London,E145JP,Uni
+DEBUG:   Trying 2-digit ratio: ratio=84.38, before_ratio='ç`ãÊç`ìÏìÒíöñ⁄15î‘ÇPçÜÅj572,14'
+DEBUG:     Extracted shares: '572,14'
+DEBUG:     Not all parts are 3 digits: [2]
+DEBUG:   Trying 1-digit ratio: ratio=4.38, before_ratio='ç`ãÊç`ìÏìÒíöñ⁄15î‘ÇPçÜÅj572,148'
+DEBUG:     Extracted shares: '572,148'
+DEBUG:   \u2705 Valid match found!
+DEBUG:   Extracted name: 'ëÂç„ésíÜâõãÊç°ã¥éOíöñ⁄ÇTî‘12çÜ633,2214.85ÉXÉeÅ[ÉgÉXÉgÉäÅ[ÉgÉoÉìÉNÉAÉìÉhÉgÉâÉXÉgÉJÉìÉpÉjÅ[ÅièÌîCë„óùêláäÇ›Ç∏ÇŸã‚çsåàçœâcã∆ïîÅjP.O.BOX351BostonMassachusetts02101U.S.A.Åi'
+DEBUG:   Skipping name due to keyword or length
+DEBUG: Extracting numbers from rest: ç`ãÊç`ìÏìÒíöñ⁄15î‘ÇPçÜÅj549,0994.21áäÉfÉìÉ\Å[
+DEBUG:   Trying 2-digit ratio: ratio=94.21, before_ratio='ç`ãÊç`ìÏìÒíöñ⁄15î‘ÇPçÜÅj549,09'
+DEBUG:     Extracted shares: '549,09'
+DEBUG:     Not all parts are 3 digits: [2]
+DEBUG:   Trying 1-digit ratio: ratio=4.21, before_ratio='ç`ãÊç`ìÏìÒíöñ⁄15î‘ÇPçÜÅj549,099'
+DEBUG:     Extracted shares: '549,099'
+DEBUG:   \u2705 Valid match found!
+DEBUG:   Extracted name: 'ç`ãÊç`ìÏìÒíöñ⁄15î‘ÇPçÜÅj572,1484.38ÉWÉFÅ[ÉsÅ[ÉÇÉãÉKÉìÉ`ÉFÅ[ÉXÉoÉìÉNÅièÌîCë„óùêláäÇ›Ç∏ÇŸã‚çsåàçœâcã∆ïîÅj25BankStreet,CanaryWharf,London,E145JP,UnitedKingdomÅi'
+DEBUG:   Skipping name due to keyword or length
+DEBUG: Extracting numbers from rest: ä†íJésè∫òaí¨àÍíöñ⁄ÇPî‘ín449,576
+3.45ÉUÉoÉìÉNÉIÉuÉjÉÖÅ[ÉàÅ[ÉNÉÅÉçÉìÉAÉYÉfÉ|ÉWÉ^ÉäÉoÉìÉNÉtÉHÅ[ÉfÉ|ÉWÉ^ÉäÉåÉVÅ[ÉgÉzÉãÉ_Å[ÉYÅièÌîCë„óùêláäéOà‰èZóFã‚çsÅj240GreenwichStreet,8
+DEBUG:   ValueError: could not convert string to float: '.A.Åi'
+DEBUG:   ValueError: could not convert string to float: 'A.Åi'
+DEBUG: Extracting numbers from rest: êÁë„ìcãÊä€ÇÃì‡àÍíöñ⁄ÇPî‘ÇQçÜÅj335,788
+2.57ÉgÉàÉ^ïsìÆéYáä
+DEBUG:   Trying 2-digit ratio: ratio=
+2.57, before_ratio='êÁë„ìcãÊä€ÇÃì‡àÍíöñ⁄ÇPî‘ÇQçÜÅj335,788'
+DEBUG:     Extracted shares: '335,788'
+DEBUG:   \u2705 Valid match found!
+DEBUG:   Extracted name: '3.45ÉUÉoÉìÉNÉIÉuÉjÉÖÅ[ÉàÅ[ÉNÉÅÉçÉìÉAÉYÉfÉ|ÉWÉ^ÉäÉoÉìÉNÉtÉHÅ[ÉfÉ|ÉWÉ^ÉäÉåÉVÅ[ÉgÉzÉãÉ_Å[ÉYÅièÌîCë„óùêláäéOà‰èZóFã‚çsÅj240GreenwichStreet,8thFloorWest,NewYork,NY10286,U.S.A.Åi'
+DEBUG:   Skipping name due to keyword or length
+DEBUG: Extracting numbers from rest: êÁë„ìcãÊóLäyí¨àÍíöñ⁄ÇPî‘ÇQçÜ249,754
+1.91éOà‰èZóFäCè„âŒç–ï€åØáä
+DEBUG:   Trying 2-digit ratio: ratio=
+1.91, before_ratio='êÁë„ìcãÊóLäyí¨àÍíöñ⁄ÇPî‘ÇQçÜ249,754'
+DEBUG:     Extracted shares: '249,754'
+DEBUG:   \u2705 Valid match found!
+DEBUG:   Extracted name: '2.57ÉgÉàÉ^ïsìÆéYáä'
+DEBUG: Extracting numbers from rest: êÁë„ìcãÊê_ìcèxâÕë‰éOíöñ⁄ÇXî‘ín204,172
+1.56åvÅ\6,803,34252.14ÅiíçÅjÇPè„ãLÇÃÇŸÇ©ÅAìñé–Ç™èäóLÇµÇƒÇ¢ÇÈé©å»äîéÆ2,746,058êÁäîÇ™Ç†ÇËÇ‹Ç∑ÅB
+ÇQè„ãLÅAäeêMëıã‚çsèäóLäîéÆêîÇÕÅA
+DEBUG:   Trying 2-digit ratio: ratio=52.14, before_ratio='êÁë„ìcãÊê_ìcèxâÕë‰éOíöñ⁄ÇXî‘ín204,172
+1.56åvÅ\6,803,342'
+DEBUG:     Extracted shares: '6,803,342'
+DEBUG:   \u2705 Valid match found!
+DEBUG:   Extracted name: '1.91éOà‰èZóFäCè„âŒç–ï€åØáä'
+INFO: Parsed 4 shareholders from plain text
+
+=== Processing Document: S100VWVY ===
+
+[CACHE HIT] S100VWVY - „Éà„É®„ÇøËá™ÂãïËªäÊ†™Âºè‰ºöÁ§æ
+Â§ßÊ†™‰∏ª„ÅÆÁä∂Ê≥Å HTML length: 1041 characters
+
+=== First 1000 characters ===
+ÔºàÔºñÔºâ„ÄêÂ§ßÊ†™‰∏ª„ÅÆÁä∂Ê≥Å„Äë2025Âπ¥ÔºìÊúà31Êó•ÁèæÂú®Ê∞èÂêçÂèà„ÅØÂêçÁß∞‰ΩèÊâÄÊâÄÊúâÊ†™ÂºèÊï∞(ÂçÉÊ†™)Áô∫Ë°åÊ∏àÊ†™Âºè(Ëá™Â∑±Ê†™Âºè„ÇíÈô§„Åè)„ÅÆÁ∑èÊï∞„Å´ÂØæ„Åô„ÇãÊâÄÊúâÊ†™ÂºèÊï∞„ÅÆÂâ≤Âêà(ÔºÖ)Êó•Êú¨„Éû„Çπ„Çø„Éº„Éà„É©„Çπ„Éà‰ø°Ë®óÈäÄË°å„à±Êù±‰∫¨ÈÉΩÊ∏ØÂå∫Ëµ§ÂùÇ‰∏Ä‰∏ÅÁõÆÔºòÁï™ÔºëÂè∑1,805,60513.84„à±Ë±äÁî∞Ëá™ÂãïÁπîÊ©üÊÑõÁü•ÁúåÂààË∞∑Â∏ÇË±äÁî∞Áî∫‰∫å‰∏ÅÁõÆÔºëÁï™Âú∞1,192,3319.14„à±Êó•Êú¨„Ç´„Çπ„Éà„Éá„Ç£ÈäÄË°åÊù±‰∫¨ÈÉΩ‰∏≠Â§ÆÂå∫Êô¥Êµ∑‰∏Ä‰∏ÅÁõÆÔºòÁï™12Âè∑811,6476.22Êó•Êú¨ÁîüÂëΩ‰øùÈô∫ÔºàÁõ∏ÔºâÂ§ßÈò™Â∫úÂ§ßÈò™Â∏Ç‰∏≠Â§ÆÂå∫‰ªäÊ©ã‰∏â‰∏ÅÁõÆÔºïÁï™12Âè∑633,2214.85„Çπ„ÉÜ„Éº„Éà „Çπ„Éà„É™„Éº„Éà „Éê„É≥„ÇØ „Ç¢„É≥„Éâ „Éà„É©„Çπ„Éà „Ç´„É≥„Éë„Éã„ÉºÔºàÂ∏∏‰ªª‰ª£ÁêÜ‰∫∫ „à±„Åø„Åö„ÅªÈäÄË°åÊ±∫Ê∏àÂñ∂Ê•≠ÈÉ®ÔºâP.O.BOX 351 Boston Massachusetts02101 U.S.A.ÔºàÊù±‰∫¨ÈÉΩÊ∏ØÂå∫Ê∏ØÂçó‰∫å‰∏ÅÁõÆ15Áï™ÔºëÂè∑Ôºâ572,1484.38„Ç∏„Çß„Éº„Éî„Éº „É¢„É´„Ç¨„É≥ „ÉÅ„Çß„Éº„Çπ „Éê„É≥„ÇØÔºàÂ∏∏‰ªª‰ª£ÁêÜ‰∫∫ „à±„Åø„Åö„ÅªÈäÄË°åÊ±∫Ê∏àÂñ∂Ê•≠ÈÉ®Ôºâ25 Bank Street,Canary Wharf, London, E14 5JP, United KingdomÔºàÊù±‰∫¨ÈÉΩÊ∏ØÂå∫Ê∏ØÂçó‰∫å‰∏ÅÁõÆ15Áï™ÔºëÂè∑Ôºâ549,0994.21„à±„Éá„É≥„ÇΩ„ÉºÊÑõÁü•ÁúåÂààË∞∑Â∏ÇÊò≠ÂíåÁî∫‰∏Ä‰∏ÅÁõÆÔºëÁï™Âú∞449,576
+3.45„Ç∂ „Éê„É≥„ÇØ „Ç™„Éñ „Éã„É•„Éº„É®„Éº„ÇØ „É°„É≠„É≥ „Ç¢„Ç∫ „Éá„Éù„Ç∏„Çø„É™ „Éê„É≥„ÇØ „Éï„Ç©„Éº „Éá„Éù„Ç∏„Çø„É™ „É¨„Ç∑„Éº„Éà „Éõ„É´„ÉÄ„Éº„Ç∫ÔºàÂ∏∏‰ªª‰ª£ÁêÜ‰∫∫ „à±‰∏â‰∫ï‰ΩèÂèãÈäÄË°åÔºâ240 Greenwich Street, 8th Floor West, New York, NY 10286, U.S.A.ÔºàÊù±‰∫¨ÈÉΩÂçÉ‰ª£Áî∞Âå∫‰∏∏„ÅÆÂÜÖ‰∏Ä‰∏ÅÁõÆÔºëÁï™ÔºíÂè∑Ôºâ335,788
+2.57„Éà„É®„Çø‰∏çÂãïÁî£„à±Êù±‰∫¨ÈÉΩÂçÉ‰ª£Áî∞Âå∫ÊúâÊ•ΩÁî∫‰∏Ä‰∏ÅÁõÆÔºëÁï™ÔºíÂè∑249,754
+1.91‰∏â‰∫ï‰ΩèÂèãÊµ∑‰∏äÁÅ´ÁÅΩ‰øùÈô∫„à±Êù±‰∫¨ÈÉΩÂçÉ‰ª£Áî∞Âå∫Á•ûÁî∞ÈßøÊ≤≥Âè∞‰∏â‰∏ÅÁõÆÔºôÁï™Âú∞204,172
+1.56Ë®à‚Äï6,803,34252.14ÔºàÊ≥®ÔºâÔºë‰∏äË®ò„ÅÆ„Åª„Åã„ÄÅÂΩìÁ§æ„ÅåÊâÄÊúâ„Åó„Å¶„ÅÑ„ÇãËá™Â∑±Ê†™Âºè2,746,058ÂçÉÊ†™„Åå„ÅÇ„Çä„Åæ„Åô„ÄÇ
+Ôºí‰∏äË®ò„ÄÅÂêÑ‰ø°Ë®óÈäÄË°åÊâÄÊúâÊ†™ÂºèÊï∞„ÅØ„ÄÅ„Åô„Åπ„Å¶‰ø°Ë®óÊ•≠Âãô„Å´„Åã„Åã„ÇãÊ†™Âºè„ÅÆÁ∑èÊï∞„Åß„Åô„ÄÇÂêÑ‰ø°Ë®óÈäÄË°åÊâÄÊúâÊ†™ÂºèÊï∞„ÅÆ„ÅÜ„Å°Ê†™‰∏ªÂêçÁ∞ø‰∏äÊâÄÊúâÊ†™ÂºèÊï∞„ÅåÊúÄ„ÇÇÂ§ö„ÅÑÂêçÁæ©ÂàÜ„ÅØ„ÄÅ„Åù„Çå„Åû„ÇåÊ¨°„ÅÆ„Å®„Åä„Çä„Åß„Åô„ÄÇ
+Êó•Êú¨„Éû„Çπ„Çø„Éº„Éà„É©„Çπ„Éà‰ø°Ë®óÈäÄË°å„à±Ôºà‰ø°Ë®óÂè£Ôºâ1,693,710ÂçÉÊ†™„ÄÅ„à±Êó•Êú¨„Ç´„Çπ„Éà„Éá„Ç£ÈäÄË°åÔºà‰ø°Ë®óÂè£Ôºâ535,685ÂçÉÊ†™Ôºì„Ç∂ „Éê„É≥„ÇØ „Ç™„Éñ „Éã„É•„Éº„É®„Éº„ÇØ „É°„É≠„É≥ „Ç¢„Ç∫ „Éá„Éù„Ç∏„Çø„É™ „Éê„É≥„ÇØ „Éï„Ç©„Éº „Éá„Éù„Ç∏„Çø„É™ „É¨„Ç∑„Éº„Éà „Éõ„É´„ÉÄ„Éº„Ç∫„ÅØ„ÄÅADRÔºàÁ±≥ÂõΩ
+
+=== Contains <table> tag: False ===
+=== Contains <tr> tag: False ===
+=== Contains "Ê†™‰∏ª" keyword: True ===
+
+=== Calling parse_shareholder_table() ===
+Result: 4 shareholders extracted
+1. {'name': '1.91‰∏â‰∫ï‰ΩèÂèãÊµ∑‰∏äÁÅ´ÁÅΩ‰øùÈô∫„à±', 'shares': 6803342000, 'ratio': 52.14}
+2. {'name': 'Ê∏ØÂå∫Ëµ§ÂùÇ‰∏Ä‰∏ÅÁõÆÔºòÁï™ÔºëÂè∑1,805,60513.84„à±Ë±äÁî∞Ëá™ÂãïÁπîÊ©ü', 'shares': 1192331000, 'ratio': 9.14}
+3. {'name': 'ÂààË∞∑Â∏ÇË±äÁî∞Áî∫‰∫å‰∏ÅÁõÆÔºëÁï™Âú∞1,192,3319.14„à±Êó•Êú¨„Ç´„Çπ„Éà„Éá„Ç£ÈäÄË°å', 'shares': 811647000, 'ratio': 6.22}
+4. {'name': '2.57„Éà„É®„Çø‰∏çÂãïÁî£„à±', 'shares': 249754000, 'ratio': 1.91}

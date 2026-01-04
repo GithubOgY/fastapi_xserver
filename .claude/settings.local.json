@@ -34,7 +34,13 @@
       "Bash(netstat:*)",
       "Bash(iconv:*)",
       "Bash(git checkout:*)",
-      "Bash(del nul)"
+      "Bash(del nul)",
+      "Bash(timeout 180 python:*)",
+      "Bash(timeout 60 python:*)",
+      "Bash(timeout 30 python:*)",
+      "Bash(timeout 5 curl:*)",
+      "Bash(timeout 10 bash -c 'for i in {1..10}; do curl -s http://localhost:8000 > /dev/null && echo \"\"✓ アプリケーション起動完了 \\(${i}秒後\\)\"\" && exit 0; sleep 1; done; echo \"\"✗ タイムアウト\"\"')",
+      "Bash(uvicorn main:app:*)"
     ]
   }
 }

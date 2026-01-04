@@ -175,3 +175,17 @@
 2025-12-31 21:10:17,314 [INFO] fastapi-app: Application starting up...
 2025-12-31 21:10:17,341 [INFO] fastapi-app: [Startup] Starting J-Quants data sync to populate scale categories...
 2025-12-31 21:10:21,231 [INFO] fastapi-app: [Startup] J-Quants sync finished. Result: {'added': 0, 'updated': 4414}
+2026-01-03 21:42:27,999 [INFO] fastapi-app: Application starting up...
+2026-01-03 21:42:28,001 [INFO] fastapi-app: [Migration] 'audit_logs' table exists.
+2026-01-03 21:42:28,039 [INFO] fastapi-app: [Startup] Starting J-Quants data sync to populate scale categories...
+2026-01-03 21:42:32,076 [INFO] fastapi-app: [Startup] J-Quants sync finished. Result: {'added': 1, 'updated': 4413}
+2026-01-03 21:42:39,030 [INFO] fastapi-app: 127.0.0.1 - "GET /docs" 200 (0.0004s)
+127.0.0.1:56016 - "GET /docs HTTP/1.1" 200
+2026-01-03 21:43:39,880 [INFO] fastapi-app: 127.0.0.1 - "GET /dashboard/72030" 404 (0.0008s)
+127.0.0.1:56183 - "GET /dashboard/72030 HTTP/1.1" 404
+2026-01-03 21:43:40,290 [INFO] fastapi-app: 127.0.0.1 - "GET /favicon.ico" 404 (0.0008s)
+127.0.0.1:56183 - "GET /favicon.ico HTTP/1.1" 404
+2026-01-03 21:43:50,610 [INFO] fastapi-app: 127.0.0.1 - "GET /dashboard/72030" 404 (0.0008s)
+127.0.0.1:56240 - "GET /dashboard/72030 HTTP/1.1" 404
+2026-01-03 21:44:00,734 [INFO] fastapi-app: 127.0.0.1 - "GET /dashboard/72030" 404 (0.0006s)
+127.0.0.1:56241 - "GET /dashboard/72030 HTTP/1.1" 404
