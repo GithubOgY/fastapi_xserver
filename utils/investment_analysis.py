@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 # - プロンプト変更時は必ずこの値を更新する
 # - これによりキャッシュが自動的に無効化される
 # =========================================================
-INVESTMENT_PROMPT_VERSION = "2026-01-04-v7-fix-output-format"
+INVESTMENT_PROMPT_VERSION = "2026-01-04-v8-profit-ratio-analysis"
 
 
 def analyze_investment_decision(ticker_code: str, financial_context: Dict[str, Any], company_name: str = "") -> str:
@@ -249,6 +249,8 @@ def analyze_investment_decision(ticker_code: str, financial_context: Dict[str, A
         # 2. 給与対比の生産性（労働分配率の逆数的な視点）
         # 従業員一人当たり営業利益 - 平均年収
         profit_salary_gap = op_per_emp - avg_salary
+        # 給与倍率（営業利益ベース）
+        profit_salary_ratio = op_per_emp / avg_salary if avg_salary > 0 else 0
         
         # フォーマット関数
         def fmt_yen(val):
@@ -267,10 +269,11 @@ def analyze_investment_decision(ticker_code: str, financial_context: Dict[str, A
         productivity_lines.append("")
         productivity_lines.append("**人的資本ROI分析:**")
         productivity_lines.append(f"- 給与倍率 (売上/給与): {rev_per_emp/avg_salary:.2f}倍")
+        productivity_lines.append(f"- 利益倍率 (営業利益/給与): {profit_salary_ratio:.2f}倍")
         
         # 判定コメント
         if op_per_emp > avg_salary:
-            productivity_lines.append(f"- ✅ **黒字構造**: 一人が給与以上の営業利益({fmt_man(op_per_emp)})を稼いでいる (+{fmt_man(profit_salary_gap)})")
+            productivity_lines.append(f"- ✅ **黒字構造**: 給与の{profit_salary_ratio:.2f}倍の利益を稼いでいる (+{fmt_man(profit_salary_gap)})")
         elif op_per_emp > 0:
             productivity_lines.append(f"- ⚠️ **低収益構造**: 営業利益({fmt_man(op_per_emp)})が給与({fmt_man(avg_salary)})を下回っている")
         else:
