@@ -3536,29 +3536,29 @@ async def search_edinet_company(
             
             sections_html += f'''
             <details class="bg-gray-900/30 rounded-lg border border-green-500/30 overflow-hidden" style="height: fit-content;" open>
-                <summary class="cursor-pointer px-4 py-3 bg-green-900/20 hover:bg-green-800/30 transition-colors font-medium text-green-200 list-none flex items-center gap-3">
-                    <span style="font-size: 0.9rem;">👥 従業員の状況</span>
+                <summary class="cursor-pointer px-3 py-2 bg-green-900/20 hover:bg-green-800/30 transition-colors font-medium text-green-200 list-none flex items-center gap-2">
+                    <span style="font-size: 0.85rem;">👥 従業員の状況</span>
                 </summary>
-                <div class="p-4 text-sm text-gray-200 leading-relaxed border-t border-green-700/30 bg-gray-900/50">
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
-                        <div style="background: rgba(16, 185, 129, 0.1); padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.2);">
-                            <div style="font-size: 0.7rem; color: #6ee7b7; margin-bottom: 0.25rem;">👤 従業員数</div>
-                            <div style="font-size: 1.25rem; font-weight: bold; color: #a7f3d0;">{employee_count if employee_count else "―"}人</div>
+                <div class="p-3 text-sm text-gray-200 leading-relaxed border-t border-green-700/30 bg-gray-900/50">
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem;">
+                        <div style="background: rgba(16, 185, 129, 0.1); padding: 0.5rem; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.2);">
+                            <div style="font-size: 0.65rem; color: #6ee7b7; margin-bottom: 0.15rem;">👤 従業員数</div>
+                            <div style="font-size: 1.1rem; font-weight: bold; color: #a7f3d0;">{employee_count if employee_count else "―"}人</div>
                         </div>
-                        <div style="background: rgba(59, 130, 246, 0.1); padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.2);">
-                            <div style="font-size: 0.7rem; color: #93c5fd; margin-bottom: 0.25rem;">🎂 平均年齢</div>
-                            <div style="font-size: 1.25rem; font-weight: bold; color: #bfdbfe;">{avg_age if avg_age else "―"}歳</div>
+                        <div style="background: rgba(59, 130, 246, 0.1); padding: 0.5rem; border-radius: 6px; border: 1px solid rgba(59, 130, 246, 0.2);">
+                            <div style="font-size: 0.65rem; color: #93c5fd; margin-bottom: 0.15rem;">🎂 平均年齢</div>
+                            <div style="font-size: 1.1rem; font-weight: bold; color: #bfdbfe;">{avg_age if avg_age else "―"}歳</div>
                         </div>
-                        <div style="background: rgba(168, 85, 247, 0.1); padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(168, 85, 247, 0.2);">
-                            <div style="font-size: 0.7rem; color: #c4b5fd; margin-bottom: 0.25rem;">📅 平均勤続年数</div>
-                            <div style="font-size: 1.25rem; font-weight: bold; color: #ddd6fe;">{avg_tenure if avg_tenure else "―"}年</div>
+                        <div style="background: rgba(168, 85, 247, 0.1); padding: 0.5rem; border-radius: 6px; border: 1px solid rgba(168, 85, 247, 0.2);">
+                            <div style="font-size: 0.65rem; color: #c4b5fd; margin-bottom: 0.15rem;">📅 平均勤続年数</div>
+                            <div style="font-size: 1.1rem; font-weight: bold; color: #ddd6fe;">{avg_tenure if avg_tenure else "―"}年</div>
                         </div>
-                        <div style="background: rgba(245, 158, 11, 0.1); padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.2);">
-                            <div style="font-size: 0.7rem; color: #fcd34d; margin-bottom: 0.25rem;">💰 平均年収</div>
-                            <div style="font-size: 1.25rem; font-weight: bold; color: #fef3c7;">{salary_display if salary_display else "―"}</div>
+                        <div style="background: rgba(245, 158, 11, 0.1); padding: 0.5rem; border-radius: 6px; border: 1px solid rgba(245, 158, 11, 0.2);">
+                            <div style="font-size: 0.65rem; color: #fcd34d; margin-bottom: 0.15rem;">💰 平均年収</div>
+                            <div style="font-size: 1.1rem; font-weight: bold; color: #fef3c7;">{salary_display if salary_display else "―"}</div>
                         </div>
                     </div>
-                    <p style="font-size: 0.65rem; color: #64748b; margin-top: 0.75rem; text-align: center;">※ 有価証券報告書「従業員の状況」より</p>
+                    <p style="font-size: 0.6rem; color: #64748b; margin-top: 0.5rem; text-align: center;">※ 有価証券報告書「従業員の状況」より</p>
                 </div>
             </details>
             '''
