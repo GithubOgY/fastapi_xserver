@@ -255,10 +255,33 @@ def extract_financial_data(xbrl_dir: str) -> Dict[str, Any]:
                 latest_date = max(context_dates.values())
                 logger.info(f"Latest context date identified in XBRL: {latest_date}")
                 
-                # Add all contexts matching the latest date to valid_contexts
-                for c_id, d_val in context_dates.items():
-                    if d_val == latest_date:
-                        valid_contexts.add(c_id)
+                # 連結優先ロジック (Consolidated vs NonConsolidated)
+                latest_contexts = [c for c, d in context_dates.items() if d == latest_date]
+                
+                consolidated_contexts = [c for c in latest_contexts if "Consolidated" in c or "Consol" in c or "Cons" in c]
+                non_consolidated_contexts = [c for c in latest_contexts if "NonConsolidated" in c or "NonConsol" in c]
+                
+                final_contexts = set()
+                
+                if consolidated_contexts:
+                    final_contexts.update(consolidated_contexts)
+                    logger.info(f"Prioritizing Consolidated contexts: {len(consolidated_contexts)} found")
+                    # 連結コンテキストが見つかった場合でも、連結で提供されないデータ（提出会社情報など）のために
+                    # ノンコンソリも予備として含めるべきか？
+                    # 現状の「早い者勝ち」ロジック（raw_dataへの書き込み）だと、もし混合させると順序に依存する。
+                    # ここでは安全のため、連結数値が確実にあるなら連結のみにする。
+                    # ただし、提出会社の従業員数などが取れなくなるリスクはあるか？
+                    # 通常、[NumberOfEmployees] は連結と単独で別タグではなく文脈で区別される。
+                    # 連結があれば連結従業員数が入り、なければ単独が入る仕組みにしたいが、
+                    # ここでは主要財務数値（PL/BS）の正確性を最優先し、連結優先とする。
+                elif non_consolidated_contexts:
+                    final_contexts.update(non_consolidated_contexts)
+                    logger.info(f"Using Non-Consolidated contexts: {len(non_consolidated_contexts)} found")
+                else:
+                    final_contexts.update(latest_contexts)
+                    logger.info(f"Using all contexts for latest date: {len(latest_contexts)} found (No specific Consolidated keyword)")
+                
+                valid_contexts = final_contexts
             
             logger.info(f"Selected valid context IDs: {len(valid_contexts)}")
             
