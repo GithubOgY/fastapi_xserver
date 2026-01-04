@@ -1106,7 +1106,7 @@ async def admin_delete_user(request: Request, user_id: int, db: Session = Depend
             "deleted_user_id": target_user.id,
             "deleted_username": target_user.username,
             "was_admin": target_user.is_admin,
-            "was_premium": target_user.is_premium
+            "premium_tier": target_user.premium_tier
         }
     )
 
