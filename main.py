@@ -1,6 +1,6 @@
 ﻿from fastapi import FastAPI, Request, Form, Depends, HTTPException, status, Response, Query, BackgroundTasks
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from typing import Annotated, Optional, List
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, desc, func
@@ -22,6 +22,9 @@ import urllib.parse
 import yfinance as yf
 import pandas as pd
 from utils.edinet_enhanced import get_financial_history, format_financial_data, search_company_reports, process_document
+from utils.edinet_api import build_public_edinet_payload, normalize_edinet_query
+from utils.rate_limiter import public_api_limiter, authenticated_api_limiter
+from utils.edinet_cache import edinet_cache
 
 from utils.growth_analysis import analyze_growth_quality
 from utils.ai_analysis import analyze_stock_with_ai, analyze_financial_health, analyze_business_competitiveness, analyze_risk_governance, analyze_dashboard_image
@@ -3630,6 +3633,111 @@ async def search_edinet_company(
                 ❌ エラー: {str(e)}
             </div>
         """, status_code=500)
+
+
+@app.get("/api/v1/edinet/search", response_class=JSONResponse)
+async def search_edinet_company_v1(query: str = Query(..., min_length=1), request: Request = None):
+    """Public EDINET search API (JSON) - Rate limited: 10 requests/minute"""
+    # レート制限チェック
+    client_ip = request.client.host if request and request.client else "unknown"
+    allowed, retry_after = public_api_limiter.check(client_ip)
+
+    if not allowed:
+        return JSONResponse(
+            content={
+                "error": {
+                    "code": "rate_limit_exceeded",
+                    "message": f"Rate limit exceeded. Please retry after {retry_after} seconds.",
+                    "retry_after": retry_after
+                }
+            },
+            status_code=429,
+            headers={"Retry-After": str(retry_after)}
+        )
+
+    clean_query = normalize_edinet_query(query)
+    if not clean_query:
+        return JSONResponse(
+            content={"error": {"code": "invalid_query", "message": "Query is required."}},
+            status_code=400,
+        )
+
+    # キャッシュチェック
+    doc_type = "120"
+    cached_result = edinet_cache.get(clean_query, doc_type)
+    if cached_result:
+        logger.info(f"Returning cached data for query: {clean_query}")
+        cached_result["metadata"]["from_cache"] = True
+        payload = build_public_edinet_payload(cached_result)
+        return JSONResponse(content=payload)
+
+    try:
+        is_code = clean_query.isdigit()
+        if is_code:
+            docs = await run_in_threadpool(
+                search_company_reports,
+                company_code=clean_query,
+                doc_type="120",
+                days_back=365,
+            )
+            if not docs:
+                doc_type = "140"
+                docs = await run_in_threadpool(
+                    search_company_reports,
+                    company_code=clean_query,
+                    doc_type="140",
+                    days_back=180,
+                )
+        else:
+            docs = await run_in_threadpool(
+                search_company_reports,
+                company_name=clean_query,
+                doc_type="120",
+                days_back=365,
+            )
+            if not docs:
+                doc_type = "140"
+                docs = await run_in_threadpool(
+                    search_company_reports,
+                    company_name=clean_query,
+                    doc_type="140",
+                    days_back=180,
+                )
+
+        if not docs:
+            return JSONResponse(
+                content={
+                    "error": {
+                        "code": "not_found",
+                        "message": "No EDINET documents found for the query.",
+                    }
+                },
+                status_code=404,
+            )
+
+        result = await run_in_threadpool(process_document, docs[0])
+        if not result:
+            return JSONResponse(
+                content={
+                    "error": {
+                        "code": "processing_failed",
+                        "message": "Failed to process the EDINET document.",
+                    }
+                },
+                status_code=502,
+            )
+
+        # キャッシュに保存
+        edinet_cache.set(clean_query, result, doc_type)
+
+        payload = build_public_edinet_payload(result)
+        return JSONResponse(content=payload)
+    except Exception as e:
+        logger.error(f"EDINET public API error: {e}")
+        return JSONResponse(
+            content={"error": {"code": "internal_error", "message": "Server error."}},
+            status_code=500,
+        )
 
 
 
